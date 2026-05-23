@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import Link from 'next/link'
 import {
   buildBuilderWebPageJsonLd,
   createBuilderStore,
@@ -8,25 +9,35 @@ import {
   exportPageToJson,
   listBlockDefinitions,
   selectedBlock,
+  type PageBlock,
   type ViewportMode
 } from '@randee/builder'
 import { useStore } from 'zustand'
 import { Cta, Faq, Features, Hero } from '@randee/ui'
-import { Button, Card, Chip, Input, Separator, Tab, Tabs, TextArea } from '@heroui/react'
 import {
   Boxes,
   Code2,
+  Copy,
   Download,
+  FileText,
+  GripVertical,
   Home,
+  Layers3,
   LayoutDashboard,
+  Monitor,
   Moon,
   PackagePlus,
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
-  Sparkles,
-  Sun
+  Plus,
+  Settings2,
+  Smartphone,
+  Store,
+  Sun,
+  Tablet,
+  Trash2
 } from 'lucide-react'
 
 type UiTheme = 'light' | 'dark'
@@ -35,6 +46,16 @@ const viewportClass: Record<ViewportMode, string> = {
   desktop: 'w-full',
   tablet: 'mx-auto w-[820px] max-w-full',
   mobile: 'mx-auto w-[420px] max-w-full'
+}
+
+const viewportIcon: Record<ViewportMode, React.ComponentType<{ className?: string }>> = {
+  desktop: Monitor,
+  tablet: Tablet,
+  mobile: Smartphone
+}
+
+function cx(...classes: Array<string | false | null | undefined>): string {
+  return classes.filter(Boolean).join(' ')
 }
 
 function download(filename: string, text: string) {
@@ -47,7 +68,7 @@ function download(filename: string, text: string) {
   URL.revokeObjectURL(url)
 }
 
-function renderPreviewBlock(block: ReturnType<typeof selectedBlock>) {
+function renderPreviewBlock(block: PageBlock | undefined) {
   if (!block) return null
 
   if (block.type === 'hero') {
@@ -74,7 +95,12 @@ function renderPreviewBlock(block: ReturnType<typeof selectedBlock>) {
   }
 
   if (block.type === 'faq') {
-    return <Faq title={block.props.title ?? 'FAQ'} items={[{ id: '1', question: 'Вопрос', answer: 'Ответ' }]} />
+    return (
+      <Faq
+        title={block.props.title ?? 'FAQ'}
+        items={[{ id: '1', question: 'Вопрос', answer: 'Ответ' }]}
+      />
+    )
   }
 
   if (block.type === 'cta') {
@@ -88,9 +114,9 @@ function renderPreviewBlock(block: ReturnType<typeof selectedBlock>) {
   }
 
   return (
-    <section className="rounded-2xl border border-black/10 bg-white p-6 shadow-sm">
+    <section className="rounded-[18px] border border-stone-200 bg-white p-6">
       <h3 className="text-lg font-semibold">{block.type}</h3>
-      <p className="text-sm text-slate-500">Template: {block.template}</p>
+      <p className="text-sm text-stone-500">Template: {block.template}</p>
     </section>
   )
 }
@@ -101,6 +127,7 @@ export default function BuilderPage() {
   const [leftOpen, setLeftOpen] = React.useState(true)
   const [rightOpen, setRightOpen] = React.useState(true)
   const [advancedOpen, setAdvancedOpen] = React.useState(false)
+  const [dragId, setDragId] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     const saved = window.localStorage.getItem('randee-builder-theme') as UiTheme | null
@@ -109,8 +136,7 @@ export default function BuilderPage() {
       return
     }
 
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    setTheme(prefersDark ? 'dark' : 'light')
+    setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
   }, [])
 
   React.useEffect(() => {
@@ -118,314 +144,414 @@ export default function BuilderPage() {
   }, [theme])
 
   const isDark = theme === 'dark'
-
   const page = useStore(store, (state) => state.page)
   const activeId = useStore(store, (state) => state.selectedBlockId)
   const viewport = useStore(store, (state) => state.viewport)
   const block = useStore(store, selectedBlock)
-
-  const [dragId, setDragId] = React.useState<string | null>(null)
+  const seoJsonLd = buildBuilderWebPageJsonLd(page.seo)
 
   const exportJson = () => download('page.json', exportPageToJson(page))
   const exportHtml = () => download('page.html', exportPageToHtml(page))
   const exportBitrix = () => download('bitrix-page.schema.json', exportPageToJson(page))
-  const seoJsonLd = buildBuilderWebPageJsonLd(page.seo)
 
   const gridClass =
     leftOpen && rightOpen
-      ? 'xl:grid-cols-[320px_1fr_420px]'
+      ? 'xl:grid-cols-[300px_minmax(0,1fr)_380px]'
       : leftOpen
-        ? 'xl:grid-cols-[320px_1fr]'
+        ? 'xl:grid-cols-[300px_minmax(0,1fr)]'
         : rightOpen
-          ? 'xl:grid-cols-[1fr_420px]'
-          : 'xl:grid-cols-[1fr]'
+          ? 'xl:grid-cols-[minmax(0,1fr)_380px]'
+          : 'xl:grid-cols-[minmax(0,1fr)]'
+
+  const surface = isDark
+    ? 'border-white/10 bg-white/[0.06] shadow-[0_22px_80px_rgba(0,0,0,0.28)]'
+    : 'border-white/80 bg-white/78 shadow-[0_22px_70px_rgba(39,42,34,0.10)]'
+
+  const panel = isDark ? 'border-white/10 bg-[#121819]/92' : 'border-white/80 bg-white/88'
+  const textMuted = isDark ? 'text-stone-300' : 'text-stone-500'
+  const buttonGhost = isDark
+    ? 'border-white/10 bg-white/[0.07] text-stone-100 hover:bg-white/[0.12]'
+    : 'border-stone-200 bg-white/80 text-stone-700 hover:bg-stone-50'
 
   return (
     <main
       data-randee-page="builder"
-      className={`min-h-screen w-screen px-4 py-4 md:px-6 ${
+      className={cx(
+        'randee-builder-shell min-h-screen w-screen overflow-x-hidden px-4 py-4 text-[15px]',
         isDark
-          ? 'bg-[radial-gradient(circle_at_0%_0%,#1b2438_0%,#0f172a_38%,#0b1020_100%)] text-slate-100'
-          : 'bg-[radial-gradient(circle_at_0%_0%,#f2f6ff_0%,#eef3fb_42%,#e8edf5_100%)] text-slate-900'
-      }`}
+          ? 'bg-[#0b1010] text-stone-100'
+          : 'bg-[radial-gradient(circle_at_18%_0%,#f8fff9_0%,#eef4ef_42%,#e4e9e4_100%)] text-stone-950'
+      )}
     >
-      <div className="mx-auto w-full max-w-[1720px]">
-        <header
-          className={`mb-4 rounded-3xl border px-5 py-4 backdrop-blur-xl ${
-            isDark
-              ? 'border-white/10 bg-white/5'
-              : 'border-white/70 bg-white/70 shadow-[0_16px_50px_rgba(15,23,42,0.08)]'
-          }`}
-        >
+      <div className="pointer-events-none fixed inset-0 -z-10 opacity-70">
+        <div className="absolute right-[8%] top-[-180px] h-[420px] w-[520px] rounded-full bg-emerald-200/35 blur-3xl" />
+        <div className="absolute bottom-[-220px] left-[10%] h-[440px] w-[520px] rounded-full bg-lime-100/40 blur-3xl" />
+      </div>
+
+      <div className="mx-auto flex min-h-[calc(100vh-32px)] w-full max-w-[1760px] flex-col gap-4">
+        <header className={cx('rounded-[28px] border px-4 py-3 backdrop-blur-2xl', surface)}>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h1 className={`text-3xl font-semibold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                Randee Builder
-              </h1>
-              <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                Compose pages, inspect content, export to Bitrix
-              </p>
+            <div className="flex items-center gap-3">
+              <div className={cx('flex h-11 w-11 items-center justify-center rounded-2xl', isDark ? 'bg-emerald-300 text-stone-950' : 'bg-stone-950 text-white')}>
+                <Layers3 className="h-5 w-5" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-semibold leading-none tracking-normal">Randee Builder</h1>
+                <p className={cx('mt-1 text-sm', textMuted)}>Page assembly for Bitrix components</p>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className={`rounded-2xl border p-1 ${isDark ? 'border-white/15 bg-white/5' : 'border-slate-200 bg-slate-100/80'}`}>
-                <Button
-                  size="sm"
-                  variant="tertiary"
-                  className={`${!isDark ? 'bg-white text-slate-950 shadow-sm' : 'text-white'}`}
+              <div className={cx('flex rounded-2xl border p-1', isDark ? 'border-white/10 bg-white/[0.06]' : 'border-stone-200 bg-stone-100/80')}>
+                <button
+                  type="button"
+                  className={cx('flex h-9 items-center gap-1 rounded-xl px-3 text-sm transition', theme === 'light' ? 'bg-white text-stone-950 shadow-sm' : 'text-stone-300')}
                   onClick={() => setTheme('light')}
                 >
-                  <Sun className="mr-1 h-4 w-4" />
+                  <Sun className="h-4 w-4" />
                   Light
-                </Button>
-                <Button
-                  size="sm"
-                  variant="tertiary"
-                  className={`${isDark ? 'bg-white/15 text-white shadow-sm' : 'text-slate-700'}`}
+                </button>
+                <button
+                  type="button"
+                  className={cx('flex h-9 items-center gap-1 rounded-xl px-3 text-sm transition', theme === 'dark' ? 'bg-white/15 text-white shadow-sm' : 'text-stone-600')}
                   onClick={() => setTheme('dark')}
                 >
-                  <Moon className="mr-1 h-4 w-4" />
+                  <Moon className="h-4 w-4" />
                   Dark
-                </Button>
+                </button>
               </div>
-              <a href="/">
-                <Button variant="tertiary" className={`${isDark ? 'border border-white/20 bg-white/10 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}>
-                  <Home className="mr-2 h-4 w-4" />
-                  Home
-                </Button>
-              </a>
-              <a href="/marketplace">
-                <Button variant="tertiary" className={`${isDark ? 'border border-white/20 bg-white/10 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}>
-                  <PackagePlus className="mr-2 h-4 w-4" />
-                  Marketplace
-                </Button>
-              </a>
-              <Button variant="tertiary" className={`${isDark ? 'border border-white/20 bg-white/10 text-white' : 'border border-slate-200 bg-white text-slate-700'}`} onClick={exportJson}>
-                <Code2 className="mr-2 h-4 w-4" />
-                Export JSON
-              </Button>
-              <Button variant="tertiary" className={`${isDark ? 'border border-emerald-300/30 bg-emerald-400/20 text-emerald-100' : 'border border-emerald-200 bg-emerald-50 text-emerald-700'}`} onClick={exportBitrix}>
-                <Boxes className="mr-2 h-4 w-4" />
+
+              <Link className={cx('flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm transition', buttonGhost)} href="/">
+                <Home className="h-4 w-4" />
+                Home
+              </Link>
+              <Link className={cx('flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm transition', buttonGhost)} href="/marketplace">
+                <Store className="h-4 w-4" />
+                Marketplace
+              </Link>
+              <button type="button" className={cx('flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm transition', buttonGhost)} onClick={exportJson}>
+                <Code2 className="h-4 w-4" />
+                JSON
+              </button>
+              <button
+                type="button"
+                className={cx(
+                  'flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm font-medium transition',
+                  isDark ? 'border-emerald-300/25 bg-emerald-300/15 text-emerald-100' : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                )}
+                onClick={exportBitrix}
+              >
+                <Boxes className="h-4 w-4" />
                 Export Bitrix
-              </Button>
-              <Button variant="primary" className={`${isDark ? 'bg-cyan-400 text-slate-950' : 'bg-slate-900 text-white'}`} onClick={exportHtml}>
-                <Download className="mr-2 h-4 w-4" />
-                Export HTML
-              </Button>
+              </button>
+              <button
+                type="button"
+                className={cx('flex h-10 items-center gap-2 rounded-2xl px-4 text-sm font-medium transition', isDark ? 'bg-emerald-300 text-stone-950' : 'bg-stone-950 text-white')}
+                onClick={exportHtml}
+              >
+                <Download className="h-4 w-4" />
+                HTML
+              </button>
             </div>
           </div>
         </header>
 
-        <section className={`grid min-h-[calc(100vh-170px)] grid-cols-1 gap-4 ${gridClass}`}>
+        <section className={cx('grid flex-1 grid-cols-1 gap-4', gridClass)}>
           {leftOpen ? (
-            <aside className={`rounded-3xl border p-4 ${isDark ? 'border-white/10 bg-white/5' : 'border-white/70 bg-white/70 shadow-[0_16px_40px_rgba(15,23,42,0.06)]'}`}>
-              <div className="mb-3 flex justify-between">
-                <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
-                  Blocks
-                </p>
-                <Button size="sm" variant="tertiary" onClick={() => setLeftOpen(false)}>
+            <aside className={cx('rounded-[28px] border p-4 backdrop-blur-xl', panel)}>
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className={cx('text-[11px] font-semibold uppercase tracking-[0.18em]', textMuted)}>Library</p>
+                  <h2 className="mt-1 text-lg font-semibold">Blocks</h2>
+                </div>
+                <button
+                  type="button"
+                  className={cx('flex h-9 w-9 items-center justify-center rounded-xl border transition', buttonGhost)}
+                  onClick={() => setLeftOpen(false)}
+                >
                   <PanelLeftClose className="h-4 w-4" />
                   <span className="sr-only">Hide Blocks</span>
-                </Button>
+                </button>
               </div>
 
-              <Card variant="secondary" className={`${isDark ? 'border border-white/10 bg-slate-900/60' : 'border border-slate-200 bg-white'}`}>
-                <Card.Content className="space-y-2 p-3">
-                  {listBlockDefinitions().map((item) => (
-                    <Button
-                      key={item.type}
-                      variant="tertiary"
-                      className={`w-full justify-start rounded-xl ${isDark ? 'border border-white/10 bg-white/5 text-slate-100 hover:bg-cyan-400/20' : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
-                      onClick={() => store.getState().addBlock(item.type)}
-                    >
-                      <LayoutDashboard className="mr-2 h-4 w-4" />
-                      {item.label}
-                    </Button>
-                  ))}
-                </Card.Content>
-              </Card>
-
-              <div className="mt-3 space-y-2">
-                {page.blocks.map((item, index) => (
-                  <Card
-                    key={item.id}
-                    variant="secondary"
-                    draggable
-                    onDragStart={() => setDragId(item.id)}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={() => {
-                      if (!dragId) return
-                      const from = page.blocks.findIndex((b) => b.id === dragId)
-                      if (from >= 0 && from !== index) store.getState().moveBlock(from, index)
-                      setDragId(null)
-                    }}
-                    onClick={() => store.getState().selectBlock(item.id)}
-                    className={`cursor-pointer rounded-2xl border ${
-                      activeId === item.id
-                        ? isDark
-                          ? 'border-cyan-300/80 bg-cyan-400/15'
-                          : 'border-slate-900 bg-slate-900 text-white'
-                        : isDark
-                          ? 'border-white/10 bg-slate-900/60'
-                          : 'border-slate-200 bg-white'
-                    }`}
+              <div className="grid gap-2">
+                {listBlockDefinitions().map((item) => (
+                  <button
+                    key={item.type}
+                    type="button"
+                    className={cx(
+                      'group flex h-12 items-center justify-between rounded-2xl border px-3 text-left transition',
+                      isDark ? 'border-white/10 bg-white/[0.04] hover:bg-white/[0.09]' : 'border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50'
+                    )}
+                    onClick={() => store.getState().addBlock(item.type)}
                   >
-                    <Card.Content className="space-y-3 p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold">{item.type}</span>
-                        <Chip variant="soft" className={`${activeId === item.id && !isDark ? 'bg-white/20 text-white' : ''}`}>
-                          #{index + 1}
-                        </Chip>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="tertiary" onClick={() => store.getState().duplicateBlock(item.id)}>
-                          Duplicate
-                        </Button>
-                        <Button size="sm" variant="danger-soft" onClick={() => store.getState().removeBlock(item.id)}>
-                          Remove
-                        </Button>
-                      </div>
-                    </Card.Content>
-                  </Card>
+                    <span className="flex items-center gap-2 text-sm font-medium">
+                      <LayoutDashboard className="h-4 w-4 text-emerald-700" />
+                      {item.label}
+                    </span>
+                    <Plus className={cx('h-4 w-4 transition group-hover:scale-110', textMuted)} />
+                  </button>
                 ))}
+              </div>
+
+              <div className="mt-5">
+                <p className={cx('mb-2 text-[11px] font-semibold uppercase tracking-[0.18em]', textMuted)}>Page order</p>
+                <div className="grid gap-2">
+                  {page.blocks.map((item, index) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      draggable
+                      onDragStart={() => setDragId(item.id)}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => {
+                        if (!dragId) return
+                        const from = page.blocks.findIndex((entry) => entry.id === dragId)
+                        if (from >= 0 && from !== index) store.getState().moveBlock(from, index)
+                        setDragId(null)
+                      }}
+                      onClick={() => store.getState().selectBlock(item.id)}
+                      className={cx(
+                        'flex items-center gap-3 rounded-2xl border p-3 text-left transition',
+                        activeId === item.id
+                          ? isDark
+                            ? 'border-emerald-300/50 bg-emerald-300/12'
+                            : 'border-stone-950 bg-stone-950 text-white'
+                          : isDark
+                            ? 'border-white/10 bg-white/[0.04] hover:bg-white/[0.08]'
+                            : 'border-stone-200 bg-white hover:bg-stone-50'
+                      )}
+                    >
+                      <GripVertical className="h-4 w-4 shrink-0 opacity-55" />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold">{item.type}</span>
+                        <span className={cx('block truncate text-xs', activeId === item.id && !isDark ? 'text-white/70' : textMuted)}>
+                          {item.template}
+                        </span>
+                      </span>
+                      <span className={cx('rounded-full px-2 py-1 text-xs', activeId === item.id && !isDark ? 'bg-white/15 text-white' : isDark ? 'bg-white/8 text-stone-300' : 'bg-stone-100 text-stone-500')}>
+                        {index + 1}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </aside>
           ) : null}
 
-          <section className={`rounded-3xl border p-4 ${isDark ? 'border-white/10 bg-white/5' : 'border-white/70 bg-white/70 shadow-[0_16px_40px_rgba(15,23,42,0.06)]'}`}>
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex min-w-[120px] items-center gap-2">
-                <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
-                  Canvas
-                </span>
-              </div>
-
-              <Tabs selectedKey={viewport} onSelectionChange={(value) => store.getState().setViewport(String(value) as ViewportMode)} variant="secondary">
-                <Tabs.List className={`${isDark ? 'rounded-2xl border border-white/10 bg-white/5 p-1' : 'rounded-2xl border border-slate-200 bg-slate-100 p-1'}`}>
-                  <Tab id="desktop" className="rounded-xl px-3 py-1.5">Desktop</Tab>
-                  <Tab id="tablet" className="rounded-xl px-3 py-1.5">Tablet</Tab>
-                  <Tab id="mobile" className="rounded-xl px-3 py-1.5">Mobile</Tab>
-                </Tabs.List>
-              </Tabs>
-            </div>
-
-            <Separator className={isDark ? 'bg-white/10' : 'bg-slate-200'} />
-
-            {(!leftOpen || !rightOpen) ? (
-              <div className="mt-4 flex flex-wrap gap-2">
+          <section className={cx('rounded-[28px] border p-4 backdrop-blur-xl', panel)}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
                 {!leftOpen ? (
-                  <Button
-                    size="sm"
-                    variant="tertiary"
-                    className={`${isDark ? 'border border-white/15 bg-white/10 text-white' : 'border border-slate-200 bg-white text-slate-700 shadow-sm'}`}
-                    onClick={() => setLeftOpen(true)}
-                  >
-                    <PanelLeftOpen className="mr-1 h-4 w-4" />
+                  <button type="button" className={cx('flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm transition', buttonGhost)} onClick={() => setLeftOpen(true)}>
+                    <PanelLeftOpen className="h-4 w-4" />
                     Show Blocks
-                  </Button>
+                  </button>
                 ) : null}
                 {!rightOpen ? (
-                  <Button
-                    size="sm"
-                    variant="tertiary"
-                    className={`${isDark ? 'border border-white/15 bg-white/10 text-white' : 'border border-slate-200 bg-white text-slate-700 shadow-sm'}`}
-                    onClick={() => setRightOpen(true)}
-                  >
-                    <PanelRightOpen className="mr-1 h-4 w-4" />
+                  <button type="button" className={cx('flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm transition', buttonGhost)} onClick={() => setRightOpen(true)}>
+                    <PanelRightOpen className="h-4 w-4" />
                     Show Inspector
-                  </Button>
+                  </button>
                 ) : null}
+                <div>
+                  <p className={cx('text-[11px] font-semibold uppercase tracking-[0.18em]', textMuted)}>Canvas</p>
+                  <p className="mt-1 text-sm font-medium">{page.page}</p>
+                </div>
               </div>
-            ) : null}
 
-            <div className="grid gap-3 py-4 md:grid-cols-3">
+              <div className={cx('flex rounded-2xl border p-1', isDark ? 'border-white/10 bg-white/[0.05]' : 'border-stone-200 bg-stone-100/80')}>
+                {(['desktop', 'tablet', 'mobile'] as ViewportMode[]).map((mode) => {
+                  const Icon = viewportIcon[mode]
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      className={cx(
+                        'flex h-9 items-center gap-1 rounded-xl px-3 text-sm capitalize transition',
+                        viewport === mode ? (isDark ? 'bg-white/15 text-white' : 'bg-white text-stone-950 shadow-sm') : textMuted
+                      )}
+                      onClick={() => store.getState().setViewport(mode)}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {mode}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
               {[
-                ['1', 'Add blocks', 'Choose reusable Randee sections'],
-                ['2', 'Edit content', 'Change text, SEO and responsive mode'],
-                ['3', 'Export Bitrix', 'Generate schema for local/components/randee']
-              ].map(([step, title, text]) => (
-                <div
-                  key={step}
-                  className={`rounded-2xl border p-3 ${isDark ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-white/70'}`}
-                >
+                ['1', 'Add blocks', 'Pick reusable sections'],
+                ['2', 'Edit content', 'Tune text, SEO and responsive view'],
+                ['3', 'Export Bitrix', 'Use schema with local/components/randee']
+              ].map(([step, title, description]) => (
+                <div key={step} className={cx('rounded-2xl border p-3', isDark ? 'border-white/10 bg-white/[0.04]' : 'border-stone-200 bg-white/70')}>
                   <div className="flex items-center gap-2">
-                    <span className={`${isDark ? 'bg-cyan-300 text-slate-950' : 'bg-slate-900 text-white'} flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold`}>
+                    <span className={cx('flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold', isDark ? 'bg-emerald-300 text-stone-950' : 'bg-stone-950 text-white')}>
                       {step}
                     </span>
                     <span className="text-sm font-semibold">{title}</span>
                   </div>
-                  <p className={`mt-1 text-xs ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>{text}</p>
+                  <p className={cx('mt-1 text-xs leading-5', textMuted)}>{description}</p>
                 </div>
               ))}
             </div>
 
-            <div className={`mt-4 rounded-3xl border border-dashed p-4 ${isDark ? 'border-cyan-200/25 bg-slate-950/40' : 'border-slate-300 bg-white'}`}>
-              <div className={viewportClass[viewport]}>{renderPreviewBlock(block)}</div>
+            <div className={cx('mt-4 min-h-[620px] rounded-[26px] border border-dashed p-4', isDark ? 'border-emerald-200/20 bg-[#090d0b]/50' : 'border-stone-300 bg-[#f8faf7]')}>
+              <div className={cx('transition-all', viewportClass[viewport])}>
+                <div className="grid gap-4">
+                  {page.blocks.map((item) => (
+                    <section
+                      key={item.id}
+                      className={cx(
+                        'group rounded-[24px] border p-3 transition',
+                        activeId === item.id
+                          ? isDark
+                            ? 'border-emerald-300/60 bg-emerald-300/8'
+                            : 'border-stone-950 bg-white shadow-[0_18px_50px_rgba(39,42,34,0.12)]'
+                          : isDark
+                            ? 'border-white/8 bg-white/[0.03]'
+                            : 'border-transparent bg-transparent hover:border-stone-200 hover:bg-white/60'
+                      )}
+                      onClick={() => store.getState().selectBlock(item.id)}
+                    >
+                      <div className="mb-2 flex items-center justify-between px-1">
+                        <span className={cx('text-xs font-semibold uppercase tracking-[0.14em]', textMuted)}>
+                          {item.type}
+                        </span>
+                        <div className="flex gap-1 opacity-0 transition group-hover:opacity-100">
+                          <button
+                            type="button"
+                            className={cx('flex h-8 w-8 items-center justify-center rounded-xl border', buttonGhost)}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              store.getState().duplicateBlock(item.id)
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            className={cx('flex h-8 w-8 items-center justify-center rounded-xl border', isDark ? 'border-red-300/20 bg-red-300/10 text-red-100' : 'border-red-100 bg-red-50 text-red-700')}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              store.getState().removeBlock(item.id)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="overflow-hidden rounded-[20px] bg-white text-stone-950">
+                        {renderPreviewBlock(item)}
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              </div>
             </div>
           </section>
 
           {rightOpen ? (
-            <aside className={`rounded-3xl border p-4 ${isDark ? 'border-white/10 bg-white/5' : 'border-white/70 bg-white/70 shadow-[0_16px_40px_rgba(15,23,42,0.06)]'}`}>
-              <div className="mb-3 flex justify-between">
-                <p className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
-                  Inspector
-                </p>
-                <Button size="sm" variant="tertiary" onClick={() => setRightOpen(false)}>
+            <aside className={cx('rounded-[28px] border p-4 backdrop-blur-xl', panel)}>
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className={cx('text-[11px] font-semibold uppercase tracking-[0.18em]', textMuted)}>Inspector</p>
+                  <h2 className="mt-1 text-lg font-semibold">Settings</h2>
+                </div>
+                <button
+                  type="button"
+                  className={cx('flex h-9 w-9 items-center justify-center rounded-xl border transition', buttonGhost)}
+                  onClick={() => setRightOpen(false)}
+                >
                   <PanelRightClose className="h-4 w-4" />
                   <span className="sr-only">Hide Inspector</span>
-                </Button>
+                </button>
               </div>
 
-              <Card variant="secondary" className={`${isDark ? 'border border-white/10 bg-slate-900/60' : 'border border-slate-200 bg-white'}`}>
-                <Card.Content className="space-y-3 p-3">
-                  <label className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Page Name</label>
-                  <Input value={page.page} onChange={(event) => store.getState().setPageMeta({ page: event.target.value, slug: page.slug })} />
-                  <label className="text-[11px] uppercase tracking-[0.14em] text-slate-500">Slug</label>
-                  <Input value={page.slug} onChange={(event) => store.getState().setPageMeta({ page: page.page, slug: event.target.value })} />
+              <div className={cx('rounded-2xl border p-3', isDark ? 'border-white/10 bg-white/[0.04]' : 'border-stone-200 bg-white')}>
+                <div className="mb-3 flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-emerald-700" />
+                  <p className="text-sm font-semibold">Page</p>
+                </div>
+                <label className={cx('text-[11px] font-semibold uppercase tracking-[0.14em]', textMuted)}>Name</label>
+                <input
+                  className={cx('mt-1 h-10 w-full rounded-xl border px-3 text-sm outline-none', isDark ? 'border-white/10 bg-black/20 text-white' : 'border-stone-200 bg-stone-50 text-stone-950')}
+                  value={page.page}
+                  onChange={(event) => store.getState().setPageMeta({ page: event.target.value, slug: page.slug })}
+                />
+                <label className={cx('mt-3 block text-[11px] font-semibold uppercase tracking-[0.14em]', textMuted)}>Slug</label>
+                <input
+                  className={cx('mt-1 h-10 w-full rounded-xl border px-3 text-sm outline-none', isDark ? 'border-white/10 bg-black/20 text-white' : 'border-stone-200 bg-stone-50 text-stone-950')}
+                  value={page.slug}
+                  onChange={(event) => store.getState().setPageMeta({ page: page.page, slug: event.target.value })}
+                />
+              </div>
 
-                  <Separator className={isDark ? 'bg-white/10' : 'bg-slate-200'} />
+              <div className={cx('mt-3 rounded-2xl border p-3', isDark ? 'border-white/10 bg-white/[0.04]' : 'border-stone-200 bg-white')}>
+                <div className="mb-3 flex items-center gap-2">
+                  <Settings2 className="h-4 w-4 text-emerald-700" />
+                  <p className="text-sm font-semibold">{block ? `${block.type} block` : 'No block selected'}</p>
+                </div>
 
-                  <label className="text-[11px] uppercase tracking-[0.14em] text-slate-500">SEO Title</label>
-                  <Input value={page.seo.title} onChange={(event) => store.getState().setSeoMeta({ title: event.target.value })} />
-                  <label className="text-[11px] uppercase tracking-[0.14em] text-slate-500">SEO Description</label>
-                  <Input value={page.seo.description} onChange={(event) => store.getState().setSeoMeta({ description: event.target.value })} />
+                {block ? (
+                  <div className="grid gap-3">
+                    {Object.entries(block.props).map(([key, value]) => (
+                      <label key={key} className="grid gap-1">
+                        <span className={cx('text-[11px] font-semibold uppercase tracking-[0.14em]', textMuted)}>{key}</span>
+                        <input
+                          className={cx('h-10 rounded-xl border px-3 text-sm outline-none', isDark ? 'border-white/10 bg-black/20 text-white' : 'border-stone-200 bg-stone-50 text-stone-950')}
+                          value={value}
+                          onChange={(event) => store.getState().updateBlockProps(block.id, { [key]: event.target.value })}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={cx('text-sm leading-6', textMuted)}>Select a block on the canvas or in the page order list.</p>
+                )}
+              </div>
 
-                  {block ? (
-                    <>
-                      <Chip color="accent" variant="soft">Selected: {block.type} / {block.id}</Chip>
-                      {Object.entries(block.props).map(([key, value]) => (
-                        <div key={key} className="space-y-1">
-                          <label className="text-[11px] uppercase tracking-[0.14em] text-slate-500">{key}</label>
-                          <Input
-                            value={value}
-                            onChange={(event) =>
-                              store.getState().updateBlockProps(block.id, { [key]: event.target.value })
-                            }
-                          />
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    <Chip variant="soft">Выберите блок</Chip>
-                  )}
+              <div className={cx('mt-3 rounded-2xl border p-3', isDark ? 'border-white/10 bg-white/[0.04]' : 'border-stone-200 bg-white')}>
+                <p className="text-sm font-semibold">SEO</p>
+                <label className={cx('mt-3 block text-[11px] font-semibold uppercase tracking-[0.14em]', textMuted)}>Title</label>
+                <input
+                  className={cx('mt-1 h-10 w-full rounded-xl border px-3 text-sm outline-none', isDark ? 'border-white/10 bg-black/20 text-white' : 'border-stone-200 bg-stone-50 text-stone-950')}
+                  value={page.seo.title}
+                  onChange={(event) => store.getState().setSeoMeta({ title: event.target.value })}
+                />
+                <label className={cx('mt-3 block text-[11px] font-semibold uppercase tracking-[0.14em]', textMuted)}>Description</label>
+                <textarea
+                  className={cx('mt-1 min-h-20 w-full resize-none rounded-xl border px-3 py-2 text-sm outline-none', isDark ? 'border-white/10 bg-black/20 text-white' : 'border-stone-200 bg-stone-50 text-stone-950')}
+                  value={page.seo.description}
+                  onChange={(event) => store.getState().setSeoMeta({ description: event.target.value })}
+                />
+              </div>
 
-                  <Button
-                    variant="tertiary"
-                    className="justify-start"
-                    onClick={() => setAdvancedOpen((value) => !value)}
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    {advancedOpen ? 'Hide advanced JSON' : 'Show advanced JSON'}
-                  </Button>
+              <button
+                type="button"
+                className={cx('mt-3 flex h-11 w-full items-center justify-center rounded-2xl border text-sm transition', buttonGhost)}
+                onClick={() => setAdvancedOpen((value) => !value)}
+              >
+                {advancedOpen ? 'Hide advanced JSON' : 'Show advanced JSON'}
+              </button>
 
-                  {advancedOpen ? (
-                    <>
-                      <TextArea className="font-mono text-xs" value={JSON.stringify(seoJsonLd, null, 2)} rows={6} readOnly />
-                      <TextArea className="font-mono text-xs" value={JSON.stringify(page, null, 2)} rows={10} readOnly />
-                    </>
-                  ) : null}
-                </Card.Content>
-              </Card>
+              {advancedOpen ? (
+                <div className="mt-3 grid gap-3">
+                  <textarea
+                    className={cx('min-h-36 resize-none rounded-2xl border p-3 font-mono text-xs outline-none', isDark ? 'border-white/10 bg-black/25 text-stone-200' : 'border-stone-200 bg-white text-stone-700')}
+                    value={JSON.stringify(seoJsonLd, null, 2)}
+                    readOnly
+                  />
+                  <textarea
+                    className={cx('min-h-48 resize-none rounded-2xl border p-3 font-mono text-xs outline-none', isDark ? 'border-white/10 bg-black/25 text-stone-200' : 'border-stone-200 bg-white text-stone-700')}
+                    value={JSON.stringify(page, null, 2)}
+                    readOnly
+                  />
+                </div>
+              ) : null}
             </aside>
           ) : null}
         </section>
