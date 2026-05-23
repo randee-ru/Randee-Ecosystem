@@ -64,6 +64,7 @@ docs/
 - [System Architecture](./docs/architecture/system-architecture.md)
 - [UI Architecture](./docs/architecture/ui-architecture.md)
 - [Builder Architecture](./docs/builder/builder-architecture.md)
+- [Phase 4 Builder Implementation (RU)](./docs/builder/phase-4-implementation-ru.md)
 - [Bitrix Export Architecture](./docs/bitrix/export-architecture.md)
 - [Phase 2 Bitrix Implementation (RU)](./docs/bitrix/phase-2-implementation-ru.md)
 - [Core & CLI Architecture](./docs/core/core-cli-architecture.md)

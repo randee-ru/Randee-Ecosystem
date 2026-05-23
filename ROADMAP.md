@@ -94,6 +94,14 @@
 - `packages/builder` + `packages/exporter`.
 - E2E сценарии на Playwright.
 
+### Execution Status (2026-05-23)
+- [x] Block CRUD and JSON schema editing.
+- [x] Responsive preview modes in `apps/web`.
+- [x] JSON/HTML export from Builder state.
+- [x] Builder package (`@randee/builder`) and web route `/builder`.
+- [~] Drag-and-drop reorder (native DnD; dnd-kit integration pending).
+- [~] Live preview (focused block; full-stack page preview pending).
+
 ## Phase 5 — Dynamic CMS Layer
 
 ### Цель
