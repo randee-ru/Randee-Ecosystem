@@ -1,0 +1,29 @@
+# dependencies
+node_modules/
+
+# build
+.next/
+dist/
+build/
+out/
+coverage/
+
+# env
+.env
+.env.*
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# os
+.DS_Store
+
+# storybook
+storybook-static/
+
+# playwright
+playwright-report/
+test-results/
