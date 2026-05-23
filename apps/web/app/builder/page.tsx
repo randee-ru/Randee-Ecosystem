@@ -48,6 +48,14 @@ const viewportClass: Record<ViewportMode, string> = {
   mobile: 'mx-auto w-[420px] max-w-full'
 }
 
+const viewportSize: Record<ViewportMode, { width: number; label: string }> = {
+  desktop: { width: 1440, label: '1440px fluid' },
+  tablet: { width: 820, label: '820px' },
+  mobile: { width: 420, label: '420px' }
+}
+
+const rulerMarks = Array.from({ length: 15 }, (_, index) => index * 100)
+
 const viewportIcon: Record<ViewportMode, React.ComponentType<{ className?: string }>> = {
   desktop: Monitor,
   tablet: Tablet,
@@ -356,7 +364,9 @@ export default function BuilderPage() {
                 ) : null}
                 <div>
                   <p className={cx('text-[11px] font-semibold uppercase tracking-[0.18em]', textMuted)}>Canvas</p>
-                  <p className="mt-1 text-sm font-medium">{page.page}</p>
+                  <p className="mt-1 text-sm font-medium">
+                    {page.page} · {viewportSize[viewport].label}
+                  </p>
                 </div>
               </div>
 
@@ -399,56 +409,117 @@ export default function BuilderPage() {
               ))}
             </div>
 
-            <div className={cx('mt-4 min-h-[620px] rounded-[26px] border border-dashed p-4', isDark ? 'border-emerald-200/20 bg-[#090d0b]/50' : 'border-stone-300 bg-[#f8faf7]')}>
-              <div className={cx('transition-all', viewportClass[viewport])}>
-                <div className="grid gap-4">
-                  {page.blocks.map((item) => (
-                    <section
-                      key={item.id}
-                      className={cx(
-                        'group rounded-[24px] border p-3 transition',
-                        activeId === item.id
-                          ? isDark
-                            ? 'border-emerald-300/60 bg-emerald-300/8'
-                            : 'border-stone-950 bg-white shadow-[0_18px_50px_rgba(39,42,34,0.12)]'
-                          : isDark
-                            ? 'border-white/8 bg-white/[0.03]'
-                            : 'border-transparent bg-transparent hover:border-stone-200 hover:bg-white/60'
-                      )}
-                      onClick={() => store.getState().selectBlock(item.id)}
-                    >
-                      <div className="mb-2 flex items-center justify-between px-1">
-                        <span className={cx('text-xs font-semibold uppercase tracking-[0.14em]', textMuted)}>
-                          {item.type}
-                        </span>
-                        <div className="flex gap-1 opacity-0 transition group-hover:opacity-100">
-                          <button
-                            type="button"
-                            className={cx('flex h-8 w-8 items-center justify-center rounded-xl border', buttonGhost)}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              store.getState().duplicateBlock(item.id)
-                            }}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            className={cx('flex h-8 w-8 items-center justify-center rounded-xl border', isDark ? 'border-red-300/20 bg-red-300/10 text-red-100' : 'border-red-100 bg-red-50 text-red-700')}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              store.getState().removeBlock(item.id)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+            <div className={cx('mt-4 min-h-[680px] overflow-auto rounded-[26px] border', isDark ? 'border-emerald-200/20 bg-[#090d0b]/50' : 'border-stone-300 bg-[#f8faf7]')}>
+              <div className="min-w-[760px]">
+                <div className={cx('sticky top-0 z-10 grid grid-cols-[48px_1fr] border-b backdrop-blur', isDark ? 'border-white/10 bg-[#090d0b]/90' : 'border-stone-200 bg-[#f8faf7]/90')}>
+                  <div className={cx('h-8 border-r', isDark ? 'border-white/10' : 'border-stone-200')} />
+                  <div
+                    className="relative h-8"
+                    style={{
+                      backgroundImage: isDark
+                        ? 'linear-gradient(to right, rgba(255,255,255,.22) 1px, transparent 1px), linear-gradient(to right, rgba(255,255,255,.08) 1px, transparent 1px)'
+                        : 'linear-gradient(to right, rgba(41,37,36,.28) 1px, transparent 1px), linear-gradient(to right, rgba(41,37,36,.10) 1px, transparent 1px)',
+                      backgroundSize: '100px 100%, 20px 100%'
+                    }}
+                  >
+                    {rulerMarks.map((mark) => (
+                      <span
+                        key={mark}
+                        className={cx('absolute top-2 text-[10px]', textMuted)}
+                        style={{ left: `${mark}px` }}
+                      >
+                        {mark}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[48px_1fr]">
+                  <div
+                    className={cx('relative border-r', isDark ? 'border-white/10' : 'border-stone-200')}
+                    style={{
+                      backgroundImage: isDark
+                        ? 'linear-gradient(to bottom, rgba(255,255,255,.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.08) 1px, transparent 1px)'
+                        : 'linear-gradient(to bottom, rgba(41,37,36,.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(41,37,36,.10) 1px, transparent 1px)',
+                      backgroundSize: '100% 100px, 100% 20px'
+                    }}
+                  >
+                    {rulerMarks.slice(1, 9).map((mark) => (
+                      <span
+                        key={mark}
+                        className={cx('absolute left-2 text-[10px]', textMuted)}
+                        style={{ top: `${mark}px` }}
+                      >
+                        {mark}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div
+                    className="p-5"
+                    style={{
+                      backgroundImage: isDark
+                        ? 'linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px), linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px)'
+                        : 'linear-gradient(rgba(41,37,36,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(41,37,36,.045) 1px, transparent 1px), linear-gradient(rgba(41,37,36,.10) 1px, transparent 1px), linear-gradient(90deg, rgba(41,37,36,.10) 1px, transparent 1px)',
+                      backgroundSize: '20px 20px, 20px 20px, 100px 100px, 100px 100px'
+                    }}
+                  >
+                    <div className={cx('transition-all', viewportClass[viewport])}>
+                      <div className={cx('mb-3 flex items-center justify-between rounded-2xl border px-3 py-2 text-xs', isDark ? 'border-white/10 bg-black/25 text-stone-300' : 'border-stone-200 bg-white/80 text-stone-500')}>
+                        <span>{viewportSize[viewport].label}</span>
+                        <span>{viewport === 'desktop' ? 'fluid width' : `fixed ${viewportSize[viewport].width}px preview`}</span>
                       </div>
-                      <div className="overflow-hidden rounded-[20px] bg-white text-stone-950">
-                        {renderPreviewBlock(item)}
+                      <div className="grid gap-4">
+                        {page.blocks.map((item) => (
+                          <section
+                            key={item.id}
+                            className={cx(
+                              'group rounded-[24px] border p-3 transition',
+                              activeId === item.id
+                                ? isDark
+                                  ? 'border-emerald-300/60 bg-emerald-300/8'
+                                  : 'border-stone-950 bg-white shadow-[0_18px_50px_rgba(39,42,34,0.12)]'
+                                : isDark
+                                  ? 'border-white/8 bg-white/[0.03]'
+                                  : 'border-transparent bg-transparent hover:border-stone-200 hover:bg-white/60'
+                            )}
+                            onClick={() => store.getState().selectBlock(item.id)}
+                          >
+                            <div className="mb-2 flex items-center justify-between px-1">
+                              <span className={cx('text-xs font-semibold uppercase tracking-[0.14em]', textMuted)}>
+                                {item.type}
+                              </span>
+                              <div className="flex gap-1 opacity-0 transition group-hover:opacity-100">
+                                <button
+                                  type="button"
+                                  className={cx('flex h-8 w-8 items-center justify-center rounded-xl border', buttonGhost)}
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    store.getState().duplicateBlock(item.id)
+                                  }}
+                                >
+                                  <Copy className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  className={cx('flex h-8 w-8 items-center justify-center rounded-xl border', isDark ? 'border-red-300/20 bg-red-300/10 text-red-100' : 'border-red-100 bg-red-50 text-red-700')}
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    store.getState().removeBlock(item.id)
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </div>
+                            <div className="overflow-hidden rounded-[20px] bg-white text-stone-950">
+                              {renderPreviewBlock(item)}
+                            </div>
+                          </section>
+                        ))}
                       </div>
-                    </section>
-                  ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
