@@ -11,9 +11,9 @@
 - [x] ESLint + Prettier + Stylelint.
 - [x] Storybook + addon-a11y.
 - [x] Visual regression integration.
-- [~] UI Kit primitives (Button/Input/Card ready).
+- [x] UI Kit primitives (core + backlog set implemented).
 - [x] Sections v1 (Hero, Features, FAQ, CTA, Header, Footer).
-- [~] Variants system + tokens + theming (base layer ready).
+- [~] Variants system + tokens + theming (base layer ready, needs token expansion).
 
 ### Scope
 - Monorepo bootstrap.

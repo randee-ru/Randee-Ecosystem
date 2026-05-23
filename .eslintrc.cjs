@@ -16,10 +16,14 @@ module.exports = {
     }
   },
   plugins: ['@typescript-eslint', 'react', 'react-hooks'],
+  rules: {
+    'react/prop-types': 'off'
+  },
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:react/recommended',
+    'plugin:react/jsx-runtime',
     'plugin:react-hooks/recommended',
     'eslint-config-prettier'
   ],

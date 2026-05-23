@@ -69,6 +69,7 @@ docs/
 - [Engineering Standards](./docs/process/engineering-standards.md)
 - [Code Comment Policy](./docs/process/code-comment-policy.md)
 - [Setup/Run Guide (RU)](./docs/process/setup-run-work-ru.md)
+- [Animation Composition (RU)](./docs/process/animation-composition-ru.md)
 
 ## Быстрый старт (план)
 
