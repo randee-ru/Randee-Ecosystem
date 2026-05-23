@@ -30,7 +30,6 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
-  PanelRightOpen,
   Plus,
   Settings2,
   Smartphone,
@@ -136,15 +135,18 @@ export default function BuilderPage() {
   const [rightOpen, setRightOpen] = React.useState(true)
   const [advancedOpen, setAdvancedOpen] = React.useState(false)
   const [dragId, setDragId] = React.useState<string | null>(null)
+  const [isReady, setIsReady] = React.useState(false)
 
   React.useEffect(() => {
     const saved = window.localStorage.getItem('randee-builder-theme') as UiTheme | null
     if (saved === 'light' || saved === 'dark') {
       setTheme(saved)
+      setIsReady(true)
       return
     }
 
     setTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    setIsReady(true)
   }, [])
 
   React.useEffect(() => {
@@ -172,27 +174,28 @@ export default function BuilderPage() {
           : 'xl:grid-cols-[minmax(0,1fr)]'
 
   const surface = isDark
-    ? 'border-white/10 bg-white/[0.06] shadow-[0_22px_80px_rgba(0,0,0,0.28)]'
+    ? 'border-zinc-700/80 bg-zinc-900/82 shadow-[0_22px_80px_rgba(0,0,0,0.26)]'
     : 'border-white/80 bg-white/78 shadow-[0_22px_70px_rgba(39,42,34,0.10)]'
 
-  const panel = isDark ? 'border-white/10 bg-[#121819]/92' : 'border-white/80 bg-white/88'
-  const textMuted = isDark ? 'text-stone-300' : 'text-stone-500'
+  const panel = isDark ? 'border-zinc-700/80 bg-zinc-900/88' : 'border-white/80 bg-white/88'
+  const textMuted = isDark ? 'text-zinc-400' : 'text-stone-500'
   const buttonGhost = isDark
-    ? 'border-white/10 bg-white/[0.07] text-stone-100 hover:bg-white/[0.12]'
+    ? 'border-zinc-700 bg-zinc-800/85 text-zinc-100 hover:bg-zinc-700'
     : 'border-stone-200 bg-white/80 text-stone-700 hover:bg-stone-50'
 
   return (
     <main
       data-randee-page="builder"
+      data-builder-ready={isReady ? 'true' : 'false'}
       className={cx(
         'randee-builder-shell min-h-screen w-screen overflow-x-hidden px-4 py-4 text-[15px]',
         isDark
-          ? 'bg-[#0b1010] text-stone-100'
+          ? 'bg-[radial-gradient(circle_at_18%_0%,#27272a_0%,#18181b_46%,#0f0f12_100%)] text-zinc-100'
           : 'bg-[radial-gradient(circle_at_18%_0%,#f8fff9_0%,#eef4ef_42%,#e4e9e4_100%)] text-stone-950'
       )}
     >
       <div className="pointer-events-none fixed inset-0 -z-10 opacity-70">
-        <div className="absolute right-[8%] top-[-180px] h-[420px] w-[520px] rounded-full bg-emerald-200/35 blur-3xl" />
+        <div className={cx('absolute right-[8%] top-[-180px] h-[420px] w-[520px] rounded-full blur-3xl', isDark ? 'bg-teal-400/10' : 'bg-emerald-200/35')} />
         <div className="absolute bottom-[-220px] left-[10%] h-[440px] w-[520px] rounded-full bg-lime-100/40 blur-3xl" />
       </div>
 
@@ -200,7 +203,7 @@ export default function BuilderPage() {
         <header className={cx('rounded-[28px] border px-4 py-3 backdrop-blur-2xl', surface)}>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className={cx('flex h-11 w-11 items-center justify-center rounded-2xl', isDark ? 'bg-emerald-300 text-stone-950' : 'bg-stone-950 text-white')}>
+              <div className={cx('flex h-11 w-11 items-center justify-center rounded-2xl', isDark ? 'bg-zinc-100 text-zinc-950' : 'bg-stone-950 text-white')}>
                 <Layers3 className="h-5 w-5" />
               </div>
               <div>
@@ -210,10 +213,10 @@ export default function BuilderPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className={cx('flex rounded-2xl border p-1', isDark ? 'border-white/10 bg-white/[0.06]' : 'border-stone-200 bg-stone-100/80')}>
+              <div className={cx('flex rounded-2xl border p-1', isDark ? 'border-zinc-700 bg-zinc-800/80' : 'border-stone-200 bg-stone-100/80')}>
                 <button
                   type="button"
-                  className={cx('flex h-9 items-center gap-1 rounded-xl px-3 text-sm transition', theme === 'light' ? 'bg-white text-stone-950 shadow-sm' : 'text-stone-300')}
+                  className={cx('flex h-9 items-center gap-1 rounded-xl px-3 text-sm transition', theme === 'light' ? 'bg-white text-stone-950 shadow-sm' : 'text-zinc-400')}
                   onClick={() => setTheme('light')}
                 >
                   <Sun className="h-4 w-4" />
@@ -221,7 +224,7 @@ export default function BuilderPage() {
                 </button>
                 <button
                   type="button"
-                  className={cx('flex h-9 items-center gap-1 rounded-xl px-3 text-sm transition', theme === 'dark' ? 'bg-white/15 text-white shadow-sm' : 'text-stone-600')}
+                  className={cx('flex h-9 items-center gap-1 rounded-xl px-3 text-sm transition', theme === 'dark' ? 'bg-zinc-100 text-zinc-950 shadow-sm' : 'text-stone-600')}
                   onClick={() => setTheme('dark')}
                 >
                   <Moon className="h-4 w-4" />
@@ -245,7 +248,7 @@ export default function BuilderPage() {
                 type="button"
                 className={cx(
                   'flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm font-medium transition',
-                  isDark ? 'border-emerald-300/25 bg-emerald-300/15 text-emerald-100' : 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                  isDark ? 'border-teal-400/25 bg-teal-400/12 text-teal-100' : 'border-emerald-200 bg-emerald-50 text-emerald-800'
                 )}
                 onClick={exportBitrix}
               >
@@ -254,7 +257,7 @@ export default function BuilderPage() {
               </button>
               <button
                 type="button"
-                className={cx('flex h-10 items-center gap-2 rounded-2xl px-4 text-sm font-medium transition', isDark ? 'bg-emerald-300 text-stone-950' : 'bg-stone-950 text-white')}
+                className={cx('flex h-10 items-center gap-2 rounded-2xl px-4 text-sm font-medium transition', isDark ? 'bg-zinc-100 text-zinc-950' : 'bg-stone-950 text-white')}
                 onClick={exportHtml}
               >
                 <Download className="h-4 w-4" />
@@ -274,6 +277,7 @@ export default function BuilderPage() {
                 </div>
                 <button
                   type="button"
+                  data-testid="hide-blocks-panel"
                   className={cx('flex h-9 w-9 items-center justify-center rounded-xl border transition', buttonGhost)}
                   onClick={() => setLeftOpen(false)}
                 >
@@ -354,12 +358,6 @@ export default function BuilderPage() {
                   <button type="button" className={cx('flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm transition', buttonGhost)} onClick={() => setLeftOpen(true)}>
                     <PanelLeftOpen className="h-4 w-4" />
                     Show Blocks
-                  </button>
-                ) : null}
-                {!rightOpen ? (
-                  <button type="button" className={cx('flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm transition', buttonGhost)} onClick={() => setRightOpen(true)}>
-                    <PanelRightOpen className="h-4 w-4" />
-                    Show Inspector
                   </button>
                 ) : null}
                 <div>
@@ -534,6 +532,7 @@ export default function BuilderPage() {
                 </div>
                 <button
                   type="button"
+                  data-testid="hide-inspector-panel"
                   className={cx('flex h-9 w-9 items-center justify-center rounded-xl border transition', buttonGhost)}
                   onClick={() => setRightOpen(false)}
                 >
@@ -627,6 +626,24 @@ export default function BuilderPage() {
           ) : null}
         </section>
       </div>
+
+      {!rightOpen ? (
+        <button
+          type="button"
+          data-testid="open-inspector-fab"
+          className={cx(
+            'fixed bottom-6 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full border shadow-[0_18px_45px_rgba(0,0,0,0.22)] transition hover:scale-105',
+            isDark
+              ? 'border-zinc-700 bg-zinc-100 text-zinc-950'
+              : 'border-white/80 bg-stone-950 text-white'
+          )}
+          onClick={() => setRightOpen(true)}
+          aria-label="Open Inspector"
+        >
+          <Settings2 className="h-6 w-6" />
+          <span className="sr-only">Open Inspector</span>
+        </button>
+      ) : null}
     </main>
   )
 }

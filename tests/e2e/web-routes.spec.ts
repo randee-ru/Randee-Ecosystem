@@ -31,8 +31,11 @@ for (const viewport of viewports) {
 
 test('builder panels can collapse and expand', async ({ page }) => {
   await page.goto('/builder')
-  await page.getByRole('button', { name: /hide blocks/i }).click()
-  await expect(page.getByRole('button', { name: /blocks/i })).toBeVisible()
-  await page.getByRole('button', { name: /hide inspector/i }).click()
-  await expect(page.getByRole('button', { name: /inspector/i })).toBeVisible()
+  await expect(page.locator('[data-builder-ready="true"]')).toBeVisible()
+  await page.getByTestId('hide-blocks-panel').click()
+  await expect(page.getByRole('button', { name: /show blocks/i })).toBeVisible()
+  await page.getByTestId('hide-inspector-panel').click()
+  await expect(page.getByTestId('open-inspector-fab')).toBeVisible()
+  await page.getByTestId('open-inspector-fab').click()
+  await expect(page.getByTestId('hide-inspector-panel')).toBeVisible()
 })
