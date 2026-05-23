@@ -8,11 +8,11 @@
 - [x] Storybook + a11y addon (`packages/ui`)
 - [ ] Visual regression integration (Chromatic/Playwright snapshots)
 - [~] UI Kit primitives (ready: Button/Input/Card/Select/Tabs/Modal/Tooltip/Table)
-- [~] Sections v1 (started: Hero)
+- [x] Sections v1 (Hero, Features, FAQ, CTA, Header, Footer)
 - [~] Variants system + tokens + theming (started: Button variants + tokens.css)
 
 ## Next ordered tasks
 
-1. Add sections: Features, FAQ, CTA, Header, Footer.
-2. Add visual regression workflow (Chromatic or Playwright screenshot baselines).
-3. Start GSAP animation primitives (`RandeeReveal`, `RandeeParallax`) with reduced-motion support.
+1. Add visual regression workflow (Chromatic or Playwright screenshot baselines).
+2. Start GSAP animation primitives (`RandeeReveal`, `RandeeParallax`) with reduced-motion support.
+3. Start `Randee UI` docs pages for component props and usage recipes.
