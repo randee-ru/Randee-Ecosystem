@@ -1,8 +1,11 @@
+import type { ExportBindingContext } from './bindings'
+
 export interface RandeeBlock {
   id: string
   type: string
   template?: string
   props: Record<string, string>
+  bindings?: ExportBindingContext
 }
 
 export interface RandeePageSchema {

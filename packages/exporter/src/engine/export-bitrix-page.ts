@@ -3,8 +3,10 @@ import { join } from 'node:path'
 import { writeBitrixComponent } from '@randee/bitrix-adapter'
 import { mapBlockToBitrixComponent } from '../mappers/bitrix-map'
 import type { ExportManifest, RandeePageSchema } from '../types/page-schema'
+import { validatePageSchema } from '../validation/page-validator'
 
 export async function exportPageToBitrix(page: RandeePageSchema, rootDir: string): Promise<ExportManifest> {
+  validatePageSchema(page)
   await mkdir(rootDir, { recursive: true })
 
   const items: ExportManifest['items'] = []

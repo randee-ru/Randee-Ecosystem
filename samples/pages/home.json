@@ -28,6 +28,26 @@
         "title": "Каталог товаров",
         "iblockId": "12",
         "sectionId": "3"
+      },
+      "bindings": {
+        "iblock": {
+          "iblockId": "12",
+          "sectionId": "3"
+        }
+      }
+    },
+    {
+      "id": "hl_001",
+      "type": "highload.list",
+      "template": "highload-01",
+      "props": {
+        "title": "Отзывы",
+        "hlblockTable": "b_randee_reviews"
+      },
+      "bindings": {
+        "highload": {
+          "hlblockTable": "b_randee_reviews"
+        }
       }
     }
   ]

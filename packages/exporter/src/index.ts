@@ -1,3 +1,5 @@
 export * from './types/page-schema'
+export * from './types/bindings'
 export * from './mappers/bitrix-map'
 export * from './engine/export-bitrix-page'
+export * from './validation/page-validator'

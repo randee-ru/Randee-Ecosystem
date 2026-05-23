@@ -4,6 +4,12 @@ export interface IblockBinding {
   elementId?: string
 }
 
+export interface HighloadBinding {
+  hlblockTable?: string
+  fieldsMap?: Record<string, string>
+}
+
 export interface ExportBindingContext {
   iblock?: IblockBinding
+  highload?: HighloadBinding
 }
