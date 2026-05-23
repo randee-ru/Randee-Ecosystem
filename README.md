@@ -68,6 +68,7 @@ docs/
 - [Core & CLI Architecture](./docs/core/core-cli-architecture.md)
 - [Engineering Standards](./docs/process/engineering-standards.md)
 - [Code Comment Policy](./docs/process/code-comment-policy.md)
+- [Setup/Run Guide (RU)](./docs/process/setup-run-work-ru.md)
 
 ## Быстрый старт (план)
 
