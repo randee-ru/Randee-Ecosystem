@@ -148,6 +148,13 @@
 - Project sync.
 - Audit/activity trail.
 
+### Execution Status (2026-05-23)
+- [x] Cloud service package (`@randee/cloud`) with project/team/preview/sync/audit domain.
+- [x] API cloud endpoints in `apps/api`.
+- [x] CLI cloud commands in `@randee/cli`.
+- [x] Samples and RU docs for cloud flows.
+- [~] Real deploy provider, auth and multi-tenant org model (post-MVP).
+
 ## Cross-phase Quality Gates
 
 - TypeScript strict mode mandatory.

@@ -90,3 +90,53 @@ describe('api marketplace endpoints', () => {
     })
   })
 })
+
+describe('api cloud endpoints', () => {
+  it('creates project and preview flow', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'randee-api-cloud-'))
+    const app = createApiApp(cwd)
+
+    const createProject = await invokeRoute(app, 'post', '/cloud/projects', {
+      body: {
+        name: 'Cloud Project',
+        slug: 'cloud-project',
+        ownerEmail: 'owner@randee.dev'
+      }
+    })
+    expect(createProject.statusCode).toBe(201)
+
+    const projectId = (createProject.payload as { project: { id: string } }).project.id
+
+    const preview = await invokeRoute(app, 'post', '/cloud/projects/:projectId/previews', {
+      params: { projectId },
+      body: {
+        commitSha: 'def5678',
+        branch: 'main',
+        actor: 'owner@randee.dev'
+      }
+    })
+    expect(preview.statusCode).toBe(201)
+
+    const sync = await invokeRoute(app, 'post', '/cloud/projects/:projectId/sync', {
+      params: { projectId },
+      body: {
+        source: 'cloud',
+        filesCount: 12,
+        actor: 'owner@randee.dev'
+      }
+    })
+    expect(sync.statusCode).toBe(200)
+
+    const audit = await invokeRoute(app, 'get', '/cloud/projects/:projectId/audit', {
+      params: { projectId }
+    })
+    expect(audit.statusCode).toBe(200)
+    expect(audit.payload).toEqual({
+      events: expect.arrayContaining([
+        expect.objectContaining({
+          action: 'project.created'
+        })
+      ])
+    })
+  })
+})

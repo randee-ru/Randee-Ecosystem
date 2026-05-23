@@ -35,6 +35,7 @@ packages/
   exporter/            # Export to HTML/Bitrix
   cli/                 # randee CLI
   bitrix-adapter/      # Bitrix integration layer
+  cloud/               # Randee Cloud domain services
 tooling/
   scripts/             # internal scripts
 .docs/                 # optional generated docs
@@ -71,6 +72,7 @@ docs/
 - [Core & CLI Architecture](./docs/core/core-cli-architecture.md)
 - [Phase 3 Core Implementation (RU)](./docs/core/phase-3-implementation-ru.md)
 - [Phase 6 Marketplace Implementation (RU)](./docs/marketplace/phase-6-implementation-ru.md)
+- [Phase 7 Cloud Implementation (RU)](./docs/cloud/phase-7-implementation-ru.md)
 - [Engineering Standards](./docs/process/engineering-standards.md)
 - [Code Comment Policy](./docs/process/code-comment-policy.md)
 - [Setup/Run Guide (RU)](./docs/process/setup-run-work-ru.md)
@@ -89,6 +91,7 @@ npm run test
 npm run test:e2e
 npm run storybook
 npm run randee:marketplace:list
+npm run randee:cloud:project:list
 ```
 
 ## Git workflow

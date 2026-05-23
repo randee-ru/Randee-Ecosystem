@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@randee/cloud": "0.1.0",
     "@randee/marketplace": "0.1.0",
     "express": "^4.21.2"
   },

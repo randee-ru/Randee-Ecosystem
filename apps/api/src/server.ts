@@ -1,10 +1,12 @@
 import express from 'express'
 import { resolve } from 'node:path'
 import { MarketplaceService } from '@randee/marketplace'
+import { CloudService } from '@randee/cloud'
 
 export function createApiApp(rootDir = process.cwd()) {
   const app = express()
   const marketplace = new MarketplaceService(rootDir)
+  const cloud = new CloudService(rootDir)
 
   app.use(express.json())
 
@@ -73,6 +75,78 @@ export function createApiApp(rootDir = process.cwd()) {
     } catch (error) {
       return res.status(400).json({ error: error instanceof Error ? error.message : 'Resolve error' })
     }
+  })
+
+  app.post('/cloud/projects', async (req, res) => {
+    try {
+      const project = await cloud.createProject(req.body)
+      return res.status(201).json({ project })
+    } catch (error) {
+      return res.status(400).json({ error: error instanceof Error ? error.message : 'Project error' })
+    }
+  })
+
+  app.get('/cloud/projects', async (_, res) => {
+    const projects = await cloud.listProjects()
+    res.json({ projects })
+  })
+
+  app.post('/cloud/projects/:projectId/members', async (req, res) => {
+    try {
+      const member = await cloud.addMember({
+        projectId: req.params.projectId,
+        email: req.body.email,
+        role: req.body.role,
+        actor: req.body.actor
+      })
+      return res.status(201).json({ member })
+    } catch (error) {
+      return res.status(400).json({ error: error instanceof Error ? error.message : 'Member error' })
+    }
+  })
+
+  app.post('/cloud/projects/:projectId/previews', async (req, res) => {
+    try {
+      const preview = await cloud.createPreview({
+        projectId: req.params.projectId,
+        commitSha: req.body.commitSha,
+        branch: req.body.branch,
+        actor: req.body.actor
+      })
+      return res.status(201).json({ preview })
+    } catch (error) {
+      return res.status(400).json({ error: error instanceof Error ? error.message : 'Preview error' })
+    }
+  })
+
+  app.get('/cloud/projects/:projectId/previews', async (req, res) => {
+    const previews = await cloud.listPreviews(req.params.projectId)
+    res.json({ previews })
+  })
+
+  app.post('/cloud/projects/:projectId/sync', async (req, res) => {
+    try {
+      const state = await cloud.syncProject({
+        projectId: req.params.projectId,
+        source: req.body.source,
+        filesCount: req.body.filesCount,
+        actor: req.body.actor
+      })
+      return res.status(200).json({ state })
+    } catch (error) {
+      return res.status(400).json({ error: error instanceof Error ? error.message : 'Sync error' })
+    }
+  })
+
+  app.get('/cloud/projects/:projectId/sync', async (req, res) => {
+    const state = await cloud.getSyncState(req.params.projectId)
+    if (!state) return res.status(404).json({ error: 'Sync state not found' })
+    return res.json({ state })
+  })
+
+  app.get('/cloud/projects/:projectId/audit', async (req, res) => {
+    const events = await cloud.listAudit(req.params.projectId)
+    res.json({ events })
   })
 
   return app

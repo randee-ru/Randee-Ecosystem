@@ -2,6 +2,7 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { CoreEngine } from '@randee/core'
+import { CloudService } from '@randee/cloud'
 import { MarketplaceService, type MarketplacePackage } from '@randee/marketplace'
 import { writeBitrixComponent } from '@randee/bitrix-adapter'
 import { exportPageToBitrix, type RandeePageSchema } from '@randee/exporter'
@@ -45,6 +46,14 @@ Marketplace commands:
   randee marketplace:license --key PRO-KEY --tier pro
   randee marketplace:install --name hero-pro --license PRO-KEY
 
+Cloud commands:
+  randee cloud:project:create --name "Site" --slug site --owner owner@randee.dev
+  randee cloud:project:list
+  randee cloud:member:add --project <id> --email dev@randee.dev --role developer --actor owner@randee.dev
+  randee cloud:preview --project <id> --branch main --sha abc123 --actor dev@randee.dev
+  randee cloud:sync --project <id> --source local --files 42 --actor dev@randee.dev
+  randee cloud:audit --project <id>
+
 Bitrix commands:
   randee bitrix:component --name hero --title "Hero" --out ./dist
   randee export --input ./samples/pages/home.json --out ./dist/bitrix-site
@@ -62,6 +71,7 @@ async function run(): Promise<void> {
   const args = parseArgs(rest)
   const engine = new CoreEngine({ cwd: process.cwd() })
   const marketplace = new MarketplaceService(process.cwd())
+  const cloud = new CloudService(process.cwd())
 
   if (command === 'sync') {
     const registry = String(args.registry ?? '')
@@ -158,6 +168,113 @@ async function run(): Promise<void> {
 
     process.stdout.write(`${result.message}\n`)
     if (result.snapshotId) process.stdout.write(`Snapshot: ${result.snapshotId}\n`)
+    return
+  }
+
+  if (command === 'cloud:project:create') {
+    const name = String(args.name ?? '')
+    const slug = String(args.slug ?? '')
+    const owner = String(args.owner ?? '')
+    if (!name || !slug || !owner) {
+      throw new Error('cloud:project:create requires --name --slug --owner')
+    }
+
+    const project = await cloud.createProject({ name, slug, ownerEmail: owner })
+    process.stdout.write(`Created project ${project.slug} (${project.id})\n`)
+    return
+  }
+
+  if (command === 'cloud:project:list') {
+    const projects = await cloud.listProjects()
+    if (projects.length === 0) {
+      process.stdout.write('No cloud projects\n')
+      return
+    }
+
+    for (const project of projects) {
+      process.stdout.write(`${project.id} ${project.slug} members=${project.members.length}\n`)
+    }
+    return
+  }
+
+  if (command === 'cloud:member:add') {
+    const projectId = String(args.project ?? '')
+    const email = String(args.email ?? '')
+    const role = String(args.role ?? '')
+    const actor = String(args.actor ?? '')
+    if (!projectId || !email || !role || !actor) {
+      throw new Error('cloud:member:add requires --project --email --role --actor')
+    }
+
+    if (role !== 'owner' && role !== 'admin' && role !== 'developer' && role !== 'viewer') {
+      throw new Error('role must be one of: owner, admin, developer, viewer')
+    }
+
+    const member = await cloud.addMember({
+      projectId,
+      email,
+      role,
+      actor
+    })
+    process.stdout.write(`Member added: ${member.email} (${member.role})\n`)
+    return
+  }
+
+  if (command === 'cloud:preview') {
+    const projectId = String(args.project ?? '')
+    const branch = String(args.branch ?? '')
+    const commitSha = String(args.sha ?? '')
+    const actor = String(args.actor ?? '')
+    if (!projectId || !branch || !commitSha || !actor) {
+      throw new Error('cloud:preview requires --project --branch --sha --actor')
+    }
+
+    const preview = await cloud.createPreview({
+      projectId,
+      branch,
+      commitSha,
+      actor
+    })
+    process.stdout.write(`Preview ready: ${preview.url}\n`)
+    return
+  }
+
+  if (command === 'cloud:sync') {
+    const projectId = String(args.project ?? '')
+    const source = String(args.source ?? '')
+    const files = Number(args.files ?? 0)
+    const actor = String(args.actor ?? '')
+    if (!projectId || !source || !files || !actor) {
+      throw new Error('cloud:sync requires --project --source --files --actor')
+    }
+
+    if (source !== 'local' && source !== 'cloud') {
+      throw new Error('source must be one of: local, cloud')
+    }
+
+    const state = await cloud.syncProject({
+      projectId,
+      source,
+      filesCount: files,
+      actor
+    })
+    process.stdout.write(`Synced at ${state.lastSyncedAt} from ${state.source}\n`)
+    return
+  }
+
+  if (command === 'cloud:audit') {
+    const projectId = String(args.project ?? '')
+    if (!projectId) throw new Error('cloud:audit requires --project')
+
+    const events = await cloud.listAudit(projectId)
+    if (events.length === 0) {
+      process.stdout.write('No audit events\n')
+      return
+    }
+
+    for (const event of events) {
+      process.stdout.write(`${event.createdAt} ${event.actor} ${event.action} ${event.target}\n`)
+    }
     return
   }
 
