@@ -13,7 +13,6 @@ import {
   type ViewportMode
 } from '@randee/builder'
 import { useStore } from 'zustand'
-import { Cta, Faq, Features, Hero } from '@randee/ui'
 import {
   Bell,
   Boxes,
@@ -25,7 +24,6 @@ import {
   FolderKanban,
   Grid2X2,
   GripVertical,
-  Home,
   Layers3,
   LayoutDashboard,
   Monitor,
@@ -104,62 +102,125 @@ function download(filename: string, text: string) {
   URL.revokeObjectURL(url)
 }
 
-function renderPreviewBlock(block: PageBlock | undefined) {
+function renderPreviewBlock(block: PageBlock | undefined, isDark: boolean) {
   if (!block) return null
+  const title = block.props.title ?? (block.type === 'hero' ? 'Новый Hero блок' : block.type)
+  const description = block.props.description ?? 'Reusable Bitrix-ready section'
+  const shell = isDark
+    ? 'border-[#2b2d31] bg-[linear-gradient(145deg,#222326_0%,#17181b_52%,#101114_100%)] text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_22px_60px_rgba(0,0,0,0.32)]'
+    : 'border-stone-200 bg-white text-stone-950 shadow-[0_22px_55px_rgba(40,45,38,0.10)]'
+  const muted = isDark ? 'text-zinc-500' : 'text-stone-500'
 
   if (block.type === 'hero') {
     return (
-      <Hero
-        title={block.props.title ?? 'Hero'}
-        description={block.props.description ?? ''}
-        ctaText={block.props.buttonText ?? 'Подробнее'}
-      />
+      <section className={cx('relative overflow-hidden rounded-[28px] border p-6', shell)}>
+        <div className="absolute right-[-80px] top-[-120px] h-72 w-72 rounded-full bg-violet-500/20 blur-3xl" />
+        <div className="absolute bottom-[-120px] left-[22%] h-52 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
+        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div>
+            <div className="mb-8 flex items-center gap-2">
+              <span className="rounded-full border border-violet-300/20 bg-violet-500/15 px-3 py-1 text-xs text-violet-100">READY TO DESIGN</span>
+              <span className={cx('text-xs', muted)}>{block.template}</span>
+            </div>
+            <h3 className="max-w-2xl text-4xl font-semibold leading-[0.98] tracking-[-0.04em] md:text-6xl">
+              {title}
+            </h3>
+            <p className={cx('mt-4 max-w-xl text-sm leading-6 md:text-base', muted)}>{description}</p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <button type="button" className="rounded-2xl bg-violet-500 px-5 py-3 text-sm font-medium text-white shadow-[0_0_32px_rgba(124,58,237,0.35)]">
+                {block.props.buttonText ?? 'Подробнее'}
+              </button>
+              <span className={cx('rounded-2xl border px-5 py-3 text-sm', isDark ? 'border-[#34363b] bg-white/[0.035] text-zinc-300' : 'border-stone-200 bg-stone-50 text-stone-600')}>Export: randee:{block.type}</span>
+            </div>
+          </div>
+          <div className={cx('rounded-[26px] border p-4', isDark ? 'border-[#34363b] bg-black/20' : 'border-stone-200 bg-stone-50')}>
+            <div className="grid gap-3">
+              {['Bitrix component', 'JSON schema', 'Tailwind tokens'].map((item, index) => (
+                <div key={item} className={cx('rounded-2xl border p-4', isDark ? 'border-[#34363b] bg-[#202126]' : 'border-stone-200 bg-white')}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{item}</span>
+                    <span className={cx('rounded-full px-2 py-1 text-xs', index === 0 ? 'bg-violet-500 text-white' : isDark ? 'bg-white/8 text-zinc-400' : 'bg-stone-100 text-stone-500')}>{index + 1}</span>
+                  </div>
+                  <div className={cx('mt-4 h-2 rounded-full', isDark ? 'bg-black/30' : 'bg-stone-100')}>
+                    <div className={cx('h-2 rounded-full', index === 0 ? 'w-4/5 bg-violet-400' : index === 1 ? 'w-2/3 bg-cyan-300' : 'w-1/2 bg-emerald-300')} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
     )
   }
 
   if (block.type === 'features') {
     return (
-      <Features
-        title={block.props.title ?? 'Features'}
-        items={[
-          { id: '1', title: block.props.item1 ?? 'Пункт 1', description: 'Описание' },
-          { id: '2', title: block.props.item2 ?? 'Пункт 2', description: 'Описание' },
-          { id: '3', title: block.props.item3 ?? 'Пункт 3', description: 'Описание' }
-        ]}
-      />
+      <section className={cx('rounded-[28px] border p-5', shell)}>
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <p className={cx('text-xs uppercase tracking-[0.2em]', muted)}>Feature system</p>
+            <h3 className="mt-2 text-2xl font-semibold">{title}</h3>
+          </div>
+          <span className="rounded-full bg-cyan-400/15 px-3 py-1 text-xs text-cyan-200">READY TO DESIGN</span>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          {[block.props.item1 ?? 'UI Kit', block.props.item2 ?? 'Bitrix export', block.props.item3 ?? 'Updates'].map((item, index) => (
+            <div key={item} className={cx('rounded-[24px] border p-5', isDark ? 'border-[#34363b] bg-[#202126]' : 'border-stone-200 bg-stone-50')}>
+              <span className={cx('flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-semibold', index === 0 ? 'bg-violet-500 text-white' : index === 1 ? 'bg-cyan-400 text-black' : 'bg-emerald-400 text-black')}>
+                {index + 1}
+              </span>
+              <h4 className="mt-5 text-lg font-semibold">{item}</h4>
+              <p className={cx('mt-2 text-sm leading-6', muted)}>Reusable section with controlled props, variants and Bitrix mapping.</p>
+            </div>
+          ))}
+        </div>
+      </section>
     )
   }
 
   if (block.type === 'faq') {
     return (
-      <Faq
-        title={block.props.title ?? 'FAQ'}
-        items={[{ id: '1', question: 'Вопрос', answer: 'Ответ' }]}
-      />
+      <section className={cx('rounded-[28px] border p-5', shell)}>
+        <p className={cx('text-xs uppercase tracking-[0.2em]', muted)}>Knowledge block</p>
+        <h3 className="mt-2 text-2xl font-semibold">{title}</h3>
+        <div className="mt-5 grid gap-3">
+          {['Как блок попадет в Bitrix?', 'Где редактировать props?', 'Как обновлять компонент?'].map((question) => (
+            <div key={question} className={cx('rounded-2xl border p-4', isDark ? 'border-[#34363b] bg-[#202126]' : 'border-stone-200 bg-stone-50')}>
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{question}</span>
+                <Plus className={cx('h-4 w-4', muted)} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     )
   }
 
   if (block.type === 'cta') {
     return (
-      <Cta
-        title={block.props.title ?? 'CTA'}
-        description={block.props.description ?? ''}
-        buttonText={block.props.buttonText ?? 'Подробнее'}
-      />
+      <section className={cx('relative overflow-hidden rounded-[28px] border p-7 text-center', shell)}>
+        <div className="absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/70 to-transparent" />
+        <h3 className="mx-auto max-w-2xl text-3xl font-semibold tracking-[-0.03em]">{title}</h3>
+        <p className={cx('mx-auto mt-3 max-w-xl text-sm leading-6', muted)}>{description}</p>
+        <button type="button" className="mt-6 rounded-2xl bg-violet-500 px-6 py-3 text-sm font-medium text-white shadow-[0_0_32px_rgba(124,58,237,0.35)]">
+          {block.props.buttonText ?? 'Подробнее'}
+        </button>
+      </section>
     )
   }
 
   return (
-    <section className="rounded-[18px] border border-stone-200 bg-white p-6">
+    <section className={cx('rounded-[28px] border p-6', shell)}>
       <h3 className="text-lg font-semibold">{block.type}</h3>
-      <p className="text-sm text-stone-500">Template: {block.template}</p>
+      <p className={cx('text-sm', muted)}>Template: {block.template}</p>
     </section>
   )
 }
 
 export default function BuilderPage() {
   const [store] = React.useState(() => createBuilderStore())
-  const [theme, setTheme] = React.useState<UiTheme>('light')
+  const [theme, setTheme] = React.useState<UiTheme>('dark')
   const [leftOpen, setLeftOpen] = React.useState(true)
   const [rightOpen, setRightOpen] = React.useState(true)
   const [advancedOpen, setAdvancedOpen] = React.useState(false)
@@ -232,16 +293,16 @@ export default function BuilderPage() {
           : 'xl:grid-cols-[minmax(0,1fr)]'
 
   const surface = isDark
-    ? 'border-white/[0.07] bg-[#17181b]/88 shadow-[0_24px_90px_rgba(0,0,0,0.45)]'
-    : 'border-white/85 bg-white/82 shadow-[0_24px_90px_rgba(30,38,34,0.12)]'
+    ? 'border-black/80 bg-[#0b0c0f]/95 shadow-[0_34px_110px_rgba(0,0,0,0.62)]'
+    : 'border-stone-200/80 bg-[#eef3ee]/92 shadow-[0_24px_90px_rgba(30,38,34,0.10)]'
 
-  const panel = isDark ? 'border-white/[0.08] bg-[#191a1d]/86 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]' : 'border-white/85 bg-white/86'
+  const panel = isDark ? 'border-[#24262b] bg-[#17181b]/94 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]' : 'border-stone-200 bg-white/74'
   const textMuted = isDark ? 'text-zinc-500' : 'text-stone-500'
   const buttonGhost = isDark
-    ? 'border-white/[0.08] bg-white/[0.045] text-zinc-200 hover:border-violet-400/35 hover:bg-white/[0.075]'
+    ? 'border-[#2a2c31] bg-[#202126] text-zinc-300 hover:border-violet-400/35 hover:bg-[#262730]'
     : 'border-stone-200 bg-white/80 text-stone-700 hover:border-emerald-200 hover:bg-white'
   const fieldClass = isDark
-    ? 'border-white/[0.08] bg-black/25 text-zinc-100 placeholder:text-zinc-600 focus:border-violet-400/45 focus:ring-2 focus:ring-violet-500/15'
+    ? 'border-[#2a2c31] bg-[#111215] text-zinc-100 placeholder:text-zinc-600 focus:border-violet-400/45 focus:ring-2 focus:ring-violet-500/15'
     : 'border-stone-200 bg-white/85 text-stone-950 placeholder:text-stone-400 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100'
   const activeGlow = isDark
     ? 'border-violet-400/45 bg-violet-500/12 text-violet-100 shadow-[0_0_34px_rgba(124,58,237,0.18)]'
@@ -315,56 +376,47 @@ export default function BuilderPage() {
         </nav>
 
         <div className="flex min-w-0 flex-1 flex-col gap-3 pl-0 lg:pl-2">
-        <header className={cx('rounded-[28px] border px-4 py-3 backdrop-blur-2xl', isDark ? 'border-white/[0.06] bg-[#1a1b1f]/88' : 'border-white/75 bg-white/72')}>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className={cx('flex h-11 w-11 items-center justify-center rounded-2xl', isDark ? 'bg-violet-500 text-white shadow-[0_0_34px_rgba(124,58,237,0.45)]' : 'bg-stone-950 text-white')}>
-                <Layers3 className="h-5 w-5" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-semibold leading-none tracking-normal">Randee Builder</h1>
-                <p className={cx('mt-1 text-sm', textMuted)}>Visual Bitrix assembly · reusable blocks · export pipeline</p>
-              </div>
+        <header className={cx('rounded-[28px] border px-4 py-3 backdrop-blur-2xl', isDark ? 'border-[#202227] bg-[#17181b]/92' : 'border-stone-200 bg-white/72')}>
+          <div className="grid gap-3 xl:grid-cols-[minmax(320px,560px)_1fr]">
+            <div className={cx('flex h-12 items-center gap-3 rounded-2xl border px-4', fieldClass)}>
+              <Search className={cx('h-4 w-4', textMuted)} />
+              <input
+                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+                value={librarySearch}
+                onChange={(event) => setLibrarySearch(event.target.value)}
+                placeholder="Search blocks, pages, Bitrix exports..."
+              />
+              <span className={cx('hidden rounded-xl border px-2 py-1 text-xs md:inline-flex', isDark ? 'border-[#2a2c31] text-zinc-500' : 'border-stone-200 text-stone-400')}>/</span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <div className={cx('flex rounded-2xl border p-1', isDark ? 'border-white/[0.08] bg-black/25' : 'border-stone-200 bg-stone-100/80')}>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <button type="button" className={cx('flex h-10 w-10 items-center justify-center rounded-2xl border', buttonGhost)} onClick={exportJson} aria-label="Export JSON">
+                <Code2 className="h-4 w-4" />
+              </button>
+              <button type="button" className={cx('flex h-10 w-10 items-center justify-center rounded-2xl border', buttonGhost)} aria-label="Notifications">
+                <Bell className="h-4 w-4" />
+              </button>
+              <div className={cx('flex rounded-2xl border p-1', isDark ? 'border-[#2a2c31] bg-[#111215]' : 'border-stone-200 bg-stone-100/80')}>
                 <button
                   type="button"
-                  className={cx('flex h-9 items-center gap-1 rounded-xl px-3 text-sm transition', theme === 'light' ? 'bg-white text-stone-950 shadow-sm' : 'text-zinc-500 hover:text-zinc-200')}
+                  className={cx('flex h-8 items-center gap-1 rounded-xl px-3 text-xs transition', theme === 'light' ? 'bg-white text-stone-950 shadow-sm' : 'text-zinc-500 hover:text-zinc-200')}
                   onClick={() => setTheme('light')}
                 >
-                  <Sun className="h-4 w-4" />
+                  <Sun className="h-3.5 w-3.5" />
                   Light
                 </button>
                 <button
                   type="button"
-                  className={cx('flex h-9 items-center gap-1 rounded-xl px-3 text-sm transition', theme === 'dark' ? 'bg-violet-500 text-white shadow-[0_0_24px_rgba(124,58,237,0.35)]' : 'text-stone-600')}
+                  className={cx('flex h-8 items-center gap-1 rounded-xl px-3 text-xs transition', theme === 'dark' ? 'bg-violet-500 text-white shadow-[0_0_24px_rgba(124,58,237,0.35)]' : 'text-stone-600')}
                   onClick={() => setTheme('dark')}
                 >
-                  <Moon className="h-4 w-4" />
+                  <Moon className="h-3.5 w-3.5" />
                   Dark
                 </button>
               </div>
-
-              <Link className={cx('flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm transition', buttonGhost)} href="/">
-                <Home className="h-4 w-4" />
-                Home
-              </Link>
-              <Link className={cx('flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm transition', buttonGhost)} href="/marketplace">
-                <Store className="h-4 w-4" />
-                Marketplace
-              </Link>
-              <button type="button" className={cx('flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm transition', buttonGhost)} onClick={exportJson}>
-                <Code2 className="h-4 w-4" />
-                JSON
-              </button>
               <button
                 type="button"
-                className={cx(
-                  'flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm font-medium transition',
-                  isDark ? 'border-violet-300/30 bg-violet-500/20 text-violet-100 shadow-[0_0_28px_rgba(124,58,237,0.22)] hover:bg-violet-500/28' : 'border-emerald-200 bg-emerald-50 text-emerald-800'
-                )}
+                className="flex h-10 items-center gap-2 rounded-2xl bg-violet-500 px-4 text-sm font-medium text-white shadow-[0_0_30px_rgba(124,58,237,0.35)] transition hover:bg-violet-400"
                 onClick={exportBitrix}
               >
                 <Boxes className="h-4 w-4" />
@@ -372,19 +424,15 @@ export default function BuilderPage() {
               </button>
               <button
                 type="button"
-                className={cx('flex h-10 items-center gap-2 rounded-2xl px-4 text-sm font-medium transition', isDark ? 'bg-white text-zinc-950 hover:bg-zinc-200' : 'bg-stone-950 text-white')}
+                className={cx('flex h-10 items-center gap-2 rounded-2xl border px-4 text-sm font-medium transition', isDark ? 'border-[#2a2c31] bg-[#202126] text-zinc-100 hover:bg-[#262730]' : 'border-stone-200 bg-white text-stone-900')}
                 onClick={exportHtml}
               >
                 <Download className="h-4 w-4" />
                 HTML
               </button>
-              <button type="button" className={cx('hidden h-10 w-10 items-center justify-center rounded-2xl border md:flex', buttonGhost)} aria-label="Notifications">
-                <Bell className="h-4 w-4" />
-              </button>
-              <button type="button" className={cx('hidden h-10 items-center gap-2 rounded-2xl border px-2 pr-3 md:flex', buttonGhost)} aria-label="Profile">
+              <button type="button" className={cx('flex h-10 items-center gap-2 rounded-2xl border px-2 pr-3', buttonGhost)} aria-label="Profile">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-cyan-300 text-xs font-bold text-black">R</span>
-                <span className="text-sm">Randee</span>
-                <CircleUserRound className="h-4 w-4 opacity-55" />
+                <span className="hidden text-sm md:inline">Randee</span>
               </button>
             </div>
           </div>
@@ -395,8 +443,8 @@ export default function BuilderPage() {
             <aside className={cx('rounded-[30px] border p-4 backdrop-blur-xl', panel)}>
               <div className="mb-4 flex items-center justify-between">
                 <div>
-                  <p className={cx('text-[11px] font-semibold uppercase tracking-[0.18em]', textMuted)}>Library</p>
-                  <h2 className="mt-1 text-lg font-semibold">Blocks</h2>
+                  <p className={cx('text-[11px] font-semibold uppercase tracking-[0.18em]', textMuted)}>Projects</p>
+                  <h2 className="mt-1 text-lg font-semibold">Randee Blocks</h2>
                 </div>
                 <button
                   type="button"
@@ -407,16 +455,6 @@ export default function BuilderPage() {
                   <PanelLeftClose className="h-4 w-4" />
                   <span className="sr-only">Hide Blocks</span>
                 </button>
-              </div>
-
-              <div className={cx('mb-3 flex h-12 items-center gap-2 rounded-2xl border px-3 shadow-inner', fieldClass)}>
-                <Search className={cx('h-4 w-4', textMuted)} />
-                <input
-                  className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-                  value={librarySearch}
-                  onChange={(event) => setLibrarySearch(event.target.value)}
-                  placeholder="Search blocks, hero, catalog..."
-                />
               </div>
 
               <div className="grid gap-2">
@@ -558,31 +596,33 @@ export default function BuilderPage() {
 
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               {[
-                ['1', 'Add blocks', 'Pick reusable sections'],
-                ['2', 'Edit content', 'Tune text, SEO and responsive view'],
-                ['3', 'Export Bitrix', 'Use schema with local/components/randee']
-              ].map(([step, title, description]) => (
-                <div key={step} className={cx('rounded-[22px] border p-3', isDark ? 'border-white/[0.07] bg-[#202126]/72' : 'border-stone-200 bg-white/70')}>
-                  <div className="flex items-center gap-2">
-                    <span className={cx('flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold', isDark ? 'bg-violet-500 text-white shadow-[0_0_18px_rgba(124,58,237,0.35)]' : 'bg-stone-950 text-white')}>
-                      {step}
+                ['IN PROGRESS', page.blocks.length, 'bg-violet-500 text-white shadow-[0_0_24px_rgba(124,58,237,0.35)]'],
+                ['READY TO DESIGN', filteredVariants.length, 'bg-cyan-400 text-black shadow-[0_0_24px_rgba(34,211,238,0.24)]'],
+                ['FINAL REVIEW', 3, 'bg-fuchsia-500 text-white shadow-[0_0_24px_rgba(217,70,239,0.28)]']
+              ].map(([title, count, tone]) => (
+                <div key={title as string} className={cx('rounded-[22px] border p-3', isDark ? 'border-[#2a2c31] bg-[#202126]/72' : 'border-stone-200 bg-white/70')}>
+                  <div className="flex items-center justify-between">
+                    <span className={cx('rounded-full px-3 py-1 text-xs font-semibold', tone as string)}>
+                      {title}
                     </span>
-                    <span className="text-sm font-semibold">{title}</span>
+                    <span className={cx('text-sm', textMuted)}>{count}</span>
                   </div>
-                  <p className={cx('mt-1 text-xs leading-5', textMuted)}>{description}</p>
+                  <p className={cx('mt-3 text-xs leading-5', textMuted)}>
+                    {title === 'IN PROGRESS' ? 'Current page blocks' : title === 'READY TO DESIGN' ? 'Filtered library variants' : 'Bitrix export checklist'}
+                  </p>
                 </div>
               ))}
             </div>
 
-            <div className={cx('mt-4 min-h-[680px] overflow-auto rounded-[28px] border', isDark ? 'border-white/[0.07] bg-[#0d0e10]/88 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]' : 'border-stone-300 bg-[#f8faf7]')}>
+            <div className={cx('mt-4 min-h-[680px] overflow-auto rounded-[28px] border', isDark ? 'border-[#24262b] bg-[#0d0e10]/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]' : 'border-stone-300 bg-[#f8faf7]')}>
               <div className="min-w-[760px]">
-                <div className={cx('sticky top-0 z-10 grid grid-cols-[48px_1fr] border-b backdrop-blur', isDark ? 'border-white/[0.07] bg-[#111215]/92' : 'border-stone-200 bg-[#f8faf7]/90')}>
-                  <div className={cx('h-8 border-r', isDark ? 'border-white/10' : 'border-stone-200')} />
+                <div className={cx('sticky top-0 z-10 grid grid-cols-[48px_1fr] border-b backdrop-blur', isDark ? 'border-[#24262b] bg-[#111215]/94' : 'border-stone-200 bg-[#f8faf7]/90')}>
+                  <div className={cx('h-8 border-r', isDark ? 'border-[#24262b]' : 'border-stone-200')} />
                   <div
                     className="relative h-8"
                     style={{
                       backgroundImage: isDark
-                        ? 'linear-gradient(to right, rgba(255,255,255,.22) 1px, transparent 1px), linear-gradient(to right, rgba(255,255,255,.08) 1px, transparent 1px)'
+                        ? 'linear-gradient(to right, rgba(82,82,91,.42) 1px, transparent 1px), linear-gradient(to right, rgba(63,63,70,.26) 1px, transparent 1px)'
                         : 'linear-gradient(to right, rgba(41,37,36,.28) 1px, transparent 1px), linear-gradient(to right, rgba(41,37,36,.10) 1px, transparent 1px)',
                       backgroundSize: '100px 100%, 20px 100%'
                     }}
@@ -601,10 +641,10 @@ export default function BuilderPage() {
 
                 <div className="grid grid-cols-[48px_1fr]">
                   <div
-                    className={cx('border-r', isDark ? 'border-white/10' : 'border-stone-200')}
+                    className={cx('border-r', isDark ? 'border-[#24262b]' : 'border-stone-200')}
                     style={{
                       backgroundImage: isDark
-                        ? 'linear-gradient(to bottom, rgba(255,255,255,.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.08) 1px, transparent 1px)'
+                        ? 'linear-gradient(to bottom, rgba(82,82,91,.42) 1px, transparent 1px), linear-gradient(to bottom, rgba(63,63,70,.26) 1px, transparent 1px)'
                         : 'linear-gradient(to bottom, rgba(41,37,36,.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(41,37,36,.10) 1px, transparent 1px)',
                       backgroundSize: '100% 100px, 100% 20px'
                     }}
@@ -614,7 +654,7 @@ export default function BuilderPage() {
                     className="p-5"
                     style={{
                       backgroundImage: isDark
-                        ? 'linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px), linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px)'
+                        ? 'linear-gradient(rgba(82,82,91,.13) 1px, transparent 1px), linear-gradient(90deg, rgba(82,82,91,.13) 1px, transparent 1px), linear-gradient(rgba(124,58,237,.14) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,.14) 1px, transparent 1px)'
                         : 'linear-gradient(rgba(41,37,36,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(41,37,36,.045) 1px, transparent 1px), linear-gradient(rgba(41,37,36,.10) 1px, transparent 1px), linear-gradient(90deg, rgba(41,37,36,.10) 1px, transparent 1px)',
                       backgroundSize: '20px 20px, 20px 20px, 100px 100px, 100px 100px'
                     }}
@@ -667,8 +707,8 @@ export default function BuilderPage() {
                                 </button>
                               </div>
                             </div>
-                            <div className={cx('overflow-hidden rounded-[22px] text-stone-950', isDark ? 'bg-zinc-100 shadow-[0_24px_80px_rgba(0,0,0,0.32)]' : 'bg-white')}>
-                              {renderPreviewBlock(item)}
+                            <div className="overflow-hidden rounded-[22px]">
+                              {renderPreviewBlock(item, isDark)}
                             </div>
                           </section>
                         ))}
