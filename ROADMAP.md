@@ -45,6 +45,13 @@
 - Export maps: Randee block -> Bitrix component.
 - Тестовые демо-компоненты (`hero`, `faq`, `catalog.section`).
 
+### Execution Status (2026-05-23)
+- [x] Generator structure for `local/components/randee/*`.
+- [x] Template engine for `component.php/.parameters.php/template.php/style.css/script.js`.
+- [x] Export maps for `hero`, `faq`, `catalog.section`.
+- [x] CLI export flow for page JSON -> Bitrix artifacts.
+- [~] Infoblock/highload bindings (MVP props-level contract; strict validation pending).
+
 ## Phase 3 — Randee Core
 
 ### Цель

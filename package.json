@@ -17,6 +17,9 @@
     "test:e2e": "playwright test",
     "test:visual": "playwright test -c playwright.visual.config.ts",
     "test:visual:update": "playwright test -c playwright.visual.config.ts --update-snapshots",
+    "randee:component": "tsx packages/cli/src/index.ts bitrix:component",
+    "randee:export": "tsx packages/cli/src/index.ts export",
+    "randee:export:sample": "tsx packages/cli/src/index.ts export --input ./samples/pages/home.json --out ./dist/bitrix-site",
     "storybook": "storybook dev -p 6006 --config-dir packages/ui/.storybook",
     "build-storybook": "storybook build --config-dir packages/ui/.storybook",
     "visual:chromatic": "chromatic --project-token=$CHROMATIC_PROJECT_TOKEN --exit-once-uploaded"
@@ -34,6 +37,7 @@
     "prettier": "^3.6.2",
     "stylelint": "^16.20.0",
     "stylelint-config-standard": "^38.0.0",
+    "tsx": "^4.22.3",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }

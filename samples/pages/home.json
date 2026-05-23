@@ -1,0 +1,34 @@
+{
+  "page": "Главная",
+  "slug": "/",
+  "blocks": [
+    {
+      "id": "hero_001",
+      "type": "hero",
+      "template": "hero-01",
+      "props": {
+        "title": "Разработка сайтов на Bitrix",
+        "description": "Современные сайты на переиспользуемых компонентах",
+        "buttonText": "Оставить заявку"
+      }
+    },
+    {
+      "id": "faq_001",
+      "type": "faq",
+      "template": "faq-01",
+      "props": {
+        "title": "Частые вопросы"
+      }
+    },
+    {
+      "id": "catalog_001",
+      "type": "catalog.section",
+      "template": "catalog-01",
+      "props": {
+        "title": "Каталог товаров",
+        "iblockId": "12",
+        "sectionId": "3"
+      }
+    }
+  ]
+}

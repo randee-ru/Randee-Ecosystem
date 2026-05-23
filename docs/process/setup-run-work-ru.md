@@ -115,6 +115,18 @@ npm run build --workspace @randee/web
 npm run lint --workspace @randee/web
 ```
 
+Bitrix export (Phase 2):
+
+```bash
+npm run randee:export:sample
+```
+
+Ручной экспорт:
+
+```bash
+npm run randee:export -- --input ./samples/pages/home.json --out ./dist/bitrix-site
+```
+
 ## 6. Как сейчас работать по roadmap
 
 ### Шаг 1. Выбрать пункт в `ROADMAP.md`
