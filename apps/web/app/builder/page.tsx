@@ -457,12 +457,6 @@ export default function BuilderPage() {
           <section className={cx('rounded-[28px] border p-4 backdrop-blur-xl', panel)}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
-                {!leftOpen ? (
-                  <button type="button" className={cx('flex h-10 items-center gap-2 rounded-2xl border px-3 text-sm transition', buttonGhost)} onClick={() => setLeftOpen(true)}>
-                    <PanelLeftOpen className="h-4 w-4" />
-                    Show Blocks
-                  </button>
-                ) : null}
                 <div>
                   <p className={cx('text-[11px] font-semibold uppercase tracking-[0.18em]', textMuted)}>Canvas</p>
                   <p className="mt-1 text-sm font-medium">
@@ -719,6 +713,24 @@ export default function BuilderPage() {
           ) : null}
         </section>
       </div>
+
+      {!leftOpen ? (
+        <button
+          type="button"
+          data-testid="open-blocks-fab"
+          className={cx(
+            'fixed bottom-24 left-6 z-30 flex h-14 w-14 items-center justify-center rounded-full border shadow-[0_18px_45px_rgba(0,0,0,0.22)] transition hover:scale-105',
+            isDark
+              ? 'border-zinc-700 bg-zinc-100 text-zinc-950'
+              : 'border-white/80 bg-stone-950 text-white'
+          )}
+          onClick={() => setLeftOpen(true)}
+          aria-label="Show Blocks"
+        >
+          <PanelLeftOpen className="h-6 w-6" />
+          <span className="sr-only">Show Blocks</span>
+        </button>
+      ) : null}
 
       {!rightOpen ? (
         <button
