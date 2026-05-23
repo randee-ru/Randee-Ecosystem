@@ -1,0 +1,12 @@
+{
+  "name": "@randee/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo \"apps/web dev server will be initialized in next step\"",
+    "build": "echo \"apps/web build is not initialized yet\"",
+    "lint": "echo \"apps/web lint placeholder\"",
+    "typecheck": "echo \"apps/web typecheck placeholder\"",
+    "test": "echo \"apps/web test placeholder\""
+  }
+}

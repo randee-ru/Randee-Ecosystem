@@ -1,0 +1,11 @@
+{
+  "name": "@randee/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "echo \"apps/api build placeholder\"",
+    "lint": "echo \"apps/api lint placeholder\"",
+    "typecheck": "echo \"apps/api typecheck placeholder\"",
+    "test": "echo \"apps/api test placeholder\""
+  }
+}
