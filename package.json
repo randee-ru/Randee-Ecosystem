@@ -15,14 +15,18 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:e2e": "playwright test",
+    "test:visual": "playwright test -c playwright.visual.config.ts",
+    "test:visual:update": "playwright test -c playwright.visual.config.ts --update-snapshots",
     "storybook": "storybook dev -p 6006 --config-dir packages/ui/.storybook",
-    "build-storybook": "storybook build --config-dir packages/ui/.storybook"
+    "build-storybook": "storybook build --config-dir packages/ui/.storybook",
+    "visual:chromatic": "chromatic --project-token=$CHROMATIC_PROJECT_TOKEN --exit-once-uploaded"
   },
   "devDependencies": {
     "@playwright/test": "^1.54.0",
     "@types/node": "^22.15.30",
     "@typescript-eslint/eslint-plugin": "^8.34.1",
     "@typescript-eslint/parser": "^8.34.1",
+    "chromatic": "^17.0.0",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-react": "^7.37.5",

@@ -10,7 +10,7 @@
 
 - Unit/component: Vitest + React Testing Library.
 - E2E: Playwright.
-- Visual regression: Storybook + Chromatic + screenshot baselines.
+- Visual regression: Storybook + Chromatic + Playwright screenshot baselines (`npm run test:visual`).
 - Accessibility: axe-core + addon-a11y.
 
 ## Required scripts

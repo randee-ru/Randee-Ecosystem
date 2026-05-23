@@ -67,6 +67,18 @@ E2E тесты:
 npm run test:e2e
 ```
 
+Visual regression тесты:
+
+```bash
+npm run test:visual
+```
+
+Обновление screenshot baseline:
+
+```bash
+npm run test:visual:update
+```
+
 Storybook:
 
 ```bash

@@ -10,7 +10,7 @@
 - [x] Next/Tailwind/TypeScript strict setup.
 - [x] ESLint + Prettier + Stylelint.
 - [x] Storybook + addon-a11y.
-- [ ] Visual regression integration.
+- [x] Visual regression integration.
 - [~] UI Kit primitives (Button/Input/Card ready).
 - [x] Sections v1 (Hero, Features, FAQ, CTA, Header, Footer).
 - [~] Variants system + tokens + theming (base layer ready).
