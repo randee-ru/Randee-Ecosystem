@@ -39,3 +39,12 @@ test('builder panels can collapse and expand', async ({ page }) => {
   await page.getByTestId('open-inspector-fab').click()
   await expect(page.getByTestId('hide-inspector-panel')).toBeVisible()
 })
+
+test('builder library filters block variants without reload', async ({ page }) => {
+  await page.goto('/builder')
+  await expect(page.locator('[data-builder-ready="true"]')).toBeVisible()
+  await expect(page.getByRole('button', { name: /hero/i }).first()).toBeVisible()
+  await page.getByPlaceholder(/search blocks/i).fill('catalog')
+  await expect(page.getByRole('button', { name: /catalog section/i })).toBeVisible()
+  await expect(page.getByText(/hero split/i)).toHaveCount(0)
+})

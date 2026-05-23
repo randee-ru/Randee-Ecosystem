@@ -31,6 +31,9 @@ import {
   PanelLeftOpen,
   PanelRightClose,
   Plus,
+  Search,
+  ChevronDown,
+  ChevronRight,
   Settings2,
   Smartphone,
   Store,
@@ -40,6 +43,26 @@ import {
 } from 'lucide-react'
 
 type UiTheme = 'light' | 'dark'
+
+type LibraryVariant = {
+  type: ReturnType<typeof listBlockDefinitions>[number]['type']
+  group: string
+  name: string
+  template: string
+  description: string
+}
+
+const libraryVariants: LibraryVariant[] = [
+  { type: 'hero', group: 'Hero', name: 'Hero Classic', template: 'hero-01', description: 'Заголовок, текст и CTA' },
+  { type: 'hero', group: 'Hero', name: 'Hero Split', template: 'hero-02', description: 'Текст + медиа справа' },
+  { type: 'hero', group: 'Hero', name: 'Hero Product', template: 'hero-03', description: 'Для продукта или сервиса' },
+  { type: 'features', group: 'Features', name: 'Feature Grid', template: 'features-01', description: 'Сетка преимуществ' },
+  { type: 'features', group: 'Features', name: 'Feature Cards', template: 'features-02', description: 'Карточки с иконками' },
+  { type: 'faq', group: 'FAQ', name: 'FAQ Accordion', template: 'faq-01', description: 'Классический список вопросов' },
+  { type: 'cta', group: 'CTA', name: 'CTA Banner', template: 'cta-01', description: 'Финальный призыв' },
+  { type: 'catalog.section', group: 'Catalog', name: 'Catalog Section', template: 'catalog-01', description: 'Bitrix catalog.section' },
+  { type: 'news.list', group: 'News', name: 'News List', template: 'news-01', description: 'Bitrix news.list' }
+]
 
 const viewportClass: Record<ViewportMode, string> = {
   desktop: 'w-full',
@@ -136,6 +159,8 @@ export default function BuilderPage() {
   const [advancedOpen, setAdvancedOpen] = React.useState(false)
   const [dragId, setDragId] = React.useState<string | null>(null)
   const [isReady, setIsReady] = React.useState(false)
+  const [librarySearch, setLibrarySearch] = React.useState('')
+  const [openGroups, setOpenGroups] = React.useState<Record<string, boolean>>({ Hero: true })
 
   React.useEffect(() => {
     const saved = window.localStorage.getItem('randee-builder-theme') as UiTheme | null
@@ -159,10 +184,39 @@ export default function BuilderPage() {
   const viewport = useStore(store, (state) => state.viewport)
   const block = useStore(store, selectedBlock)
   const seoJsonLd = buildBuilderWebPageJsonLd(page.seo)
+  const filteredVariants = libraryVariants.filter((item) => {
+    const query = librarySearch.trim().toLowerCase()
+    if (!query) return true
+
+    return [item.group, item.name, item.template, item.description, item.type]
+      .join(' ')
+      .toLowerCase()
+      .includes(query)
+  })
+  const groupedVariants = filteredVariants.reduce<Record<string, LibraryVariant[]>>((acc, item) => {
+    acc[item.group] = [...(acc[item.group] ?? []), item]
+    return acc
+  }, {})
 
   const exportJson = () => download('page.json', exportPageToJson(page))
   const exportHtml = () => download('page.html', exportPageToHtml(page))
   const exportBitrix = () => download('bitrix-page.schema.json', exportPageToJson(page))
+
+  function addVariant(variant: LibraryVariant) {
+    const beforeIds = new Set(store.getState().page.blocks.map((item) => item.id))
+    store.getState().addBlock(variant.type)
+    const added = store.getState().page.blocks.find((item) => !beforeIds.has(item.id))
+    if (!added) return
+
+    store.setState((state) => ({
+      page: {
+        ...state.page,
+        blocks: state.page.blocks.map((item) =>
+          item.id === added.id ? { ...item, template: variant.template } : item
+        )
+      }
+    }))
+  }
 
   const gridClass =
     leftOpen && rightOpen
@@ -286,24 +340,73 @@ export default function BuilderPage() {
                 </button>
               </div>
 
+              <div className={cx('mb-3 flex h-11 items-center gap-2 rounded-2xl border px-3', isDark ? 'border-zinc-700 bg-zinc-950/45' : 'border-stone-200 bg-white')}>
+                <Search className={cx('h-4 w-4', textMuted)} />
+                <input
+                  className={cx('min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-stone-400', isDark ? 'text-zinc-100' : 'text-stone-900')}
+                  value={librarySearch}
+                  onChange={(event) => setLibrarySearch(event.target.value)}
+                  placeholder="Search blocks, hero, catalog..."
+                />
+              </div>
+
               <div className="grid gap-2">
-                {listBlockDefinitions().map((item) => (
-                  <button
-                    key={item.type}
-                    type="button"
-                    className={cx(
-                      'group flex h-12 items-center justify-between rounded-2xl border px-3 text-left transition',
-                      isDark ? 'border-white/10 bg-white/[0.04] hover:bg-white/[0.09]' : 'border-stone-200 bg-white hover:border-stone-300 hover:bg-stone-50'
-                    )}
-                    onClick={() => store.getState().addBlock(item.type)}
-                  >
-                    <span className="flex items-center gap-2 text-sm font-medium">
-                      <LayoutDashboard className="h-4 w-4 text-emerald-700" />
-                      {item.label}
-                    </span>
-                    <Plus className={cx('h-4 w-4 transition group-hover:scale-110', textMuted)} />
-                  </button>
-                ))}
+                {Object.entries(groupedVariants).map(([group, items]) => {
+                  const isOpen = openGroups[group] ?? Boolean(librarySearch)
+                  return (
+                    <div key={group} className={cx('rounded-2xl border', isDark ? 'border-white/10 bg-white/[0.03]' : 'border-stone-200 bg-white')}>
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between px-3 py-3 text-left"
+                        onClick={() => setOpenGroups((current) => ({ ...current, [group]: !isOpen }))}
+                      >
+                        <span className="flex items-center gap-2 text-sm font-semibold">
+                          <LayoutDashboard className="h-4 w-4 text-emerald-700" />
+                          {group}
+                          <span className={cx('rounded-full px-2 py-0.5 text-xs', isDark ? 'bg-white/8 text-zinc-300' : 'bg-stone-100 text-stone-500')}>
+                            {items.length}
+                          </span>
+                        </span>
+                        {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                      </button>
+
+                      {isOpen ? (
+                        <div className="grid gap-2 px-2 pb-2">
+                          {items.map((item) => (
+                            <button
+                              key={`${item.group}-${item.template}`}
+                              type="button"
+                              className={cx(
+                                'group rounded-xl border p-3 text-left transition',
+                                isDark ? 'border-white/10 bg-zinc-950/35 hover:bg-white/[0.07]' : 'border-stone-100 bg-stone-50 hover:bg-white'
+                              )}
+                              onClick={() => addVariant(item)}
+                            >
+                              <span className="flex items-start justify-between gap-2">
+                                <span>
+                                  <span className="block text-sm font-semibold">{item.name}</span>
+                                  <span className={cx('mt-1 block text-xs leading-5', textMuted)}>
+                                    {item.description}
+                                  </span>
+                                </span>
+                                <Plus className={cx('mt-0.5 h-4 w-4 shrink-0 transition group-hover:scale-110', textMuted)} />
+                              </span>
+                              <span className={cx('mt-2 inline-flex rounded-full px-2 py-1 text-[11px]', isDark ? 'bg-white/8 text-zinc-300' : 'bg-white text-stone-500')}>
+                                {item.template}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  )
+                })}
+
+                {filteredVariants.length === 0 ? (
+                  <div className={cx('rounded-2xl border p-4 text-sm', isDark ? 'border-white/10 bg-white/[0.03] text-zinc-400' : 'border-stone-200 bg-white text-stone-500')}>
+                    Ничего не найдено. Попробуйте `hero`, `catalog` или `faq`.
+                  </div>
+                ) : null}
               </div>
 
               <div className="mt-5">
@@ -434,24 +537,14 @@ export default function BuilderPage() {
 
                 <div className="grid grid-cols-[48px_1fr]">
                   <div
-                    className={cx('relative border-r', isDark ? 'border-white/10' : 'border-stone-200')}
+                    className={cx('border-r', isDark ? 'border-white/10' : 'border-stone-200')}
                     style={{
                       backgroundImage: isDark
                         ? 'linear-gradient(to bottom, rgba(255,255,255,.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.08) 1px, transparent 1px)'
                         : 'linear-gradient(to bottom, rgba(41,37,36,.28) 1px, transparent 1px), linear-gradient(to bottom, rgba(41,37,36,.10) 1px, transparent 1px)',
                       backgroundSize: '100% 100px, 100% 20px'
                     }}
-                  >
-                    {rulerMarks.slice(1, 9).map((mark) => (
-                      <span
-                        key={mark}
-                        className={cx('absolute left-2 text-[10px]', textMuted)}
-                        style={{ top: `${mark}px` }}
-                      >
-                        {mark}
-                      </span>
-                    ))}
-                  </div>
+                  />
 
                   <div
                     className="p-5"

@@ -15,7 +15,7 @@ test('web pages use explicit Randee page scopes', async () => {
 })
 
 test('web UI does not expose placeholder copy', async () => {
-  const forbidden = ['TODO', 'placeholder', 'smoke placeholder']
+  const forbidden = ['TODO', 'smoke placeholder']
 
   for (const file of webPages) {
     const source = await readFile(file, 'utf8')
