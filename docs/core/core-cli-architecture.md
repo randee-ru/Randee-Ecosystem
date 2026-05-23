@@ -17,6 +17,6 @@
 
 ## Safety model
 
-- dry-run для update/rollback.
-- checksums для пакетов.
-- migration hooks per package version.
+- checksums для пакетов (stored + compared in lockfile).
+- snapshots before install/update/rollback.
+- dry-run и migration hooks запланированы в следующем итерационном шаге.

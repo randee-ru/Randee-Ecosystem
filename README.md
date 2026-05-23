@@ -67,6 +67,7 @@ docs/
 - [Bitrix Export Architecture](./docs/bitrix/export-architecture.md)
 - [Phase 2 Bitrix Implementation (RU)](./docs/bitrix/phase-2-implementation-ru.md)
 - [Core & CLI Architecture](./docs/core/core-cli-architecture.md)
+- [Phase 3 Core Implementation (RU)](./docs/core/phase-3-implementation-ru.md)
 - [Engineering Standards](./docs/process/engineering-standards.md)
 - [Code Comment Policy](./docs/process/code-comment-policy.md)
 - [Setup/Run Guide (RU)](./docs/process/setup-run-work-ru.md)

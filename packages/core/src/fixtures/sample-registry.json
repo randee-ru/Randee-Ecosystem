@@ -1,0 +1,23 @@
+{
+  "updatedAt": "2026-05-23T00:00:00.000Z",
+  "packages": [
+    {
+      "name": "hero",
+      "version": "1.0.0",
+      "checksum": "sha256-hero-100",
+      "description": "Hero block"
+    },
+    {
+      "name": "faq",
+      "version": "1.1.0",
+      "checksum": "sha256-faq-110",
+      "description": "FAQ block"
+    },
+    {
+      "name": "catalog.section",
+      "version": "2.0.0",
+      "checksum": "sha256-catalog-200",
+      "description": "Catalog section"
+    }
+  ]
+}

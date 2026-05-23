@@ -12,6 +12,7 @@ coverage/
 # env
 .env
 .env.*
+.randee/
 
 # logs
 npm-debug.log*

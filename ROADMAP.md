@@ -69,6 +69,13 @@
 - Package metadata contract.
 - Интеграционные тесты обновлений.
 
+### Execution Status (2026-05-23)
+- [x] Registry schema and sample registries.
+- [x] Install/update/rollback/sync/list engine in `@randee/core`.
+- [x] Lockfile + snapshots in `.randee/*`.
+- [x] CLI commands wired in `@randee/cli`.
+- [~] Dependency graph resolution (MVP state; advanced resolver pending).
+
 ## Phase 4 — Builder MVP
 
 ### Цель

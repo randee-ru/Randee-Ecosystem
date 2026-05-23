@@ -1,11 +1,8 @@
 {
-  "name": "@randee/cli",
+  "name": "@randee/core",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "bin": {
-    "randee": "src/index.ts"
-  },
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
@@ -13,11 +10,6 @@
     "lint": "eslint \"src/**/*.ts\"",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
-  },
-  "dependencies": {
-    "@randee/bitrix-adapter": "0.1.0",
-    "@randee/core": "0.1.0",
-    "@randee/exporter": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
