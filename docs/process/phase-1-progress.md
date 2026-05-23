@@ -7,12 +7,12 @@
 - [x] ESLint + Prettier + Stylelint
 - [x] Storybook + a11y addon (`packages/ui`)
 - [ ] Visual regression integration (Chromatic/Playwright snapshots)
-- [~] UI Kit primitives (started: Button/Input/Card)
+- [~] UI Kit primitives (ready: Button/Input/Card/Select/Tabs/Modal/Tooltip/Table)
 - [~] Sections v1 (started: Hero)
 - [~] Variants system + tokens + theming (started: Button variants + tokens.css)
 
 ## Next ordered tasks
 
-1. Add `Select`, `Tabs`, `Modal`, `Tooltip`, `Table` to `packages/ui` with tests/stories.
-2. Add sections: Features, FAQ, CTA, Header, Footer.
-3. Add visual regression workflow (Chromatic or Playwright screenshot baselines).
+1. Add sections: Features, FAQ, CTA, Header, Footer.
+2. Add visual regression workflow (Chromatic or Playwright screenshot baselines).
+3. Start GSAP animation primitives (`RandeeReveal`, `RandeeParallax`) with reduced-motion support.
