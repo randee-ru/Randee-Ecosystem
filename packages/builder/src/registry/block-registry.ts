@@ -67,8 +67,16 @@ const registry: Record<BlockType, BlockDefinition> = {
   }
 }
 
-function buildId(type: BlockType): string {
-  return `${type.replace('.', '_')}_${Math.random().toString(36).slice(2, 8)}`
+let blockIdCounter = 1
+
+export function createBlockId(type: BlockType): string {
+  const id = `${type.replace('.', '_')}_${String(blockIdCounter).padStart(4, '0')}`
+  blockIdCounter += 1
+  return id
+}
+
+export function resetBlockIdCounter(nextValue = 1): void {
+  blockIdCounter = nextValue
 }
 
 export function listBlockDefinitions(): BlockDefinition[] {
@@ -80,7 +88,7 @@ export function createBlock(type: BlockType): PageBlock {
   if (!def) throw new Error(`Unknown block type: ${type}`)
 
   return {
-    id: buildId(type),
+    id: createBlockId(type),
     type: def.type,
     template: def.defaultTemplate,
     props: { ...def.defaultProps }

@@ -1,5 +1,5 @@
 import { createStore } from 'zustand/vanilla'
-import { createBlock } from '../registry/block-registry'
+import { createBlock, createBlockId } from '../registry/block-registry'
 import { reorder } from '../utils/reorder'
 import type { BlockType, BuilderPage, PageBlock, SeoMetadata, ViewportMode } from '../types/page'
 
@@ -37,7 +37,7 @@ export const DEFAULT_PAGE: BuilderPage = {
 function cloneBlock(block: PageBlock): PageBlock {
   return {
     ...block,
-    id: `${block.type.replace('.', '_')}_${Math.random().toString(36).slice(2, 8)}`,
+    id: createBlockId(block.type),
     props: { ...block.props },
     bindings: block.bindings ? { items: [...(block.bindings.items ?? [])] } : undefined
   }

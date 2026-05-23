@@ -11,11 +11,13 @@
     "test": "echo \"no tests yet for apps/web\""
   },
   "dependencies": {
+    "@heroui/react": "^3.0.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@randee/builder": "0.1.0",
     "@randee/ui": "0.1.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.40.0",
     "lucide-react": "^0.511.0",
     "next": "^16.0.0",
     "react": "^19.2.0",
