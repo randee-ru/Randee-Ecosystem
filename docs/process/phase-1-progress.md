@@ -8,6 +8,7 @@
 - [x] Storybook + a11y addon (`packages/ui`)
 - [x] Visual regression integration (Chromatic workflow + Playwright snapshots)
 - [~] UI Kit primitives (ready: Button/Input/Card/Select/Tabs/Modal/Tooltip/Table)
+- [x] UI backlog primitives (Accordion/Drawer/Dropdown/Pagination/Breadcrumbs/Badge/Alert/Skeleton/Loader)
 - [x] Sections v1 (Hero, Features, FAQ, CTA, Header, Footer)
 - [~] Variants system + tokens + theming (started: Button variants + tokens.css)
 - [~] GSAP animation primitives (Reveal, Parallax, Counter, Marquee, ScrollSection, AnimatedSection ready)
@@ -15,5 +16,5 @@
 ## Next ordered tasks
 
 1. Start `Randee UI` docs pages for component props and usage recipes.
-2. Add missing UI primitives from backlog (`Accordion`, `Drawer`, `Dropdown`, `Pagination`, `Breadcrumbs`, `Badge`, `Alert`, `Skeleton`, `Loader`).
-3. Add docs examples for animation composition and performance knobs.
+2. Add docs examples for animation composition and performance knobs.
+3. Prepare `apps/web` UI showcase page that consumes `@randee/ui` primitives directly.
