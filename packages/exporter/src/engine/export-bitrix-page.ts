@@ -4,6 +4,7 @@ import { writeBitrixComponent } from '@randee/bitrix-adapter'
 import { mapBlockToBitrixComponent } from '../mappers/bitrix-map'
 import type { ExportManifest, RandeePageSchema } from '../types/page-schema'
 import { validatePageSchema } from '../validation/page-validator'
+import { buildWebPageJsonLd } from './seo-jsonld'
 
 export async function exportPageToBitrix(page: RandeePageSchema, rootDir: string): Promise<ExportManifest> {
   validatePageSchema(page)
@@ -31,5 +32,21 @@ export async function exportPageToBitrix(page: RandeePageSchema, rootDir: string
   }
 
   await writeFile(join(rootDir, 'randee-export-manifest.json'), JSON.stringify(manifest, null, 2), 'utf8')
+
+  if (page.seo) {
+    await writeFile(
+      join(rootDir, 'randee-seo.json'),
+      JSON.stringify(
+        {
+          meta: page.seo,
+          jsonLd: buildWebPageJsonLd(page.seo)
+        },
+        null,
+        2
+      ),
+      'utf8'
+    )
+  }
+
   return manifest
 }

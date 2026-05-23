@@ -1,5 +1,7 @@
 export * from './types/page-schema'
 export * from './types/bindings'
+export * from './types/seo'
 export * from './mappers/bitrix-map'
 export * from './engine/export-bitrix-page'
+export * from './engine/seo-jsonld'
 export * from './validation/page-validator'

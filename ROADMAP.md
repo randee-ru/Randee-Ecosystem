@@ -113,6 +113,12 @@
 - SEO metadata editor.
 - Schema.org JSON-LD support.
 
+### Execution Status (2026-05-23)
+- [x] SEO metadata editor in Builder.
+- [x] Schema.org JSON-LD helper and export artifact.
+- [~] Dynamic bindings model in Builder schema (foundation).
+- [ ] API-backed dynamic data providers.
+
 ## Phase 6 — Marketplace
 
 ### Цель

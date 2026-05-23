@@ -12,6 +12,10 @@ describe('exportPageToBitrix', () => {
       {
         page: 'Главная',
         slug: '/',
+        seo: {
+          title: 'Главная',
+          description: 'Описание'
+        },
         blocks: [
           { id: 'hero_001', type: 'hero', props: { title: 'Title' } },
           { id: 'faq_001', type: 'faq', props: { title: 'FAQ' } },
@@ -29,6 +33,9 @@ describe('exportPageToBitrix', () => {
 
     const manifestRaw = await readFile(join(root, 'randee-export-manifest.json'), 'utf8')
     expect(manifestRaw).toContain('hero_001')
+
+    const seoRaw = await readFile(join(root, 'randee-seo.json'), 'utf8')
+    expect(seoRaw).toContain('WebPage')
   })
 
   it('fails on invalid bindings', async () => {

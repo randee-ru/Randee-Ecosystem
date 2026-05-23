@@ -5,6 +5,7 @@ describe('builder exporters', () => {
   const page = {
     page: 'Main',
     slug: '/',
+    seo: { title: 'Main', description: 'Desc' },
     blocks: [{ id: 'hero_1', type: 'hero' as const, template: 'hero-01', props: { title: 'Hero' } }]
   }
 

@@ -2,12 +2,12 @@
 
 import * as React from 'react'
 import {
+  buildBuilderWebPageJsonLd,
   createBuilderStore,
   exportPageToHtml,
   exportPageToJson,
   listBlockDefinitions,
   selectedBlock,
-  type BlockType,
   type ViewportMode
 } from '@randee/builder'
 import { useStore } from 'zustand'
@@ -107,6 +107,7 @@ export default function BuilderPage() {
 
   const exportJson = () => download('page.json', exportPageToJson(page))
   const exportHtml = () => download('page.html', exportPageToHtml(page))
+  const seoJsonLd = buildBuilderWebPageJsonLd(page.seo)
 
   return (
     <main className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 px-4 py-6 md:px-6">
@@ -114,7 +115,7 @@ export default function BuilderPage() {
         <div className="space-y-2">
           <h1 className="text-2xl font-semibold">Randee Builder MVP</h1>
           <p className="text-sm text-neutral-600">
-            CRUD блоков, reorder, props editor, responsive preview и экспорт JSON/HTML.
+            CRUD блоков, reorder, props editor, responsive preview, SEO editor и экспорт JSON/HTML.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -123,12 +124,17 @@ export default function BuilderPage() {
         </div>
       </header>
 
-      <section className="grid gap-4 lg:grid-cols-[320px_1fr_360px]">
+      <section className="grid gap-4 lg:grid-cols-[320px_1fr_380px]">
         <aside className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-4">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Blocks</h2>
           <div className="space-y-2">
             {listBlockDefinitions().map((item) => (
-              <Button key={item.type} variant="secondary" className="w-full justify-start" onClick={() => store.getState().addBlock(item.type)}>
+              <Button
+                key={item.type}
+                variant="secondary"
+                className="w-full justify-start"
+                onClick={() => store.getState().addBlock(item.type)}
+              >
                 + {item.label}
               </Button>
             ))}
@@ -186,6 +192,57 @@ export default function BuilderPage() {
 
         <aside className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-4">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Inspector</h2>
+
+          <div className="space-y-2 rounded-lg border border-neutral-200 p-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Page Meta</h3>
+            <Input
+              value={page.page}
+              onChange={(event) =>
+                store.getState().setPageMeta({ page: event.target.value, slug: page.slug })
+              }
+              placeholder="Page name"
+            />
+            <Input
+              value={page.slug}
+              onChange={(event) =>
+                store.getState().setPageMeta({ page: page.page, slug: event.target.value })
+              }
+              placeholder="Slug"
+            />
+          </div>
+
+          <div className="space-y-2 rounded-lg border border-neutral-200 p-3">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">SEO</h3>
+            <Input
+              value={page.seo.title}
+              onChange={(event) => store.getState().setSeoMeta({ title: event.target.value })}
+              placeholder="SEO title"
+            />
+            <Input
+              value={page.seo.description}
+              onChange={(event) => store.getState().setSeoMeta({ description: event.target.value })}
+              placeholder="SEO description"
+            />
+            <Input
+              value={page.seo.canonicalUrl ?? ''}
+              onChange={(event) => store.getState().setSeoMeta({ canonicalUrl: event.target.value })}
+              placeholder="Canonical URL"
+            />
+            <Input
+              value={page.seo.ogImage ?? ''}
+              onChange={(event) => store.getState().setSeoMeta({ ogImage: event.target.value })}
+              placeholder="OG image URL"
+            />
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={Boolean(page.seo.noindex)}
+                onChange={(event) => store.getState().setSeoMeta({ noindex: event.target.checked })}
+              />
+              Noindex
+            </label>
+          </div>
+
           {block ? (
             <div className="space-y-3">
               <Alert title={`Selected: ${block.type}`}>ID: {block.id}</Alert>
@@ -194,7 +251,9 @@ export default function BuilderPage() {
                   <label className="text-xs uppercase tracking-wide text-neutral-500">{key}</label>
                   <Input
                     value={value}
-                    onChange={(event) => store.getState().updateBlockProps(block.id, { [key]: event.target.value })}
+                    onChange={(event) =>
+                      store.getState().updateBlockProps(block.id, { [key]: event.target.value })
+                    }
                   />
                 </div>
               ))}
@@ -204,8 +263,15 @@ export default function BuilderPage() {
           )}
 
           <div>
+            <h3 className="mb-2 text-xs uppercase tracking-wide text-neutral-500">SEO JSON-LD</h3>
+            <pre className="max-h-[180px] overflow-auto rounded-lg bg-neutral-950 p-3 text-xs text-neutral-100">
+              {JSON.stringify(seoJsonLd, null, 2)}
+            </pre>
+          </div>
+
+          <div>
             <h3 className="mb-2 text-xs uppercase tracking-wide text-neutral-500">Live JSON</h3>
-            <pre className="max-h-[300px] overflow-auto rounded-lg bg-neutral-950 p-3 text-xs text-neutral-100">
+            <pre className="max-h-[220px] overflow-auto rounded-lg bg-neutral-950 p-3 text-xs text-neutral-100">
               {JSON.stringify(page, null, 2)}
             </pre>
           </div>

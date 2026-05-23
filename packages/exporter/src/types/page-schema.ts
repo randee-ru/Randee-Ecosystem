@@ -1,4 +1,5 @@
 import type { ExportBindingContext } from './bindings'
+import type { SeoPayload } from './seo'
 
 export interface RandeeBlock {
   id: string
@@ -11,6 +12,7 @@ export interface RandeeBlock {
 export interface RandeePageSchema {
   page: string
   slug: string
+  seo?: SeoPayload
   blocks: RandeeBlock[]
 }
 

@@ -1,6 +1,13 @@
 {
   "page": "Главная",
   "slug": "/",
+  "seo": {
+    "title": "Главная — Randee",
+    "description": "Современная экосистема разработки под 1С-Битрикс",
+    "canonicalUrl": "https://randee.local/",
+    "ogImage": "https://randee.local/og.jpg",
+    "noindex": false
+  },
   "blocks": [
     {
       "id": "hero_001",

@@ -3,7 +3,12 @@ import { createBuilderStore } from '../store/builder-store'
 
 describe('builder store', () => {
   it('adds, duplicates and removes blocks', () => {
-    const store = createBuilderStore({ page: 'Home', slug: '/', blocks: [] })
+    const store = createBuilderStore({
+      page: 'Home',
+      slug: '/',
+      seo: { title: 'Home', description: 'Desc' },
+      blocks: []
+    })
     store.getState().addBlock('hero')
 
     const first = store.getState().page.blocks[0]
@@ -20,6 +25,7 @@ describe('builder store', () => {
     const store = createBuilderStore({
       page: 'Home',
       slug: '/',
+      seo: { title: 'Home', description: 'Desc' },
       blocks: [
         { id: 'a', type: 'hero', template: 'hero-01', props: { title: 'A' } },
         { id: 'b', type: 'faq', template: 'faq-01', props: { title: 'B' } }

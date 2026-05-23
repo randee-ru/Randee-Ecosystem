@@ -1,7 +1,7 @@
 import { createStore } from 'zustand/vanilla'
 import { createBlock } from '../registry/block-registry'
 import { reorder } from '../utils/reorder'
-import type { BlockType, BuilderPage, PageBlock, ViewportMode } from '../types/page'
+import type { BlockType, BuilderPage, PageBlock, SeoMetadata, ViewportMode } from '../types/page'
 
 export interface BuilderState {
   page: BuilderPage
@@ -18,6 +18,7 @@ export interface BuilderActions {
   moveBlock: (fromIndex: number, toIndex: number) => void
   updateBlockProps: (blockId: string, props: Record<string, string>) => void
   setPageMeta: (meta: Pick<BuilderPage, 'page' | 'slug'>) => void
+  setSeoMeta: (seo: Partial<SeoMetadata>) => void
   loadPage: (nextPage: BuilderPage) => void
 }
 
@@ -26,6 +27,10 @@ export type BuilderStore = BuilderState & BuilderActions
 export const DEFAULT_PAGE: BuilderPage = {
   page: 'Новая страница',
   slug: '/',
+  seo: {
+    title: 'Новая страница',
+    description: 'Описание страницы'
+  },
   blocks: [createBlock('hero')]
 }
 
@@ -33,7 +38,8 @@ function cloneBlock(block: PageBlock): PageBlock {
   return {
     ...block,
     id: `${block.type.replace('.', '_')}_${Math.random().toString(36).slice(2, 8)}`,
-    props: { ...block.props }
+    props: { ...block.props },
+    bindings: block.bindings ? { items: [...(block.bindings.items ?? [])] } : undefined
   }
 }
 
@@ -44,7 +50,6 @@ export function createBuilderStore(initialPage: BuilderPage = DEFAULT_PAGE) {
     viewport: 'desktop',
 
     setViewport: (viewport) => set({ viewport }),
-
     selectBlock: (blockId) => set({ selectedBlockId: blockId }),
 
     addBlock: (type) => {
@@ -107,6 +112,15 @@ export function createBuilderStore(initialPage: BuilderPage = DEFAULT_PAGE) {
           ...state.page,
           page: meta.page,
           slug: meta.slug
+        }
+      }))
+    },
+
+    setSeoMeta: (seo) => {
+      set((state) => ({
+        page: {
+          ...state.page,
+          seo: { ...state.page.seo, ...seo }
         }
       }))
     },
