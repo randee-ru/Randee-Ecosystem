@@ -15,10 +15,9 @@ import { Cta, Faq, Features, Hero } from '@randee/ui'
 import { Button, Card, Chip, Input, Separator, Tab, Tabs, TextArea } from '@heroui/react'
 import {
   Boxes,
-  ChevronLeft,
-  ChevronRight,
   Code2,
   Download,
+  Home,
   LayoutDashboard,
   Moon,
   PackagePlus,
@@ -189,6 +188,12 @@ export default function BuilderPage() {
                   Dark
                 </Button>
               </div>
+              <a href="/">
+                <Button variant="tertiary" className={`${isDark ? 'border border-white/20 bg-white/10 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}>
+                  <Home className="mr-2 h-4 w-4" />
+                  Home
+                </Button>
+              </a>
               <a href="/marketplace">
                 <Button variant="tertiary" className={`${isDark ? 'border border-white/20 bg-white/10 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}>
                   <PackagePlus className="mr-2 h-4 w-4" />
@@ -289,19 +294,10 @@ export default function BuilderPage() {
 
           <section className={`rounded-3xl border p-4 ${isDark ? 'border-white/10 bg-white/5' : 'border-white/70 bg-white/70 shadow-[0_16px_40px_rgba(15,23,42,0.06)]'}`}>
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex gap-2">
-                {!leftOpen ? (
-                  <Button size="sm" variant="tertiary" onClick={() => setLeftOpen(true)}>
-                    <PanelLeftOpen className="mr-1 h-4 w-4" />
-                    Blocks
-                  </Button>
-                ) : null}
-                {!rightOpen ? (
-                  <Button size="sm" variant="tertiary" onClick={() => setRightOpen(true)}>
-                    <PanelRightOpen className="mr-1 h-4 w-4" />
-                    Inspector
-                  </Button>
-                ) : null}
+              <div className="flex min-w-[120px] items-center gap-2">
+                <span className={`text-xs font-semibold uppercase tracking-[0.18em] ${isDark ? 'text-slate-300' : 'text-slate-500'}`}>
+                  Canvas
+                </span>
               </div>
 
               <Tabs selectedKey={viewport} onSelectionChange={(value) => store.getState().setViewport(String(value) as ViewportMode)} variant="secondary">
@@ -314,6 +310,33 @@ export default function BuilderPage() {
             </div>
 
             <Separator className={isDark ? 'bg-white/10' : 'bg-slate-200'} />
+
+            {(!leftOpen || !rightOpen) ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {!leftOpen ? (
+                  <Button
+                    size="sm"
+                    variant="tertiary"
+                    className={`${isDark ? 'border border-white/15 bg-white/10 text-white' : 'border border-slate-200 bg-white text-slate-700 shadow-sm'}`}
+                    onClick={() => setLeftOpen(true)}
+                  >
+                    <PanelLeftOpen className="mr-1 h-4 w-4" />
+                    Show Blocks
+                  </Button>
+                ) : null}
+                {!rightOpen ? (
+                  <Button
+                    size="sm"
+                    variant="tertiary"
+                    className={`${isDark ? 'border border-white/15 bg-white/10 text-white' : 'border border-slate-200 bg-white text-slate-700 shadow-sm'}`}
+                    onClick={() => setRightOpen(true)}
+                  >
+                    <PanelRightOpen className="mr-1 h-4 w-4" />
+                    Show Inspector
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="grid gap-3 py-4 md:grid-cols-3">
               {[
