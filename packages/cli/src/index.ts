@@ -2,6 +2,7 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { CoreEngine } from '@randee/core'
+import { MarketplaceService, type MarketplacePackage } from '@randee/marketplace'
 import { writeBitrixComponent } from '@randee/bitrix-adapter'
 import { exportPageToBitrix, type RandeePageSchema } from '@randee/exporter'
 
@@ -38,6 +39,12 @@ Core commands:
   randee update [package]
   randee rollback --snapshot <id>
 
+Marketplace commands:
+  randee marketplace:publish --file ./samples/marketplace/hero-pro.json
+  randee marketplace:list
+  randee marketplace:license --key PRO-KEY --tier pro
+  randee marketplace:install --name hero-pro --license PRO-KEY
+
 Bitrix commands:
   randee bitrix:component --name hero --title "Hero" --out ./dist
   randee export --input ./samples/pages/home.json --out ./dist/bitrix-site
@@ -54,6 +61,7 @@ async function run(): Promise<void> {
 
   const args = parseArgs(rest)
   const engine = new CoreEngine({ cwd: process.cwd() })
+  const marketplace = new MarketplaceService(process.cwd())
 
   if (command === 'sync') {
     const registry = String(args.registry ?? '')
@@ -98,6 +106,58 @@ async function run(): Promise<void> {
     if (!snapshot) throw new Error('rollback requires --snapshot <id>')
     const result = await engine.rollback(snapshot)
     process.stdout.write(`${result.message}\n`)
+    return
+  }
+
+  if (command === 'marketplace:publish') {
+    const file = String(args.file ?? '')
+    if (!file) throw new Error('marketplace:publish requires --file <path>')
+
+    const raw = await readFile(resolve(file), 'utf8')
+    const pkg = JSON.parse(raw) as MarketplacePackage
+    await marketplace.publishPackage(pkg)
+    process.stdout.write(`Published ${pkg.name}\n`)
+    return
+  }
+
+  if (command === 'marketplace:list') {
+    const packages = await marketplace.listPackages()
+    if (packages.length === 0) {
+      process.stdout.write('Marketplace is empty\n')
+      return
+    }
+
+    for (const pkg of packages) {
+      process.stdout.write(`${pkg.name} [${pkg.licenseTier}] versions=${pkg.versions.length}\n`)
+    }
+    return
+  }
+
+  if (command === 'marketplace:license') {
+    const key = String(args.key ?? '')
+    const tier = String(args.tier ?? '')
+    if (!key || !tier) throw new Error('marketplace:license requires --key and --tier')
+
+    if (tier !== 'free' && tier !== 'pro' && tier !== 'enterprise') {
+      throw new Error('tier must be one of: free, pro, enterprise')
+    }
+
+    await marketplace.upsertLicense({ key, tier, active: true })
+    process.stdout.write(`License upserted: ${key}\n`)
+    return
+  }
+
+  if (command === 'marketplace:install') {
+    const name = String(args.name ?? '')
+    if (!name) throw new Error('marketplace:install requires --name')
+
+    const result = await marketplace.installFromMarketplace(name, {
+      version: typeof args.version === 'string' ? args.version : undefined,
+      licenseKey: typeof args.license === 'string' ? args.license : undefined
+    })
+
+    process.stdout.write(`${result.message}\n`)
+    if (result.snapshotId) process.stdout.write(`Snapshot: ${result.snapshotId}\n`)
     return
   }
 

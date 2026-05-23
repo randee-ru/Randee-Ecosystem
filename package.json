@@ -25,6 +25,10 @@
     "randee:install": "tsx packages/cli/src/index.ts install",
     "randee:update": "tsx packages/cli/src/index.ts update",
     "randee:rollback": "tsx packages/cli/src/index.ts rollback",
+    "randee:marketplace:publish": "tsx packages/cli/src/index.ts marketplace:publish",
+    "randee:marketplace:list": "tsx packages/cli/src/index.ts marketplace:list",
+    "randee:marketplace:license": "tsx packages/cli/src/index.ts marketplace:license",
+    "randee:marketplace:install": "tsx packages/cli/src/index.ts marketplace:install",
     "storybook": "storybook dev -p 6006 --config-dir packages/ui/.storybook",
     "build-storybook": "storybook build --config-dir packages/ui/.storybook",
     "visual:chromatic": "chromatic --project-token=$CHROMATIC_PROJECT_TOKEN --exit-once-uploaded"

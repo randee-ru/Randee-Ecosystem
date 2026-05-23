@@ -17,7 +17,8 @@
   "dependencies": {
     "@randee/bitrix-adapter": "0.1.0",
     "@randee/core": "0.1.0",
-    "@randee/exporter": "0.1.0"
+    "@randee/exporter": "0.1.0",
+    "@randee/marketplace": "0.1.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",

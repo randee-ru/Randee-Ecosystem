@@ -130,6 +130,13 @@
 - License + version checks.
 - Download/install/update flow.
 
+### Execution Status (2026-05-23)
+- [x] Marketplace package service (`@randee/marketplace`) with local index and license store.
+- [x] API endpoints for publish/list/get/install/license/check/download.
+- [x] CLI marketplace commands (`marketplace:publish/list/license/install`).
+- [x] Sample marketplace package contract.
+- [~] Production billing/provider integration (post-MVP).
+
 ## Phase 7 — Randee Cloud
 
 ### Цель

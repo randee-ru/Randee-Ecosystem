@@ -1,0 +1,24 @@
+{
+  "name": "hero-pro",
+  "title": "Hero Pro",
+  "description": "Advanced hero section pack",
+  "category": "section",
+  "licenseTier": "pro",
+  "tags": ["hero", "landing", "animation"],
+  "versions": [
+    {
+      "version": "1.0.0",
+      "checksum": "sha256-hero-pro-100",
+      "minCoreVersion": "0.1.0",
+      "downloadUrl": "https://cdn.randee.local/hero-pro-1.0.0.tgz",
+      "releasedAt": "2026-05-23T00:00:00.000Z"
+    },
+    {
+      "version": "1.1.0",
+      "checksum": "sha256-hero-pro-110",
+      "minCoreVersion": "0.1.0",
+      "downloadUrl": "https://cdn.randee.local/hero-pro-1.1.0.tgz",
+      "releasedAt": "2026-05-23T12:00:00.000Z"
+    }
+  ]
+}

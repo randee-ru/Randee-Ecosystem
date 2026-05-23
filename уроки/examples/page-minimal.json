@@ -1,0 +1,20 @@
+{
+  "page": "Тестовая",
+  "slug": "/test",
+  "seo": {
+    "title": "Тестовая страница",
+    "description": "Минимальный пример страницы"
+  },
+  "blocks": [
+    {
+      "id": "hero_001",
+      "type": "hero",
+      "template": "hero-01",
+      "props": {
+        "title": "Пример Hero",
+        "description": "Описание Hero",
+        "buttonText": "Подробнее"
+      }
+    }
+  ]
+}

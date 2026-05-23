@@ -1,0 +1,31 @@
+{
+  "page": "SEO Demo",
+  "slug": "/seo-demo",
+  "seo": {
+    "title": "SEO Demo — Randee",
+    "description": "Проверка SEO и JSON-LD",
+    "canonicalUrl": "https://randee.local/seo-demo",
+    "ogImage": "https://randee.local/og-seo-demo.jpg",
+    "noindex": false
+  },
+  "blocks": [
+    {
+      "id": "hero_001",
+      "type": "hero",
+      "template": "hero-01",
+      "props": {
+        "title": "SEO Demo",
+        "description": "Демо страница",
+        "buttonText": "Старт"
+      }
+    },
+    {
+      "id": "faq_001",
+      "type": "faq",
+      "template": "faq-01",
+      "props": {
+        "title": "FAQ"
+      }
+    }
+  ]
+}
