@@ -11,7 +11,6 @@
     "test": "echo \"no tests yet for apps/web\""
   },
   "dependencies": {
-    "@heroui/react": "^3.0.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@randee/builder": "0.1.0",
     "@randee/ui": "0.1.0",

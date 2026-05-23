@@ -1,7 +1,6 @@
 'use client'
 
 import * as React from 'react'
-import Link from 'next/link'
 import {
   buildBuilderWebPageJsonLd,
   createBuilderStore,
@@ -16,7 +15,6 @@ import { useStore } from 'zustand'
 import {
   Bell,
   Boxes,
-  CircleUserRound,
   Code2,
   Copy,
   Download,
@@ -24,7 +22,6 @@ import {
   FolderKanban,
   Grid2X2,
   GripVertical,
-  Layers3,
   LayoutDashboard,
   Monitor,
   Moon,
@@ -107,13 +104,13 @@ function renderPreviewBlock(block: PageBlock | undefined, isDark: boolean) {
   const title = block.props.title ?? (block.type === 'hero' ? 'Новый Hero блок' : block.type)
   const description = block.props.description ?? 'Reusable Bitrix-ready section'
   const shell = isDark
-    ? 'border-[#2b2d31] bg-[linear-gradient(145deg,#222326_0%,#17181b_52%,#101114_100%)] text-zinc-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_22px_60px_rgba(0,0,0,0.32)]'
+    ? 'rb-glass-card border-transparent text-zinc-100'
     : 'border-stone-200 bg-white text-stone-950 shadow-[0_22px_55px_rgba(40,45,38,0.10)]'
   const muted = isDark ? 'text-zinc-500' : 'text-stone-500'
 
   if (block.type === 'hero') {
     return (
-      <section className={cx('relative overflow-hidden rounded-[28px] border p-6', shell)}>
+      <section className={cx('relative overflow-hidden rounded-[38px] border p-7', shell)}>
         <div className="absolute right-[-80px] top-[-120px] h-72 w-72 rounded-full bg-violet-500/20 blur-3xl" />
         <div className="absolute bottom-[-120px] left-[22%] h-52 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
         <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -127,16 +124,16 @@ function renderPreviewBlock(block: PageBlock | undefined, isDark: boolean) {
             </h3>
             <p className={cx('mt-4 max-w-xl text-sm leading-6 md:text-base', muted)}>{description}</p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <button type="button" className="rounded-2xl bg-violet-500 px-5 py-3 text-sm font-medium text-white shadow-[0_0_32px_rgba(124,58,237,0.35)]">
+              <button type="button" className="rb-glow-purple rounded-[20px] bg-violet-500 px-5 py-3 text-sm font-medium text-white">
                 {block.props.buttonText ?? 'Подробнее'}
               </button>
-              <span className={cx('rounded-2xl border px-5 py-3 text-sm', isDark ? 'border-[#34363b] bg-white/[0.035] text-zinc-300' : 'border-stone-200 bg-stone-50 text-stone-600')}>Export: randee:{block.type}</span>
+              <span className={cx('rounded-[20px] border px-5 py-3 text-sm', isDark ? 'rb-glass-control border-transparent text-zinc-300' : 'border-stone-200 bg-stone-50 text-stone-600')}>Export: randee:{block.type}</span>
             </div>
           </div>
-          <div className={cx('rounded-[26px] border p-4', isDark ? 'border-[#34363b] bg-black/20' : 'border-stone-200 bg-stone-50')}>
+          <div className={cx('rounded-[34px] border p-4', isDark ? 'rb-glass-panel border-transparent' : 'border-stone-200 bg-stone-50')}>
             <div className="grid gap-3">
               {['Bitrix component', 'JSON schema', 'Tailwind tokens'].map((item, index) => (
-                <div key={item} className={cx('rounded-2xl border p-4', isDark ? 'border-[#34363b] bg-[#202126]' : 'border-stone-200 bg-white')}>
+                <div key={item} className={cx('rounded-[24px] border p-4', isDark ? 'rb-glass-control border-transparent' : 'border-stone-200 bg-white')}>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">{item}</span>
                     <span className={cx('rounded-full px-2 py-1 text-xs', index === 0 ? 'bg-violet-500 text-white' : isDark ? 'bg-white/8 text-zinc-400' : 'bg-stone-100 text-stone-500')}>{index + 1}</span>
@@ -155,7 +152,7 @@ function renderPreviewBlock(block: PageBlock | undefined, isDark: boolean) {
 
   if (block.type === 'features') {
     return (
-      <section className={cx('rounded-[28px] border p-5', shell)}>
+      <section className={cx('rounded-[38px] border p-6', shell)}>
         <div className="mb-5 flex items-center justify-between">
           <div>
             <p className={cx('text-xs uppercase tracking-[0.2em]', muted)}>Feature system</p>
@@ -165,7 +162,7 @@ function renderPreviewBlock(block: PageBlock | undefined, isDark: boolean) {
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           {[block.props.item1 ?? 'UI Kit', block.props.item2 ?? 'Bitrix export', block.props.item3 ?? 'Updates'].map((item, index) => (
-            <div key={item} className={cx('rounded-[24px] border p-5', isDark ? 'border-[#34363b] bg-[#202126]' : 'border-stone-200 bg-stone-50')}>
+            <div key={item} className={cx('rounded-[30px] border p-5', isDark ? 'rb-glass-control border-transparent' : 'border-stone-200 bg-stone-50')}>
               <span className={cx('flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-semibold', index === 0 ? 'bg-violet-500 text-white' : index === 1 ? 'bg-cyan-400 text-black' : 'bg-emerald-400 text-black')}>
                 {index + 1}
               </span>
@@ -180,12 +177,12 @@ function renderPreviewBlock(block: PageBlock | undefined, isDark: boolean) {
 
   if (block.type === 'faq') {
     return (
-      <section className={cx('rounded-[28px] border p-5', shell)}>
+      <section className={cx('rounded-[38px] border p-6', shell)}>
         <p className={cx('text-xs uppercase tracking-[0.2em]', muted)}>Knowledge block</p>
         <h3 className="mt-2 text-2xl font-semibold">{title}</h3>
         <div className="mt-5 grid gap-3">
           {['Как блок попадет в Bitrix?', 'Где редактировать props?', 'Как обновлять компонент?'].map((question) => (
-            <div key={question} className={cx('rounded-2xl border p-4', isDark ? 'border-[#34363b] bg-[#202126]' : 'border-stone-200 bg-stone-50')}>
+            <div key={question} className={cx('rounded-[24px] border p-4', isDark ? 'rb-glass-control border-transparent' : 'border-stone-200 bg-stone-50')}>
               <div className="flex items-center justify-between">
                 <span className="font-medium">{question}</span>
                 <Plus className={cx('h-4 w-4', muted)} />
@@ -199,11 +196,11 @@ function renderPreviewBlock(block: PageBlock | undefined, isDark: boolean) {
 
   if (block.type === 'cta') {
     return (
-      <section className={cx('relative overflow-hidden rounded-[28px] border p-7 text-center', shell)}>
+      <section className={cx('relative overflow-hidden rounded-[38px] border p-8 text-center', shell)}>
         <div className="absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/70 to-transparent" />
         <h3 className="mx-auto max-w-2xl text-3xl font-semibold tracking-[-0.03em]">{title}</h3>
         <p className={cx('mx-auto mt-3 max-w-xl text-sm leading-6', muted)}>{description}</p>
-        <button type="button" className="mt-6 rounded-2xl bg-violet-500 px-6 py-3 text-sm font-medium text-white shadow-[0_0_32px_rgba(124,58,237,0.35)]">
+        <button type="button" className="rb-glow-purple mt-6 rounded-[20px] bg-violet-500 px-6 py-3 text-sm font-medium text-white">
           {block.props.buttonText ?? 'Подробнее'}
         </button>
       </section>
@@ -211,7 +208,7 @@ function renderPreviewBlock(block: PageBlock | undefined, isDark: boolean) {
   }
 
   return (
-    <section className={cx('rounded-[28px] border p-6', shell)}>
+    <section className={cx('rounded-[38px] border p-6', shell)}>
       <h3 className="text-lg font-semibold">{block.type}</h3>
       <p className={cx('text-sm', muted)}>Template: {block.template}</p>
     </section>
@@ -293,19 +290,19 @@ export default function BuilderPage() {
           : 'xl:grid-cols-[minmax(0,1fr)]'
 
   const surface = isDark
-    ? 'border-black/80 bg-[#0b0c0f]/95 shadow-[0_34px_110px_rgba(0,0,0,0.62)]'
+    ? 'rb-glass-shell border-transparent'
     : 'border-stone-200/80 bg-[#eef3ee]/92 shadow-[0_24px_90px_rgba(30,38,34,0.10)]'
 
-  const panel = isDark ? 'border-[#24262b] bg-[#17181b]/94 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]' : 'border-stone-200 bg-white/74'
+  const panel = isDark ? 'rb-glass-panel border-transparent' : 'border-stone-200 bg-white/74'
   const textMuted = isDark ? 'text-zinc-500' : 'text-stone-500'
   const buttonGhost = isDark
-    ? 'border-[#2a2c31] bg-[#202126] text-zinc-300 hover:border-violet-400/35 hover:bg-[#262730]'
+    ? 'rb-glass-control border-transparent text-zinc-300 hover:text-white'
     : 'border-stone-200 bg-white/80 text-stone-700 hover:border-emerald-200 hover:bg-white'
   const fieldClass = isDark
-    ? 'border-[#2a2c31] bg-[#111215] text-zinc-100 placeholder:text-zinc-600 focus:border-violet-400/45 focus:ring-2 focus:ring-violet-500/15'
+    ? 'rb-glass-control border-transparent text-zinc-100 placeholder:text-zinc-600 focus:ring-2 focus:ring-violet-500/15'
     : 'border-stone-200 bg-white/85 text-stone-950 placeholder:text-stone-400 focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100'
   const activeGlow = isDark
-    ? 'border-violet-400/45 bg-violet-500/12 text-violet-100 shadow-[0_0_34px_rgba(124,58,237,0.18)]'
+    ? 'border-violet-400/35 bg-violet-500/12 text-violet-100 shadow-[0_0_34px_rgba(124,58,237,0.28)]'
     : 'border-stone-950 bg-stone-950 text-white shadow-[0_18px_40px_rgba(39,42,34,0.16)]'
 
   return (
@@ -333,10 +330,10 @@ export default function BuilderPage() {
         <div className={cx('absolute bottom-[-220px] right-[10%] h-[440px] w-[520px] rounded-full blur-3xl', isDark ? 'bg-violet-600/12' : 'bg-emerald-200/45')} />
       </div>
 
-      <div className={cx('mx-auto flex min-h-[calc(100vh-32px)] w-full max-w-[1780px] overflow-hidden rounded-[34px] border p-2 backdrop-blur-2xl', surface)}>
-        <nav className={cx('hidden w-[76px] shrink-0 flex-col items-center justify-between rounded-[28px] border px-3 py-4 lg:flex', isDark ? 'border-white/[0.06] bg-black/30' : 'border-white/75 bg-white/45')}>
+      <div className={cx('mx-auto flex min-h-[calc(100vh-32px)] w-full max-w-[1780px] overflow-hidden rounded-[44px] border p-3 backdrop-blur-2xl', surface)}>
+        <nav className={cx('hidden w-[82px] shrink-0 flex-col items-center justify-between rounded-[34px] border px-3 py-4 lg:flex', isDark ? 'rb-glass-panel border-transparent' : 'border-white/75 bg-white/45')}>
           <div className="grid gap-5">
-            <div className={cx('flex h-12 w-12 items-center justify-center rounded-2xl shadow-[0_0_30px_rgba(124,58,237,0.28)]', isDark ? 'bg-white text-black' : 'bg-stone-950 text-white')}>
+            <div className={cx('flex h-12 w-12 items-center justify-center rounded-[22px] shadow-[0_0_30px_rgba(124,58,237,0.28)]', isDark ? 'bg-white text-black' : 'bg-stone-950 text-white')}>
               <Sparkles className="h-6 w-6" />
             </div>
             {[
@@ -352,7 +349,7 @@ export default function BuilderPage() {
                   key={label as string}
                   type="button"
                   className={cx(
-                    'group relative flex h-11 w-11 items-center justify-center rounded-2xl border transition',
+                    'group relative flex h-11 w-11 items-center justify-center rounded-[20px] border transition',
                     active
                       ? isDark
                         ? 'border-violet-300/25 bg-violet-500/25 text-white shadow-[0_0_28px_rgba(124,58,237,0.35)]'
@@ -376,9 +373,9 @@ export default function BuilderPage() {
         </nav>
 
         <div className="flex min-w-0 flex-1 flex-col gap-3 pl-0 lg:pl-2">
-        <header className={cx('rounded-[28px] border px-4 py-3 backdrop-blur-2xl', isDark ? 'border-[#202227] bg-[#17181b]/92' : 'border-stone-200 bg-white/72')}>
+        <header className={cx('rounded-[34px] border px-4 py-3 backdrop-blur-2xl', isDark ? 'rb-glass-panel border-transparent' : 'border-stone-200 bg-white/72')}>
           <div className="grid gap-3 xl:grid-cols-[minmax(320px,560px)_1fr]">
-            <div className={cx('flex h-12 items-center gap-3 rounded-2xl border px-4', fieldClass)}>
+            <div className={cx('flex h-12 items-center gap-3 rounded-[24px] border px-4', fieldClass)}>
               <Search className={cx('h-4 w-4', textMuted)} />
               <input
                 className="min-w-0 flex-1 bg-transparent text-sm outline-none"
@@ -390,13 +387,13 @@ export default function BuilderPage() {
             </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2">
-              <button type="button" className={cx('flex h-10 w-10 items-center justify-center rounded-2xl border', buttonGhost)} onClick={exportJson} aria-label="Export JSON">
+              <button type="button" className={cx('flex h-10 w-10 items-center justify-center rounded-[18px] border', buttonGhost)} onClick={exportJson} aria-label="Export JSON">
                 <Code2 className="h-4 w-4" />
               </button>
-              <button type="button" className={cx('flex h-10 w-10 items-center justify-center rounded-2xl border', buttonGhost)} aria-label="Notifications">
+              <button type="button" className={cx('flex h-10 w-10 items-center justify-center rounded-[18px] border', buttonGhost)} aria-label="Notifications">
                 <Bell className="h-4 w-4" />
               </button>
-              <div className={cx('flex rounded-2xl border p-1', isDark ? 'border-[#2a2c31] bg-[#111215]' : 'border-stone-200 bg-stone-100/80')}>
+              <div className={cx('flex rounded-[20px] border p-1', isDark ? 'rb-glass-control border-transparent' : 'border-stone-200 bg-stone-100/80')}>
                 <button
                   type="button"
                   className={cx('flex h-8 items-center gap-1 rounded-xl px-3 text-xs transition', theme === 'light' ? 'bg-white text-stone-950 shadow-sm' : 'text-zinc-500 hover:text-zinc-200')}
@@ -416,7 +413,7 @@ export default function BuilderPage() {
               </div>
               <button
                 type="button"
-                className="flex h-10 items-center gap-2 rounded-2xl bg-violet-500 px-4 text-sm font-medium text-white shadow-[0_0_30px_rgba(124,58,237,0.35)] transition hover:bg-violet-400"
+                className="rb-glow-purple flex h-10 items-center gap-2 rounded-[20px] bg-violet-500 px-4 text-sm font-medium text-white transition hover:bg-violet-400"
                 onClick={exportBitrix}
               >
                 <Boxes className="h-4 w-4" />
@@ -424,13 +421,13 @@ export default function BuilderPage() {
               </button>
               <button
                 type="button"
-                className={cx('flex h-10 items-center gap-2 rounded-2xl border px-4 text-sm font-medium transition', isDark ? 'border-[#2a2c31] bg-[#202126] text-zinc-100 hover:bg-[#262730]' : 'border-stone-200 bg-white text-stone-900')}
+                className={cx('flex h-10 items-center gap-2 rounded-[20px] border px-4 text-sm font-medium transition', buttonGhost)}
                 onClick={exportHtml}
               >
                 <Download className="h-4 w-4" />
                 HTML
               </button>
-              <button type="button" className={cx('flex h-10 items-center gap-2 rounded-2xl border px-2 pr-3', buttonGhost)} aria-label="Profile">
+              <button type="button" className={cx('flex h-10 items-center gap-2 rounded-[20px] border px-2 pr-3', buttonGhost)} aria-label="Profile">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-cyan-300 text-xs font-bold text-black">R</span>
                 <span className="hidden text-sm md:inline">Randee</span>
               </button>
@@ -440,7 +437,7 @@ export default function BuilderPage() {
 
         <section className={cx('grid flex-1 grid-cols-1 gap-4', gridClass)}>
           {leftOpen ? (
-            <aside className={cx('rounded-[30px] border p-4 backdrop-blur-xl', panel)}>
+            <aside className={cx('rounded-[40px] border p-4 backdrop-blur-xl', panel)}>
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <p className={cx('text-[11px] font-semibold uppercase tracking-[0.18em]', textMuted)}>Projects</p>
@@ -461,7 +458,7 @@ export default function BuilderPage() {
                 {Object.entries(groupedVariants).map(([group, items]) => {
                   const isOpen = openGroups[group] ?? Boolean(librarySearch)
                   return (
-                    <div key={group} className={cx('rounded-[22px] border', isDark ? 'border-white/[0.075] bg-white/[0.035]' : 'border-stone-200 bg-white')}>
+                    <div key={group} className={cx('rounded-[28px] border', isDark ? 'rb-glass-control border-transparent' : 'border-stone-200 bg-white')}>
                       <button
                         type="button"
                         className="flex w-full items-center justify-between px-3 py-3.5 text-left"
@@ -484,8 +481,8 @@ export default function BuilderPage() {
                               key={`${item.group}-${item.template}`}
                               type="button"
                               className={cx(
-                                'group rounded-2xl border p-3 text-left transition hover:-translate-y-0.5',
-                                isDark ? 'border-white/[0.07] bg-[#202126]/80 hover:border-violet-300/25 hover:bg-[#252630]' : 'border-stone-100 bg-stone-50 hover:bg-white'
+                                'group rounded-[24px] border p-3 text-left transition hover:-translate-y-0.5',
+                                isDark ? 'rb-glass-control border-transparent hover:text-white' : 'border-stone-100 bg-stone-50 hover:bg-white'
                               )}
                               onClick={() => addVariant(item)}
                             >
@@ -510,7 +507,7 @@ export default function BuilderPage() {
                 })}
 
                 {filteredVariants.length === 0 ? (
-                  <div className={cx('rounded-2xl border p-4 text-sm', isDark ? 'border-white/10 bg-white/[0.03] text-zinc-400' : 'border-stone-200 bg-white text-stone-500')}>
+                  <div className={cx('rounded-[24px] border p-4 text-sm', isDark ? 'rb-glass-control border-transparent text-zinc-400' : 'border-stone-200 bg-white text-stone-500')}>
                     Ничего не найдено. Попробуйте `hero`, `catalog` или `faq`.
                   </div>
                 ) : null}
@@ -534,11 +531,11 @@ export default function BuilderPage() {
                       }}
                       onClick={() => store.getState().selectBlock(item.id)}
                       className={cx(
-                        'flex items-center gap-3 rounded-2xl border p-3 text-left transition hover:-translate-y-0.5',
+                        'flex items-center gap-3 rounded-[24px] border p-3 text-left transition hover:-translate-y-0.5',
                         activeId === item.id
                           ? activeGlow
                           : isDark
-                            ? 'border-white/[0.07] bg-white/[0.035] hover:bg-white/[0.07]'
+                            ? 'rb-glass-control border-transparent'
                             : 'border-stone-200 bg-white hover:bg-stone-50'
                       )}
                     >
@@ -559,7 +556,7 @@ export default function BuilderPage() {
             </aside>
           ) : null}
 
-          <section className={cx('rounded-[30px] border p-4 backdrop-blur-xl', panel)}>
+          <section className={cx('rounded-[40px] border p-4 backdrop-blur-xl', panel)}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <div className={cx('hidden h-10 w-10 items-center justify-center rounded-2xl border md:flex', isDark ? 'border-violet-300/20 bg-violet-500/15 text-violet-200' : 'border-emerald-200 bg-emerald-50 text-emerald-800')}>
@@ -573,7 +570,7 @@ export default function BuilderPage() {
                 </div>
               </div>
 
-              <div className={cx('flex rounded-2xl border p-1', isDark ? 'border-white/[0.08] bg-black/25' : 'border-stone-200 bg-stone-100/80')}>
+              <div className={cx('flex rounded-[22px] border p-1', isDark ? 'rb-glass-control border-transparent' : 'border-stone-200 bg-stone-100/80')}>
                 {(['desktop', 'tablet', 'mobile'] as ViewportMode[]).map((mode) => {
                   const Icon = viewportIcon[mode]
                   return (
@@ -600,7 +597,7 @@ export default function BuilderPage() {
                 ['READY TO DESIGN', filteredVariants.length, 'bg-cyan-400 text-black shadow-[0_0_24px_rgba(34,211,238,0.24)]'],
                 ['FINAL REVIEW', 3, 'bg-fuchsia-500 text-white shadow-[0_0_24px_rgba(217,70,239,0.28)]']
               ].map(([title, count, tone]) => (
-                <div key={title as string} className={cx('rounded-[22px] border p-3', isDark ? 'border-[#2a2c31] bg-[#202126]/72' : 'border-stone-200 bg-white/70')}>
+                <div key={title as string} className={cx('rounded-[30px] border p-3', isDark ? 'rb-glass-card border-transparent' : 'border-stone-200 bg-white/70')}>
                   <div className="flex items-center justify-between">
                     <span className={cx('rounded-full px-3 py-1 text-xs font-semibold', tone as string)}>
                       {title}
@@ -614,7 +611,7 @@ export default function BuilderPage() {
               ))}
             </div>
 
-            <div className={cx('mt-4 min-h-[680px] overflow-auto rounded-[28px] border', isDark ? 'border-[#24262b] bg-[#0d0e10]/92 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]' : 'border-stone-300 bg-[#f8faf7]')}>
+            <div className={cx('mt-4 min-h-[680px] overflow-auto rounded-[40px] border', isDark ? 'rb-glass-panel border-transparent' : 'border-stone-300 bg-[#f8faf7]')}>
               <div className="min-w-[760px]">
                 <div className={cx('sticky top-0 z-10 grid grid-cols-[48px_1fr] border-b backdrop-blur', isDark ? 'border-[#24262b] bg-[#111215]/94' : 'border-stone-200 bg-[#f8faf7]/90')}>
                   <div className={cx('h-8 border-r', isDark ? 'border-[#24262b]' : 'border-stone-200')} />
@@ -669,13 +666,13 @@ export default function BuilderPage() {
                           <section
                             key={item.id}
                             className={cx(
-                              'group rounded-[26px] border p-3 transition hover:-translate-y-0.5',
+                              'group rounded-[34px] border p-3 transition hover:-translate-y-0.5',
                               activeId === item.id
                                 ? isDark
                                   ? 'border-violet-300/45 bg-violet-500/10 shadow-[0_0_38px_rgba(124,58,237,0.18)]'
                                   : 'border-stone-950 bg-white shadow-[0_18px_50px_rgba(39,42,34,0.12)]'
                                 : isDark
-                                  ? 'border-white/[0.06] bg-white/[0.025] hover:border-white/[0.12] hover:bg-white/[0.045]'
+                                  ? 'rb-glass-control border-transparent'
                                   : 'border-transparent bg-transparent hover:border-stone-200 hover:bg-white/60'
                             )}
                             onClick={() => store.getState().selectBlock(item.id)}
@@ -707,7 +704,7 @@ export default function BuilderPage() {
                                 </button>
                               </div>
                             </div>
-                            <div className="overflow-hidden rounded-[22px]">
+                            <div className="overflow-hidden rounded-[34px]">
                               {renderPreviewBlock(item, isDark)}
                             </div>
                           </section>
@@ -721,7 +718,7 @@ export default function BuilderPage() {
           </section>
 
           {rightOpen ? (
-            <aside className={cx('rounded-[30px] border p-4 backdrop-blur-xl', panel)}>
+            <aside className={cx('rounded-[40px] border p-4 backdrop-blur-xl', panel)}>
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <p className={cx('text-[11px] font-semibold uppercase tracking-[0.18em]', textMuted)}>Inspector</p>
@@ -738,7 +735,7 @@ export default function BuilderPage() {
                 </button>
               </div>
 
-              <div className={cx('rounded-[22px] border p-3', isDark ? 'border-white/[0.07] bg-white/[0.035]' : 'border-stone-200 bg-white')}>
+              <div className={cx('rounded-[30px] border p-3', isDark ? 'rb-glass-control border-transparent' : 'border-stone-200 bg-white')}>
                 <div className="mb-3 flex items-center gap-2">
                   <FileText className={cx('h-4 w-4', isDark ? 'text-violet-300' : 'text-emerald-700')} />
                   <p className="text-sm font-semibold">Page</p>
@@ -757,7 +754,7 @@ export default function BuilderPage() {
                 />
               </div>
 
-              <div className={cx('mt-3 rounded-[22px] border p-3', isDark ? 'border-white/[0.07] bg-white/[0.035]' : 'border-stone-200 bg-white')}>
+              <div className={cx('mt-3 rounded-[30px] border p-3', isDark ? 'rb-glass-control border-transparent' : 'border-stone-200 bg-white')}>
                 <div className="mb-3 flex items-center gap-2">
                   <Settings2 className={cx('h-4 w-4', isDark ? 'text-violet-300' : 'text-emerald-700')} />
                   <p className="text-sm font-semibold">{block ? `${block.type} block` : 'No block selected'}</p>
@@ -781,7 +778,7 @@ export default function BuilderPage() {
                 )}
               </div>
 
-              <div className={cx('mt-3 rounded-[22px] border p-3', isDark ? 'border-white/[0.07] bg-white/[0.035]' : 'border-stone-200 bg-white')}>
+              <div className={cx('mt-3 rounded-[30px] border p-3', isDark ? 'rb-glass-control border-transparent' : 'border-stone-200 bg-white')}>
                 <p className="text-sm font-semibold">SEO</p>
                 <label className={cx('mt-3 block text-[11px] font-semibold uppercase tracking-[0.14em]', textMuted)}>Title</label>
                 <input
