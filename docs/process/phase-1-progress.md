@@ -10,9 +10,10 @@
 - [~] UI Kit primitives (ready: Button/Input/Card/Select/Tabs/Modal/Tooltip/Table)
 - [x] Sections v1 (Hero, Features, FAQ, CTA, Header, Footer)
 - [~] Variants system + tokens + theming (started: Button variants + tokens.css)
+- [~] GSAP animation primitives (RandeeReveal, RandeeParallax ready)
 
 ## Next ordered tasks
 
-1. Start GSAP animation primitives (`RandeeReveal`, `RandeeParallax`) with reduced-motion support.
-2. Start `Randee UI` docs pages for component props and usage recipes.
-3. Add missing UI primitives from backlog (`Accordion`, `Drawer`, `Dropdown`, `Pagination`, `Breadcrumbs`, `Badge`, `Alert`, `Skeleton`, `Loader`).
+1. Start `Randee UI` docs pages for component props and usage recipes.
+2. Add missing UI primitives from backlog (`Accordion`, `Drawer`, `Dropdown`, `Pagination`, `Breadcrumbs`, `Badge`, `Alert`, `Skeleton`, `Loader`).
+3. Extend animation layer (`RandeeCounter`, `RandeeMarquee`, `RandeeScrollSection`, `RandeeAnimatedSection`).
