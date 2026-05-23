@@ -5,6 +5,16 @@
 ### Цель
 Собрать базовую UI-платформу и инженерный фундамент.
 
+### Execution Status (2026-05-23)
+- [x] Monorepo bootstrap.
+- [x] Next/Tailwind/TypeScript strict setup.
+- [x] ESLint + Prettier + Stylelint.
+- [x] Storybook + addon-a11y.
+- [ ] Visual regression integration.
+- [~] UI Kit primitives (Button/Input/Card ready).
+- [~] Sections v1 (Hero ready).
+- [~] Variants system + tokens + theming (base layer ready).
+
 ### Scope
 - Monorepo bootstrap.
 - Vite/Next/Tailwind/TypeScript strict setup.

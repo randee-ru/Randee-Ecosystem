@@ -1,0 +1,17 @@
+:root {
+  --rd-background: #ffffff;
+  --rd-foreground: #171717;
+  --rd-muted: #737373;
+  --rd-border: #e5e5e5;
+  --rd-primary: #171717;
+  --rd-primary-foreground: #ffffff;
+}
+
+.rd-theme-dark {
+  --rd-background: #0a0a0a;
+  --rd-foreground: #fafafa;
+  --rd-muted: #a3a3a3;
+  --rd-border: #262626;
+  --rd-primary: #fafafa;
+  --rd-primary-foreground: #0a0a0a;
+}
