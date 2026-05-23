@@ -111,3 +111,9 @@ body {
     radial-gradient(circle at 1px 1px, rgb(255 255 255 / 0.045) 1px, transparent 0);
   background-size: 14px 14px;
 }
+
+/* Builder editor: don't inherit global border-color on every element */
+.randee-builder-editor,
+.randee-builder-editor * {
+  border-color: transparent;
+}

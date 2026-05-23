@@ -39,4 +39,4 @@ export interface BuilderPage {
   blocks: PageBlock[]
 }
 
-export type ViewportMode = 'desktop' | 'tablet' | 'mobile'
+export type ViewportMode = 'desktop' | 'macbook' | 'tablet' | 'mobile'

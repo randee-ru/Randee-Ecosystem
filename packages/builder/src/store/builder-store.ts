@@ -13,6 +13,7 @@ export interface BuilderActions {
   setViewport: (viewport: ViewportMode) => void
   selectBlock: (blockId: string | null) => void
   addBlock: (type: BlockType) => void
+  insertBlock: (block: PageBlock) => void
   removeBlock: (blockId: string) => void
   duplicateBlock: (blockId: string) => void
   moveBlock: (fromIndex: number, toIndex: number) => void
@@ -47,13 +48,20 @@ export function createBuilderStore(initialPage: BuilderPage = DEFAULT_PAGE) {
   return createStore<BuilderStore>()((set) => ({
     page: initialPage,
     selectedBlockId: initialPage.blocks[0]?.id ?? null,
-    viewport: 'desktop',
+    viewport: 'macbook',
 
     setViewport: (viewport) => set({ viewport }),
     selectBlock: (blockId) => set({ selectedBlockId: blockId }),
 
     addBlock: (type) => {
       const block = createBlock(type)
+      set((state) => ({
+        page: { ...state.page, blocks: [...state.page.blocks, block] },
+        selectedBlockId: block.id
+      }))
+    },
+
+    insertBlock: (block) => {
       set((state) => ({
         page: { ...state.page, blocks: [...state.page.blocks, block] },
         selectedBlockId: block.id

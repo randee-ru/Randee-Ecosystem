@@ -1,0 +1,41 @@
+.randee-news-01 {
+  padding: 2.5rem;
+  color: #171717;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.randee-news-01__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #737373;
+}
+
+.randee-news-01__title {
+  margin-top: 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.randee-news-01__meta {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: #525252;
+}
+
+.randee-news-01.is-mounted {
+  animation: randee-news-01-in 0.35s ease;
+}
+
+@keyframes randee-news-01-in {
+  from {
+    opacity: 0.6;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
