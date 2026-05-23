@@ -5,52 +5,65 @@ import { describe, expect, it } from 'vitest'
 import { createApiApp } from './server'
 import type { Express } from 'express'
 
-type MockRequest = {
+type InvokeRequest = {
+  method: 'GET' | 'POST'
+  path: string
   body?: unknown
-  params?: Record<string, string>
-  query?: Record<string, string | undefined>
+  headers?: Record<string, string>
 }
 
-type MockResponse = {
+type InvokeResponse = {
   statusCode: number
   payload: unknown
-  status: (code: number) => MockResponse
-  json: (payload: unknown) => MockResponse
+  headers: Record<string, string>
 }
 
-function createMockResponse(): MockResponse {
-  return {
-    statusCode: 200,
-    payload: undefined,
-    status(code: number) {
-      this.statusCode = code
-      return this
-    },
-    json(payload: unknown) {
-      this.payload = payload
-      return this
+async function invoke(app: Express, input: InvokeRequest): Promise<InvokeResponse> {
+  return new Promise((resolve, reject) => {
+    const req = {
+      method: input.method,
+      url: input.path,
+      headers: {
+        'content-type': 'application/json',
+        ...(input.headers ?? {})
+      },
+      body: input.body,
+      ip: '127.0.0.1',
+      socket: { remoteAddress: '127.0.0.1' }
     }
-  }
-}
 
-async function invokeRoute(app: Express, method: 'get' | 'post', path: string, req: MockRequest) {
-  const stack =
-    (app as Express & { _router?: { stack?: Array<{ route?: unknown }> } })._router?.stack ?? []
-  const layer = stack.find((entry: { route?: unknown }) => {
-    const route = entry.route as { path?: string; methods?: Record<string, boolean> } | undefined
-    return route?.path === path && route.methods?.[method]
+    const responseHeaders: Record<string, string> = {}
+    const res = {
+      statusCode: 200,
+      setHeader(name: string, value: string) {
+        responseHeaders[name.toLowerCase()] = value
+      },
+      getHeader(name: string) {
+        return responseHeaders[name.toLowerCase()]
+      },
+      status(code: number) {
+        this.statusCode = code
+        return this
+      },
+      json(payload: unknown) {
+        resolve({
+          statusCode: this.statusCode,
+          payload,
+          headers: responseHeaders
+        })
+        return this
+      }
+    }
+
+    ;(app as Express & { handle: (req: unknown, res: unknown, next: (error?: unknown) => void) => void }).handle(
+      req,
+      res,
+      (error?: unknown) => {
+      if (error) reject(error)
+      else resolve({ statusCode: res.statusCode, payload: undefined, headers: responseHeaders })
+      }
+    )
   })
-
-  if (!layer) throw new Error(`Route not found: ${method.toUpperCase()} ${path}`)
-
-  const route = layer.route as { stack: Array<{ handle: (req: MockRequest, res: MockResponse) => unknown }> }
-  const res = createMockResponse()
-
-  for (const routeLayer of route.stack) {
-    await routeLayer.handle(req, res)
-  }
-
-  return res
 }
 
 describe('api marketplace endpoints', () => {
@@ -58,7 +71,9 @@ describe('api marketplace endpoints', () => {
     const cwd = await mkdtemp(join(tmpdir(), 'randee-api-'))
     const app = createApiApp(cwd)
 
-    const publishResponse = await invokeRoute(app, 'post', '/marketplace/publish', {
+    const publishResponse = await invoke(app, {
+      method: 'POST',
+      path: '/marketplace/publish',
       body: {
         name: 'hero-lite',
         title: 'Hero Lite',
@@ -79,8 +94,13 @@ describe('api marketplace endpoints', () => {
     })
     expect(publishResponse.statusCode).toBe(201)
 
-    const listResponse = await invokeRoute(app, 'get', '/marketplace/packages', {})
+    const listResponse = await invoke(app, {
+      method: 'GET',
+      path: '/marketplace/packages'
+    })
+
     expect(listResponse.statusCode).toBe(200)
+    expect(listResponse.headers['x-request-id']).toBeTypeOf('string')
     expect(listResponse.payload).toEqual({
       packages: expect.arrayContaining([
         expect.objectContaining({
@@ -96,7 +116,9 @@ describe('api cloud endpoints', () => {
     const cwd = await mkdtemp(join(tmpdir(), 'randee-api-cloud-'))
     const app = createApiApp(cwd)
 
-    const createProject = await invokeRoute(app, 'post', '/cloud/projects', {
+    const createProject = await invoke(app, {
+      method: 'POST',
+      path: '/cloud/projects',
       body: {
         name: 'Cloud Project',
         slug: 'cloud-project',
@@ -107,8 +129,9 @@ describe('api cloud endpoints', () => {
 
     const projectId = (createProject.payload as { project: { id: string } }).project.id
 
-    const preview = await invokeRoute(app, 'post', '/cloud/projects/:projectId/previews', {
-      params: { projectId },
+    const preview = await invoke(app, {
+      method: 'POST',
+      path: `/cloud/projects/${projectId}/previews`,
       body: {
         commitSha: 'def5678',
         branch: 'main',
@@ -117,8 +140,9 @@ describe('api cloud endpoints', () => {
     })
     expect(preview.statusCode).toBe(201)
 
-    const sync = await invokeRoute(app, 'post', '/cloud/projects/:projectId/sync', {
-      params: { projectId },
+    const sync = await invoke(app, {
+      method: 'POST',
+      path: `/cloud/projects/${projectId}/sync`,
       body: {
         source: 'cloud',
         filesCount: 12,
@@ -127,8 +151,9 @@ describe('api cloud endpoints', () => {
     })
     expect(sync.statusCode).toBe(200)
 
-    const audit = await invokeRoute(app, 'get', '/cloud/projects/:projectId/audit', {
-      params: { projectId }
+    const audit = await invoke(app, {
+      method: 'GET',
+      path: `/cloud/projects/${projectId}/audit`
     })
     expect(audit.statusCode).toBe(200)
     expect(audit.payload).toEqual({
@@ -138,5 +163,35 @@ describe('api cloud endpoints', () => {
         })
       ])
     })
+  })
+
+  it('requires api key for write operations when configured', async () => {
+    const cwd = await mkdtemp(join(tmpdir(), 'randee-api-auth-'))
+    const app = createApiApp(cwd, { apiKey: 'secret-key' })
+
+    const denied = await invoke(app, {
+      method: 'POST',
+      path: '/cloud/projects',
+      body: {
+        name: 'Denied Project',
+        slug: 'denied-project',
+        ownerEmail: 'owner@randee.dev'
+      }
+    })
+    expect(denied.statusCode).toBe(401)
+
+    const allowed = await invoke(app, {
+      method: 'POST',
+      path: '/cloud/projects',
+      headers: {
+        'x-randee-api-key': 'secret-key'
+      },
+      body: {
+        name: 'Allowed Project',
+        slug: 'allowed-project',
+        ownerEmail: 'owner@randee.dev'
+      }
+    })
+    expect(allowed.statusCode).toBe(201)
   })
 })

@@ -77,6 +77,7 @@ docs/
 - [Code Comment Policy](./docs/process/code-comment-policy.md)
 - [Setup/Run Guide (RU)](./docs/process/setup-run-work-ru.md)
 - [Animation Composition (RU)](./docs/process/animation-composition-ru.md)
+- [Phase 8 Production Hardening (RU)](./docs/process/phase-8-production-hardening-ru.md)
 
 ## Быстрый старт (план)
 
@@ -92,6 +93,7 @@ npm run test:e2e
 npm run storybook
 npm run randee:marketplace:list
 npm run randee:cloud:project:list
+npm run randee:hardening:check
 ```
 
 ## Git workflow

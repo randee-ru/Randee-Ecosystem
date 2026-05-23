@@ -1,14 +1,111 @@
-import express from 'express'
+import express, { type NextFunction, type Request, type Response } from 'express'
 import { resolve } from 'node:path'
+import { randomUUID } from 'node:crypto'
 import { MarketplaceService } from '@randee/marketplace'
+import type { LicenseTier } from '@randee/marketplace'
 import { CloudService } from '@randee/cloud'
+import type { RandeeSyncState, RandeeTeamMember } from '@randee/cloud'
 
-export function createApiApp(rootDir = process.cwd()) {
+type ApiAppOptions = {
+  apiKey?: string
+  rateLimitWindowMs?: number
+  rateLimitMaxRequests?: number
+}
+
+const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
+function asNonEmptyString(value: unknown, field: string): string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`Field "${field}" is required`)
+  }
+
+  return value.trim()
+}
+
+function asPositiveNumber(value: unknown, field: string): number {
+  if (typeof value !== 'number' || Number.isNaN(value) || value <= 0) {
+    throw new Error(`Field "${field}" must be a positive number`)
+  }
+
+  return value
+}
+
+function readRateLimitKey(req: Request): string {
+  const ip = req.ip || req.socket.remoteAddress || 'unknown'
+  return `${ip}:${req.method}`
+}
+
+function asRole(value: unknown): RandeeTeamMember['role'] {
+  const role = asNonEmptyString(value, 'role')
+  if (role === 'owner' || role === 'admin' || role === 'developer' || role === 'viewer') {
+    return role
+  }
+
+  throw new Error('Field "role" must be one of: owner, admin, developer, viewer')
+}
+
+function asSyncSource(value: unknown): RandeeSyncState['source'] {
+  const source = asNonEmptyString(value, 'source')
+  if (source === 'local' || source === 'cloud') {
+    return source
+  }
+
+  throw new Error('Field "source" must be one of: local, cloud')
+}
+
+function asLicenseTier(value: unknown): LicenseTier {
+  const tier = asNonEmptyString(value, 'tier')
+  if (tier === 'free' || tier === 'pro' || tier === 'enterprise') {
+    return tier
+  }
+
+  throw new Error('Field "tier" must be one of: free, pro, enterprise')
+}
+
+export function createApiApp(rootDir = process.cwd(), options: ApiAppOptions = {}) {
   const app = express()
   const marketplace = new MarketplaceService(rootDir)
   const cloud = new CloudService(rootDir)
+  const apiKey = options.apiKey ?? process.env.RANDEE_API_KEY
+  const rateLimitWindowMs = options.rateLimitWindowMs ?? Number(process.env.RANDEE_RATE_LIMIT_WINDOW_MS ?? 60_000)
+  const rateLimitMaxRequests = options.rateLimitMaxRequests ?? Number(process.env.RANDEE_RATE_LIMIT_MAX ?? 120)
+  const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
 
   app.use(express.json())
+  app.use((req, res, next) => {
+    const requestId = randomUUID()
+    res.setHeader('x-request-id', requestId)
+    next()
+  })
+
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const key = readRateLimitKey(req)
+    const now = Date.now()
+    const current = rateLimitStore.get(key)
+
+    if (!current || now >= current.resetAt) {
+      rateLimitStore.set(key, { count: 1, resetAt: now + rateLimitWindowMs })
+      return next()
+    }
+
+    if (current.count >= rateLimitMaxRequests) {
+      return res.status(429).json({ error: 'Rate limit exceeded' })
+    }
+
+    current.count += 1
+    return next()
+  })
+
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (!apiKey || !WRITE_METHODS.has(req.method)) return next()
+
+    const received = req.header('x-randee-api-key')
+    if (received !== apiKey) {
+      return res.status(401).json({ error: 'Unauthorized' })
+    }
+
+    return next()
+  })
 
   app.get('/health', (_, res) => {
     res.json({ status: 'ok' })
@@ -44,13 +141,16 @@ export function createApiApp(rootDir = process.cwd()) {
   })
 
   app.post('/marketplace/license/check', async (req, res) => {
-    const valid = await marketplace.validateLicense(req.body.tier, req.body.key)
+    const tier = asLicenseTier(req.body.tier)
+    const key = asNonEmptyString(req.body.key, 'key')
+    const valid = await marketplace.validateLicense(tier, key)
     res.json({ valid })
   })
 
   app.post('/marketplace/install', async (req, res) => {
     try {
-      const result = await marketplace.installFromMarketplace(req.body.name, {
+      const name = asNonEmptyString(req.body.name, 'name')
+      const result = await marketplace.installFromMarketplace(name, {
         version: req.body.version,
         licenseKey: req.body.licenseKey
       })
@@ -79,7 +179,11 @@ export function createApiApp(rootDir = process.cwd()) {
 
   app.post('/cloud/projects', async (req, res) => {
     try {
-      const project = await cloud.createProject(req.body)
+      const project = await cloud.createProject({
+        name: asNonEmptyString(req.body.name, 'name'),
+        slug: asNonEmptyString(req.body.slug, 'slug'),
+        ownerEmail: asNonEmptyString(req.body.ownerEmail, 'ownerEmail')
+      })
       return res.status(201).json({ project })
     } catch (error) {
       return res.status(400).json({ error: error instanceof Error ? error.message : 'Project error' })
@@ -95,9 +199,9 @@ export function createApiApp(rootDir = process.cwd()) {
     try {
       const member = await cloud.addMember({
         projectId: req.params.projectId,
-        email: req.body.email,
-        role: req.body.role,
-        actor: req.body.actor
+        email: asNonEmptyString(req.body.email, 'email'),
+        role: asRole(req.body.role),
+        actor: asNonEmptyString(req.body.actor, 'actor')
       })
       return res.status(201).json({ member })
     } catch (error) {
@@ -109,9 +213,9 @@ export function createApiApp(rootDir = process.cwd()) {
     try {
       const preview = await cloud.createPreview({
         projectId: req.params.projectId,
-        commitSha: req.body.commitSha,
-        branch: req.body.branch,
-        actor: req.body.actor
+        commitSha: asNonEmptyString(req.body.commitSha, 'commitSha'),
+        branch: asNonEmptyString(req.body.branch, 'branch'),
+        actor: asNonEmptyString(req.body.actor, 'actor')
       })
       return res.status(201).json({ preview })
     } catch (error) {
@@ -128,9 +232,9 @@ export function createApiApp(rootDir = process.cwd()) {
     try {
       const state = await cloud.syncProject({
         projectId: req.params.projectId,
-        source: req.body.source,
-        filesCount: req.body.filesCount,
-        actor: req.body.actor
+        source: asSyncSource(req.body.source),
+        filesCount: asPositiveNumber(req.body.filesCount, 'filesCount'),
+        actor: asNonEmptyString(req.body.actor, 'actor')
       })
       return res.status(200).json({ state })
     } catch (error) {

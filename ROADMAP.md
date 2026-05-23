@@ -162,3 +162,23 @@
 - Playwright smoke + critical E2E flows.
 - Visual regression checks for UI packages.
 - Accessibility checks (axe-core + Storybook addon-a11y).
+
+## Phase 8 — Production Hardening
+
+### Цель
+Снизить production-риски MVP до рабочего baseline.
+
+### Scope
+- API auth baseline.
+- Input validation hardening.
+- Abuse/rate-limit protection.
+- Request traceability.
+- Hardening regression checks.
+
+### Execution Status (2026-05-23)
+- [x] API key guard for write endpoints.
+- [x] Payload validation for cloud/marketplace write flows.
+- [x] In-memory rate limiter + request id headers.
+- [x] API tests for auth and hardened flows.
+- [x] Dedicated hardening-check npm script.
+- [~] JWT/RBAC/Redis-based limits and centralized observability (next increment).

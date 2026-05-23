@@ -35,6 +35,7 @@
     "randee:cloud:preview": "tsx packages/cli/src/index.ts cloud:preview",
     "randee:cloud:sync": "tsx packages/cli/src/index.ts cloud:sync",
     "randee:cloud:audit": "tsx packages/cli/src/index.ts cloud:audit",
+    "randee:hardening:check": "npm run typecheck --workspace @randee/cloud && npm run test --workspace @randee/cloud && npm run typecheck --workspace @randee/api && npm run test --workspace @randee/api && npm run typecheck --workspace @randee/cli",
     "storybook": "storybook dev -p 6006 --config-dir packages/ui/.storybook",
     "build-storybook": "storybook build --config-dir packages/ui/.storybook",
     "visual:chromatic": "chromatic --project-token=$CHROMATIC_PROJECT_TOKEN --exit-once-uploaded"
