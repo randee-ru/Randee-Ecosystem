@@ -6,6 +6,22 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 export const RULER_SIZE = 22
 export const CANVAS_PADDING = 32
 
+export type RulerOrigin = {
+  x: number
+  y: number
+}
+
+/** Scroll-content coordinate of an element's top-left (stable across scroll). */
+export function measureElementContentOrigin(element: HTMLElement, scrollContainer: HTMLElement): RulerOrigin {
+  const elementRect = element.getBoundingClientRect()
+  const scrollRect = scrollContainer.getBoundingClientRect()
+  return {
+    x: elementRect.left - scrollRect.left + scrollContainer.scrollLeft,
+    y: elementRect.top - scrollRect.top + scrollContainer.scrollTop
+  }
+}
+
+
 export const PANEL_LEFT_MIN = 180
 export const PANEL_LEFT_MAX = 420
 export const PANEL_LEFT_DEFAULT = 220
@@ -46,8 +62,8 @@ type RulerProps = {
   zoom: number
   viewportSize: number
   theme: 'light' | 'dark'
-  /** Content-space offset from canvas origin to the page frame top-left (0,0). */
-  frameOrigin: number
+  /** Scroll-content X/Y where design coordinate 0 is anchored. */
+  contentOrigin: number
 }
 
 function rulerColors(theme: 'light' | 'dark') {
@@ -58,13 +74,12 @@ function rulerColors(theme: 'light' | 'dark') {
 
 const RULER_TICK_STEP = 50
 
-function designCoordToRulerPos(designPx: number, scrollOffset: number, scale: number, frameOrigin: number) {
-  return CANVAS_PADDING + frameOrigin + designPx * scale - scrollOffset
+function designCoordToRulerPos(designPx: number, scrollOffset: number, scale: number, contentOrigin: number) {
+  return contentOrigin + designPx * scale - scrollOffset
 }
 
-function visibleDesignTickRange(scrollOffset: number, scale: number, frameOrigin: number, spanDesign: number) {
-  const start =
-    Math.floor((scrollOffset - CANVAS_PADDING - frameOrigin) / scale / RULER_TICK_STEP) * RULER_TICK_STEP
+function visibleDesignTickRange(scrollOffset: number, scale: number, contentOrigin: number, spanDesign: number) {
+  const start = Math.floor((scrollOffset - contentOrigin) / scale / RULER_TICK_STEP) * RULER_TICK_STEP
   return { start, end: start + spanDesign + 200 }
 }
 
@@ -72,15 +87,15 @@ function renderRulerTicks(
   axis: 'horizontal' | 'vertical',
   scrollOffset: number,
   scale: number,
-  frameOrigin: number,
+  contentOrigin: number,
   spanDesign: number,
   colors: ReturnType<typeof rulerColors>
 ) {
-  const { start, end } = visibleDesignTickRange(scrollOffset, scale, frameOrigin, spanDesign)
+  const { start, end } = visibleDesignTickRange(scrollOffset, scale, contentOrigin, spanDesign)
   const ticks: React.ReactNode[] = []
 
   for (let px = start; px <= end; px += RULER_TICK_STEP) {
-    const pos = designCoordToRulerPos(px, scrollOffset, scale, frameOrigin)
+    const pos = designCoordToRulerPos(px, scrollOffset, scale, contentOrigin)
     const isMajor = px % 100 === 0
     const isOrigin = px === 0
 
@@ -141,7 +156,7 @@ function renderRulerTicks(
   return ticks
 }
 
-export function CanvasRulerHorizontal({ scrollOffset, zoom, viewportSize, theme, frameOrigin }: RulerProps) {
+export function CanvasRulerHorizontal({ scrollOffset, zoom, viewportSize, theme, contentOrigin }: RulerProps) {
   const colors = rulerColors(theme)
   const scale = zoom / 100
   const span = Math.max(viewportSize, 2400)
@@ -151,12 +166,12 @@ export function CanvasRulerHorizontal({ scrollOffset, zoom, viewportSize, theme,
       className="relative h-full overflow-hidden"
       style={{ background: colors.bg, borderBottom: `1px solid ${colors.major}` }}
     >
-      {renderRulerTicks('horizontal', scrollOffset, scale, frameOrigin, span, colors)}
+      {renderRulerTicks('horizontal', scrollOffset, scale, contentOrigin, span, colors)}
     </div>
   )
 }
 
-export function CanvasRulerVertical({ scrollOffset, zoom, theme, frameOrigin }: Omit<RulerProps, 'viewportSize'>) {
+export function CanvasRulerVertical({ scrollOffset, zoom, theme, contentOrigin }: Omit<RulerProps, 'viewportSize'>) {
   const colors = rulerColors(theme)
   const scale = zoom / 100
 
@@ -165,7 +180,7 @@ export function CanvasRulerVertical({ scrollOffset, zoom, theme, frameOrigin }: 
       className="relative w-full overflow-hidden"
       style={{ background: colors.bg, borderRight: `1px solid ${colors.major}` }}
     >
-      {renderRulerTicks('vertical', scrollOffset, scale, frameOrigin, 3200, colors)}
+      {renderRulerTicks('vertical', scrollOffset, scale, contentOrigin, 3200, colors)}
     </div>
   )
 }
@@ -173,7 +188,7 @@ export function CanvasRulerVertical({ scrollOffset, zoom, theme, frameOrigin }: 
 
 type PanelResizeHandleProps = {
   side: 'left' | 'right'
-  onResizeStart: (event: React.MouseEvent) => void
+  onResizeStart: (event: React.PointerEvent) => void
   accent: string
   hoverBg: string
 }
@@ -186,11 +201,12 @@ export function PanelResizeHandle({ side, onResizeStart, accent, hoverBg }: Pane
       className="group absolute top-0 z-40 flex h-full w-3 items-center justify-center"
       style={{
         [side === 'left' ? 'right' : 'left']: -6,
-        cursor: 'col-resize'
+        cursor: 'col-resize',
+        touchAction: 'none'
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      onMouseDown={onResizeStart}
+      onPointerDown={onResizeStart}
       role="separator"
       aria-orientation="vertical"
       aria-label={side === 'left' ? 'Resize left panel' : 'Resize right panel'}

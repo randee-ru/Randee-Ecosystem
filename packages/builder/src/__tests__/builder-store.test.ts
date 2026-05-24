@@ -35,4 +35,20 @@ describe('builder store', () => {
     store.getState().moveBlock(1, 0)
     expect(store.getState().page.blocks[0].id).toBe('b')
   })
+
+  it('renames blocks and preserves name on duplicate', () => {
+    const store = createBuilderStore({
+      page: 'Home',
+      slug: '/',
+      seo: { title: 'Home', description: 'Desc' },
+      blocks: [{ id: 'a', type: 'hero', template: 'hero-01', props: { title: 'A' } }]
+    })
+
+    expect(typeof store.getState().renameBlock).toBe('function')
+    store.getState().renameBlock('a', '  My Hero  ')
+    expect(store.getState().page.blocks[0].name).toBe('My Hero')
+
+    store.getState().duplicateBlock('a')
+    expect(store.getState().page.blocks[1].name).toBe('My Hero')
+  })
 })

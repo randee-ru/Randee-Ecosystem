@@ -15,6 +15,7 @@ export interface BitrixComponentDescriptor {
   templateData?: Record<string, string>
   css?: string
   js?: string
+  templatePhp?: string
 }
 
 export interface BitrixWriteOptions {

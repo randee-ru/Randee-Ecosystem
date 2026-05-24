@@ -1,0 +1,10 @@
+{
+  "id": "component-01",
+  "type": "component",
+  "group": "Custom",
+  "name": "Component 01",
+  "description": "Empty component",
+  "defaultProps": {
+    "title": "Component 01"
+  }
+}

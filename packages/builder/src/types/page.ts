@@ -5,6 +5,7 @@ export type BlockType =
   | 'cta'
   | 'catalog.section'
   | 'news.list'
+  | 'component'
 
 export interface DynamicBinding {
   source: 'iblock' | 'highload'
@@ -20,6 +21,8 @@ export interface PageBlock {
   id: string
   type: BlockType
   template: string
+  /** Custom display name in Layers panel */
+  name?: string
   props: Record<string, string>
   bindings?: BlockBindings
 }
@@ -37,6 +40,8 @@ export interface BuilderPage {
   slug: string
   seo: SeoMetadata
   blocks: PageBlock[]
+  /** Manually enabled external libraries (GSAP, Swiper, etc.) */
+  vendors?: string[]
 }
 
 export type ViewportMode = 'desktop' | 'macbook' | 'tablet' | 'mobile'

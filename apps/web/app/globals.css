@@ -117,3 +117,15 @@ body {
 .randee-builder-editor * {
   border-color: transparent;
 }
+
+@media (pointer: coarse) {
+  .randee-builder-editor .builder-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .randee-builder-editor footer .builder-touch-target {
+    height: 44px;
+    width: 44px;
+  }
+}

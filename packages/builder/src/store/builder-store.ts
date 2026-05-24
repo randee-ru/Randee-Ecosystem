@@ -18,9 +18,11 @@ export interface BuilderActions {
   duplicateBlock: (blockId: string) => void
   moveBlock: (fromIndex: number, toIndex: number) => void
   updateBlockProps: (blockId: string, props: Record<string, string>) => void
+  renameBlock: (blockId: string, name: string) => void
   setPageMeta: (meta: Pick<BuilderPage, 'page' | 'slug'>) => void
   setSeoMeta: (seo: Partial<SeoMetadata>) => void
   loadPage: (nextPage: BuilderPage) => void
+  togglePageVendor: (vendorId: string) => void
 }
 
 export type BuilderStore = BuilderState & BuilderActions
@@ -39,6 +41,7 @@ function cloneBlock(block: PageBlock): PageBlock {
   return {
     ...block,
     id: createBlockId(block.type),
+    name: block.name,
     props: { ...block.props },
     bindings: block.bindings ? { items: [...(block.bindings.items ?? [])] } : undefined
   }
@@ -114,6 +117,20 @@ export function createBuilderStore(initialPage: BuilderPage = DEFAULT_PAGE) {
       }))
     },
 
+    renameBlock: (blockId, name) => {
+      const trimmed = name.trim()
+      set((state) => ({
+        page: {
+          ...state.page,
+          blocks: state.page.blocks.map((block) =>
+            block.id === blockId
+              ? { ...block, name: trimmed.length > 0 ? trimmed : undefined }
+              : block
+          )
+        }
+      }))
+    },
+
     setPageMeta: (meta) => {
       set((state) => ({
         page: {
@@ -137,6 +154,20 @@ export function createBuilderStore(initialPage: BuilderPage = DEFAULT_PAGE) {
       set({
         page: nextPage,
         selectedBlockId: nextPage.blocks[0]?.id ?? null
+      })
+    },
+
+    togglePageVendor: (vendorId) => {
+      set((state) => {
+        const current = state.page.vendors ?? []
+        const enabled = current.includes(vendorId)
+        const vendors = enabled ? current.filter((id) => id !== vendorId) : [...current, vendorId]
+        return {
+          page: {
+            ...state.page,
+            vendors: vendors.length > 0 ? vendors : undefined
+          }
+        }
       })
     }
   }))

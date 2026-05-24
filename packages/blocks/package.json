@@ -17,7 +17,9 @@
     "scaffold": "node scripts/scaffold-template.mjs"
   },
   "dependencies": {
-    "@randee/builder": "0.1.0"
+    "@randee/builder": "0.1.0",
+    "gsap": "^3.15.0",
+    "swiper": "^11.2.8"
   },
   "peerDependencies": {
     "react": "^18.3.1 || ^19.0.0",

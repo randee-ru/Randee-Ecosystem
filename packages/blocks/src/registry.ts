@@ -1,6 +1,8 @@
 import { createBlockId } from '@randee/builder'
 import type { PageBlock } from '@randee/builder'
-import type { BlockTemplateDefinition, LibraryVariant } from './types'
+import type { BlockTemplateDefinition, BlockTemplateAssets, BlockTemplateManifest, LibraryVariant } from './types'
+import { GenericComponentPreview } from './components/generic-component-preview'
+import { isUserComponentTemplateId, getUserComponentFolderPath } from './component-template-id'
 
 import { manifest as hero01Manifest, assets as hero01Assets } from './templates/hero/hero-01/manifest'
 import { Hero01Preview } from './templates/hero/hero-01/preview'
@@ -33,22 +35,38 @@ const templateRegistry: Record<string, BlockTemplateDefinition> = {
   'news-01': { manifest: news01Manifest, assets: news01Assets, Preview: News01Preview }
 }
 
+const userTemplateRegistry: Record<string, BlockTemplateDefinition> = {}
+
+export function registerUserTemplate(manifest: BlockTemplateManifest, assets: BlockTemplateAssets): void {
+  userTemplateRegistry[manifest.id] = {
+    manifest,
+    assets,
+    Preview: GenericComponentPreview
+  }
+}
+
 export function getBlockTemplate(templateId: string): BlockTemplateDefinition | undefined {
-  return templateRegistry[templateId]
+  return templateRegistry[templateId] ?? userTemplateRegistry[templateId]
 }
 
 export function listBlockTemplates(): BlockTemplateDefinition[] {
-  return Object.values(templateRegistry)
+  return [...Object.values(templateRegistry), ...Object.values(userTemplateRegistry)]
 }
 
 export function listLibraryVariants(): LibraryVariant[] {
-  return listBlockTemplates().map(({ manifest }) => ({
-    type: manifest.type,
-    group: manifest.group,
-    name: manifest.name,
-    template: manifest.id,
-    description: manifest.description
-  }))
+  return listBlockTemplates()
+    .map(({ manifest }) => ({
+      type: manifest.type,
+      group: manifest.group,
+      name: manifest.name,
+      template: manifest.id,
+      description: manifest.description
+    }))
+    .filter((item) => {
+      if (!isUserComponentTemplateId(item.template)) return true
+      const entry = getBlockTemplate(item.template)
+      return entry?.manifest.savedToAssets === true
+    })
 }
 
 export function createBlockFromTemplate(templateId: string): PageBlock | null {
@@ -66,6 +84,7 @@ export function createBlockFromTemplate(templateId: string): PageBlock | null {
 
 export function getTemplateFolderName(templateId: string): string | null {
   const entry = getBlockTemplate(templateId)
-  if (!entry) return null
-  return `${entry.manifest.type}/${entry.manifest.id}`
+  if (entry) return `${entry.manifest.type}/${entry.manifest.id}`
+  if (isUserComponentTemplateId(templateId)) return getUserComponentFolderPath(templateId)
+  return null
 }

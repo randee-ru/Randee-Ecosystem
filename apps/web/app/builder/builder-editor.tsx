@@ -8,11 +8,12 @@ import {
   selectedBlock,
   type PageBlock
 } from '@randee/builder'
-import { BlockPreview, createBlockFromTemplate, listLibraryVariants, type LibraryVariant } from '@randee/blocks'
+import { BlockPreview, BlockVendorProvider, collectTemplateVendors, createBlockFromTemplate, isUserComponentTemplateId, listLibraryVariants, listVendors, registerUserTemplate, type LibraryVariant } from '@randee/blocks'
 import { useStore } from 'zustand'
 import {
   Boxes,
   ChevronDown,
+  Component,
   Copy,
   Download,
   GripVertical,
@@ -23,8 +24,10 @@ import {
   MousePointer2,
   PanelLeftOpen,
   PanelRightClose,
+  Pencil,
   Plus,
   Ruler,
+  SquarePlus,
   Sun,
   Trash2,
   Type
@@ -33,6 +36,7 @@ import {
   CANVAS_PADDING,
   CanvasRulerHorizontal,
   CanvasRulerVertical,
+  measureElementContentOrigin,
   PANEL_LEFT_DEFAULT,
   PANEL_LEFT_MAX,
   PANEL_LEFT_MIN,
@@ -52,9 +56,16 @@ import {
   saveBuilderSession,
   type BuilderCanvasTool
 } from './builder-session'
-import { BuilderLeftPanel, type LeftTab } from './builder-left-panel'
+import { BuilderLeftPanel, type LeftTab, type SavedAssetComponent } from './builder-left-panel'
+import { BuilderAssetEditor } from './builder-asset-editor'
+import type { BuilderAssetTarget } from './builder-asset-types'
 import { BuilderViewportToolbar } from './builder-viewport-toolbar'
 import { resolveViewportSize, type ViewportOrientation } from './builder-viewport'
+import {
+  attachCanvasPinchZoom,
+  CANVAS_PAN_TOUCH_STYLES,
+  CANVAS_TOUCH_STYLES
+} from './builder-canvas-gestures'
 
 const CANVAS_WORKSPACE_PAD = 520
 
@@ -70,10 +81,18 @@ function normalizeWheelDelta(event: WheelEvent) {
   return { deltaX, deltaY }
 }
 
+function isTrackpadPinchZoom(event: WheelEvent) {
+  return event.ctrlKey
+}
+
+function clampZoom(value: number) {
+  return Math.min(200, Math.max(10, Math.round(value * 10) / 10))
+}
+
 type CanvasTool = BuilderCanvasTool
 type UiTheme = 'light' | 'dark'
 
-const libraryVariants = listLibraryVariants()
+const vendorLibraries = listVendors()
 
 const themeTokens = {
   dark: {
@@ -144,17 +163,18 @@ function download(filename: string, text: string) {
   URL.revokeObjectURL(url)
 }
 
-function clampZoom(value: number) {
-  return Math.min(200, Math.max(10, Math.round(value)))
-}
-
-
 export default function BuilderEditor() {
   const [store] = React.useState(() => createBuilderStore())
   const [leftOpen, setLeftOpen] = React.useState(true)
   const [rightOpen, setRightOpen] = React.useState(true)
   const [leftTab, setLeftTab] = React.useState<LeftTab>('layers')
   const [insertOpen, setInsertOpen] = React.useState(false)
+  const [newOpen, setNewOpen] = React.useState(false)
+  const [creatingComponent, setCreatingComponent] = React.useState(false)
+  const [variantTick, setVariantTick] = React.useState(0)
+  const [savedAssetComponents, setSavedAssetComponents] = React.useState<SavedAssetComponent[]>([])
+  const [savingToAssets, setSavingToAssets] = React.useState(false)
+  const [pendingSaveTemplateId, setPendingSaveTemplateId] = React.useState<string | null>(null)
   const [zoomOpen, setZoomOpen] = React.useState(false)
   const [librarySearch, setLibrarySearch] = React.useState('')
   const [dragId, setDragId] = React.useState<string | null>(null)
@@ -171,6 +191,8 @@ export default function BuilderEditor() {
   const [gridMajorStep, setGridMajorStep] = React.useState(5)
   const [gridSettingsOpen, setGridSettingsOpen] = React.useState(false)
   const [canvasScroll, setCanvasScroll] = React.useState({ left: 0, top: 0 })
+  const [openAsset, setOpenAsset] = React.useState<BuilderAssetTarget | null>(null)
+  const [rulerOrigin, setRulerOrigin] = React.useState({ x: CANVAS_WORKSPACE_PAD, y: CANVAS_WORKSPACE_PAD })
   const [frameNaturalHeight, setFrameNaturalHeight] = React.useState(900)
   const [leftPanelWidth, setLeftPanelWidth] = React.useState(PANEL_LEFT_DEFAULT)
   const [rightPanelWidth, setRightPanelWidth] = React.useState(PANEL_RIGHT_DEFAULT)
@@ -179,15 +201,53 @@ export default function BuilderEditor() {
   const resizeStart = React.useRef({ x: 0, width: 0 })
 
   const insertRef = React.useRef<HTMLDivElement>(null)
+  const newRef = React.useRef<HTMLDivElement>(null)
   const zoomMenuRef = React.useRef<HTMLDivElement>(null)
   const gridSettingsRef = React.useRef<HTMLDivElement>(null)
   const canvasScrollRef = React.useRef<HTMLDivElement>(null)
   const canvasPanRef = React.useRef<HTMLDivElement>(null)
+  const canvasHostRef = React.useRef<HTMLElement>(null)
   const canvasFrameRef = React.useRef<HTMLDivElement>(null)
   const blockRefs = React.useRef<Record<string, HTMLElement | null>>({})
   const zoomLevelRef = React.useRef(zoom)
+  const pinchStartRef = React.useRef({ distance: 0, zoom: zoom })
 
   const t = themeTokens[theme]
+
+  React.useEffect(() => {
+    let cancelled = false
+
+    void fetch('/api/builder/components')
+      .then((response) => (response.ok ? response.json() : []))
+      .then((templates: Array<{ manifest: Parameters<typeof registerUserTemplate>[0]; assets: Parameters<typeof registerUserTemplate>[1] }>) => {
+        if (cancelled) return
+        for (const item of templates) {
+          registerUserTemplate(item.manifest, item.assets)
+        }
+        setVariantTick((value) => value + 1)
+      })
+      .catch(() => undefined)
+
+    void fetch('/api/builder/assets/components')
+      .then((response) => (response.ok ? response.json() : []))
+      .then((templates: Array<{ templateId: string; manifest: { name: string; description: string } }>) => {
+        if (cancelled) return
+        setSavedAssetComponents(
+          templates.map((item) => ({
+            templateId: item.templateId,
+            name: item.manifest.name,
+            description: item.manifest.description
+          }))
+        )
+      })
+      .catch(() => undefined)
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const libraryVariants = React.useMemo(() => listLibraryVariants(), [variantTick])
 
   React.useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -252,24 +312,41 @@ export default function BuilderEditor() {
   ])
 
   React.useEffect(() => {
-    if (!insertOpen && !zoomOpen && !gridSettingsOpen) return
-    const onPointerDown = (event: MouseEvent) => {
+    if (!insertOpen && !newOpen && !zoomOpen && !gridSettingsOpen) return
+    const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node
       if (insertOpen && insertRef.current && !insertRef.current.contains(target)) setInsertOpen(false)
+      if (newOpen && newRef.current && !newRef.current.contains(target)) setNewOpen(false)
       if (zoomOpen && zoomMenuRef.current && !zoomMenuRef.current.contains(target)) setZoomOpen(false)
       if (gridSettingsOpen && gridSettingsRef.current && !gridSettingsRef.current.contains(target)) {
         setGridSettingsOpen(false)
       }
     }
-    document.addEventListener('mousedown', onPointerDown)
-    return () => document.removeEventListener('mousedown', onPointerDown)
-  }, [insertOpen, zoomOpen, gridSettingsOpen])
+    document.addEventListener('pointerdown', onPointerDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [insertOpen, newOpen, zoomOpen, gridSettingsOpen])
 
   const page = useStore(store, (state) => state.page)
   const activeId = useStore(store, (state) => state.selectedBlockId)
   const viewport = useStore(store, (state) => state.viewport)
   const block = useStore(store, selectedBlock)
   const seoJsonLd = buildBuilderWebPageJsonLd(page.seo)
+  const firstBlockId = page.blocks[0]?.id ?? null
+
+  const updateRulerOrigin = React.useCallback(() => {
+    const scrollEl = canvasScrollRef.current
+    if (!scrollEl) return
+
+    const blockEl = firstBlockId ? blockRefs.current[firstBlockId] : null
+    const measureEl =
+      (blockEl?.querySelector('[data-randee-template]') as HTMLElement | null) ??
+      blockEl ??
+      canvasFrameRef.current
+
+    if (!measureEl) return
+
+    setRulerOrigin(measureElementContentOrigin(measureEl, scrollEl))
+  }, [firstBlockId])
 
   const viewportSize = React.useMemo(
     () => resolveViewportSize(viewport, tabletOrientation, mobileOrientation),
@@ -305,7 +382,79 @@ export default function BuilderEditor() {
     if (!response.ok) return
     download('page.html', await response.text())
   }
-  const exportBitrix = () => download('bitrix-page.schema.json', exportPageToJson(page))
+  const exportBitrix = async () => {
+    const response = await fetch('/api/builder/export-bitrix', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(page)
+    })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null
+      window.alert(payload?.error ?? 'Bitrix export failed')
+      return
+    }
+    const payload = (await response.json()) as { manifest: unknown }
+    download('bitrix-export-manifest.json', JSON.stringify(payload.manifest, null, 2))
+  }
+
+  const refreshSavedAssetComponents = React.useCallback(async () => {
+    const response = await fetch('/api/builder/assets/components')
+    if (!response.ok) return
+    const templates = (await response.json()) as Array<{
+      templateId: string
+      manifest: { name: string; description: string }
+    }>
+    setSavedAssetComponents(
+      templates.map((item) => ({
+        templateId: item.templateId,
+        name: item.manifest.name,
+        description: item.manifest.description
+      }))
+    )
+  }, [])
+
+  const saveComponentToAssets = React.useCallback(
+    async (templateId: string, name?: string) => {
+      setSavingToAssets(true)
+      try {
+        const response = await fetch(`/api/builder/components/${templateId}/save-to-assets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        })
+        if (!response.ok) return
+
+        const saved = (await response.json()) as {
+          templateId: string
+          manifest: Parameters<typeof registerUserTemplate>[0]
+          assets: Parameters<typeof registerUserTemplate>[1]
+        }
+
+        registerUserTemplate(saved.manifest, saved.assets)
+        setVariantTick((value) => value + 1)
+        setPendingSaveTemplateId(null)
+        await refreshSavedAssetComponents()
+        setLeftOpen(true)
+        setLeftTab('assets')
+      } finally {
+        setSavingToAssets(false)
+      }
+    },
+    [refreshSavedAssetComponents]
+  )
+
+  const addSavedComponent = React.useCallback((templateId: string, name: string) => {
+    const block = createBlockFromTemplate(templateId)
+    if (!block) return
+    block.name = name
+    store.getState().insertBlock(block)
+  }, [store])
+
+  const openAssetTemplateId = openAsset?.templateId ?? null
+  const openAssetSavedToAssets = React.useMemo(() => {
+    if (!openAssetTemplateId || !isUserComponentTemplateId(openAssetTemplateId)) return true
+    return savedAssetComponents.some((item) => item.templateId === openAssetTemplateId)
+  }, [openAssetTemplateId, savedAssetComponents])
 
   React.useEffect(() => {
     zoomLevelRef.current = zoom
@@ -316,7 +465,7 @@ export default function BuilderEditor() {
     const clamped = clampZoom(nextZoom)
     const prev = zoomLevelRef.current
 
-    if (!scrollEl || prev === clamped) {
+    if (!scrollEl || Math.abs(prev - clamped) < 0.05) {
       setZoom(clamped)
       return
     }
@@ -392,27 +541,50 @@ export default function BuilderEditor() {
     const el = canvasFrameRef.current
     if (!el) return
 
-    const updateHeight = () => setFrameNaturalHeight(el.offsetHeight)
+    const updateHeight = () => {
+      setFrameNaturalHeight(el.offsetHeight)
+      updateRulerOrigin()
+    }
     updateHeight()
 
     const observer = new ResizeObserver(updateHeight)
     observer.observe(el)
     return () => observer.disconnect()
-  }, [page.blocks, viewport, tabletOrientation, mobileOrientation, zoom])
+  }, [page.blocks, viewport, tabletOrientation, mobileOrientation, zoom, updateRulerOrigin])
 
   React.useEffect(() => {
-    const el = canvasScrollRef.current
-    if (!el) return
+    let cancelled = false
+    let outer = 0
+    outer = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        if (!cancelled) updateRulerOrigin()
+      })
+    })
+    return () => {
+      cancelled = true
+      window.cancelAnimationFrame(outer)
+    }
+  }, [firstBlockId, zoom, frameNaturalHeight, viewport, tabletOrientation, mobileOrientation, updateRulerOrigin])
+
+  React.useEffect(() => {
+    if (openAsset) return
+
+    const host = canvasHostRef.current
+    const scrollEl = canvasScrollRef.current
+    if (!host || !scrollEl) return
+
+    let lastGestureScale = 1
 
     const onWheel = (event: WheelEvent) => {
-      const scrollEl = canvasScrollRef.current
-      if (!scrollEl) return
+      if (isEditableTarget(event.target)) return
 
-      if (event.ctrlKey) {
+      if (isTrackpadPinchZoom(event)) {
         event.preventDefault()
         event.stopPropagation()
+        const { deltaY } = normalizeWheelDelta(event)
+        if (deltaY === 0) return
         const current = zoomLevelRef.current
-        const factor = Math.exp(-event.deltaY * 0.01)
+        const factor = Math.exp(-deltaY * 0.003)
         applyZoom(current * factor, { x: event.clientX, y: event.clientY })
         return
       }
@@ -425,30 +597,60 @@ export default function BuilderEditor() {
       scrollEl.scrollTop += deltaY
     }
 
-    el.addEventListener('wheel', onWheel, { passive: false })
-    return () => el.removeEventListener('wheel', onWheel)
-  }, [applyZoom])
-
-  React.useEffect(() => {
-    const panHost = canvasPanRef.current
-    const scrollEl = canvasScrollRef.current
-    if (!panHost || !scrollEl) return
-
-    const onWheelCapture = (event: WheelEvent) => {
-      if (event.ctrlKey) return
-      if (scrollEl.contains(event.target as Node)) return
-
-      const { deltaX, deltaY } = normalizeWheelDelta(event)
-      if (deltaX === 0 && deltaY === 0) return
-
+    const onGestureStart = (event: Event) => {
       event.preventDefault()
-      scrollEl.scrollLeft += deltaX
-      scrollEl.scrollTop += deltaY
+      lastGestureScale = (event as unknown as { scale: number }).scale || 1
     }
 
-    panHost.addEventListener('wheel', onWheelCapture, { passive: false })
-    return () => panHost.removeEventListener('wheel', onWheelCapture)
-  }, [])
+    const onGestureChange = (event: Event) => {
+      event.preventDefault()
+      const gesture = event as unknown as { scale: number; clientX: number; clientY: number }
+      const scale = gesture.scale || 1
+      const ratio = scale / lastGestureScale
+      lastGestureScale = scale
+      if (Math.abs(ratio - 1) < 0.001) return
+      applyZoom(zoomLevelRef.current * ratio, { x: gesture.clientX, y: gesture.clientY })
+    }
+
+    const onGestureEnd = (event: Event) => {
+      event.preventDefault()
+      lastGestureScale = 1
+    }
+
+    let pinchStartDistance = 0
+    let pinchStartZoom = zoomLevelRef.current
+
+    const detachTouchPinch = attachCanvasPinchZoom(host, {
+      onPinchStart: (distance) => {
+        if (distance <= 0) return
+        pinchStartDistance = distance
+        pinchStartZoom = zoomLevelRef.current
+        pinchStartRef.current = { distance, zoom: pinchStartZoom }
+      },
+      onPinchMove: (distance, focal) => {
+        if (distance <= 0 || pinchStartDistance <= 0) return
+        const ratio = distance / pinchStartDistance
+        applyZoom(pinchStartZoom * ratio, focal)
+      },
+      onPinchEnd: () => {
+        pinchStartDistance = 0
+        pinchStartZoom = zoomLevelRef.current
+      }
+    })
+
+    host.addEventListener('wheel', onWheel, { passive: false, capture: true })
+    host.addEventListener('gesturestart', onGestureStart, { passive: false, capture: true })
+    host.addEventListener('gesturechange', onGestureChange, { passive: false, capture: true })
+    host.addEventListener('gestureend', onGestureEnd, { passive: false, capture: true })
+
+    return () => {
+      detachTouchPinch()
+      host.removeEventListener('wheel', onWheel, true)
+      host.removeEventListener('gesturestart', onGestureStart, true)
+      host.removeEventListener('gesturechange', onGestureChange, true)
+      host.removeEventListener('gestureend', onGestureEnd, true)
+    }
+  }, [applyZoom, openAsset])
 
   React.useEffect(() => {
     const scrollEl = canvasScrollRef.current
@@ -494,7 +696,7 @@ export default function BuilderEditor() {
         }
       }
 
-      if (!event.metaKey) return
+      if (!(event.metaKey || event.ctrlKey)) return
       if (event.key === '=' || event.key === '+') {
         event.preventDefault()
         zoomIn()
@@ -518,24 +720,26 @@ export default function BuilderEditor() {
 
   React.useEffect(() => {
     if (!isPanning) return
-    const onMove = (event: MouseEvent) => {
+    const onMove = (event: PointerEvent) => {
       const el = canvasScrollRef.current
       if (!el) return
       el.scrollLeft = panStart.current.scrollLeft - (event.clientX - panStart.current.x)
       el.scrollTop = panStart.current.scrollTop - (event.clientY - panStart.current.y)
     }
     const onUp = () => setIsPanning(false)
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
     return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
     }
   }, [isPanning])
 
   React.useEffect(() => {
     if (!resizingPanel) return
-    const onMove = (event: MouseEvent) => {
+    const onMove = (event: PointerEvent) => {
       const delta = event.clientX - resizeStart.current.x
       if (resizingPanel === 'left') {
         setLeftPanelWidth(clampPanelWidth(resizeStart.current.width + delta, PANEL_LEFT_MIN, PANEL_LEFT_MAX))
@@ -544,16 +748,19 @@ export default function BuilderEditor() {
       }
     }
     const onUp = () => setResizingPanel(null)
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
     return () => {
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
     }
   }, [resizingPanel])
 
-  function startPanelResize(side: 'left' | 'right', event: React.MouseEvent) {
+  function startPanelResize(side: 'left' | 'right', event: React.PointerEvent) {
     event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
     setResizingPanel(side)
     resizeStart.current = {
       x: event.clientX,
@@ -573,10 +780,44 @@ export default function BuilderEditor() {
     setInsertOpen(false)
   }
 
-  function onCanvasMouseDown(event: React.MouseEvent) {
+  async function createNewComponent() {
+    if (creatingComponent) return
+    setCreatingComponent(true)
+    try {
+      const response = await fetch('/api/builder/new-component', { method: 'POST' })
+      if (!response.ok) return
+
+      const created = (await response.json()) as {
+        templateId: string
+        manifest: Parameters<typeof registerUserTemplate>[0]
+        assets: Parameters<typeof registerUserTemplate>[1]
+      }
+
+      registerUserTemplate(created.manifest, created.assets)
+      setVariantTick((value) => value + 1)
+
+      const block = createBlockFromTemplate(created.templateId)
+      if (!block) return
+
+      block.name = created.manifest.name
+      store.getState().insertBlock(block)
+      store.getState().selectBlock(block.id)
+      setPendingSaveTemplateId(created.templateId)
+      setNewOpen(false)
+      setLeftOpen(true)
+      setLeftTab('layers')
+    } finally {
+      setCreatingComponent(false)
+    }
+  }
+
+  function onCanvasPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (canvasTool !== 'pan') return
+    if (event.pointerType === 'mouse' && event.button !== 0) return
     const el = canvasScrollRef.current
     if (!el) return
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
     setIsPanning(true)
     panStart.current = {
       x: event.clientX,
@@ -584,6 +825,14 @@ export default function BuilderEditor() {
       scrollLeft: el.scrollLeft,
       scrollTop: el.scrollTop
     }
+  }
+
+  function onCanvasPointerUp(event: React.PointerEvent<HTMLDivElement>) {
+    if (!isPanning) return
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    setIsPanning(false)
   }
 
   const inputStyle: React.CSSProperties = {
@@ -651,15 +900,66 @@ export default function BuilderEditor() {
           <button
             type="button"
             style={chromeBtnStyle(insertOpen)}
-            onClick={() => setInsertOpen((value) => !value)}
+            onClick={() => {
+              setInsertOpen((value) => !value)
+              setNewOpen(false)
+            }}
           >
             <Plus className="h-3.5 w-3.5" />
             Insert
           </button>
-          <button type="button" style={chromeBtnStyle()}>
-            <LayoutGrid className="h-3.5 w-3.5" />
-            Layout
-          </button>
+          <div ref={newRef} className="relative">
+            <button
+              type="button"
+              style={chromeBtnStyle(newOpen)}
+              onClick={() => {
+                setNewOpen((value) => !value)
+                setInsertOpen(false)
+              }}
+            >
+              <SquarePlus className="h-3.5 w-3.5" />
+              New
+            </button>
+
+            {newOpen ? (
+              <div
+                className="absolute left-0 top-full z-50 mt-1 w-52 rounded-lg p-1 shadow-xl"
+                style={{ background: t.menu, border: `1px solid ${t.menuBorder}` }}
+              >
+                <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: t.textMuted }}>
+                  Create
+                </p>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: creatingComponent ? 'wait' : 'pointer',
+                    opacity: creatingComponent ? 0.7 : 1
+                  }}
+                  disabled={creatingComponent}
+                  onMouseEnter={(event) => {
+                    event.currentTarget.style.background = t.hover
+                  }}
+                  onMouseLeave={(event) => {
+                    event.currentTarget.style.background = 'transparent'
+                  }}
+                  onClick={() => void createNewComponent()}
+                >
+                  <Component className="h-3.5 w-3.5 shrink-0" style={{ color: t.accent }} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-medium" style={{ color: t.text }}>
+                      Component
+                    </span>
+                    <span className="block text-[10px]" style={{ color: t.textMuted }}>
+                      Empty block with style, script and preview
+                    </span>
+                  </span>
+                </button>
+              </div>
+            ) : null}
+          </div>
           <button type="button" style={chromeBtnStyle()}>
             <Type className="h-3.5 w-3.5" />
             Text
@@ -729,6 +1029,7 @@ export default function BuilderEditor() {
         </div>
       </header>
 
+      <BlockVendorProvider page={page}>
       <div className="flex min-h-0 flex-1">
         {leftOpen ? (
           <aside
@@ -760,11 +1061,73 @@ export default function BuilderEditor() {
               groupedVariants={groupedVariants}
               onAddVariant={addVariant}
               onClose={() => setLeftOpen(false)}
+              vendorLibraries={vendorLibraries}
+              pageVendors={page.vendors ?? []}
+              requiredVendors={page.blocks.flatMap((block) => collectTemplateVendors(block.template))}
+              onToggleVendor={(vendorId) => store.getState().togglePageVendor(vendorId)}
+              onOpenAsset={(asset) => {
+                setOpenAsset(asset)
+                if (asset.blockId) store.getState().selectBlock(asset.blockId)
+              }}
+              activeAssetPath={openAsset ? `${openAsset.templateId}:${openAsset.path}` : null}
+              savedAssetComponents={savedAssetComponents}
+              onAddSavedComponent={addSavedComponent}
             />
           </aside>
         ) : null}
 
-        <section className="relative flex min-w-0 flex-1 flex-col" style={{ background: t.canvas }}>
+        <section
+          ref={canvasHostRef}
+          className="relative flex min-w-0 flex-1 flex-col"
+          style={{ background: t.canvas, touchAction: 'manipulation' }}
+        >
+          {openAsset ? (
+            <BuilderAssetEditor
+              asset={openAsset}
+              pageName={page.page}
+              uiTheme={theme}
+              t={t}
+              onClose={() => setOpenAsset(null)}
+              canSaveToAssets={isUserComponentTemplateId(openAsset.templateId)}
+              savedToAssets={openAssetSavedToAssets}
+              savingToAssets={savingToAssets}
+              onSaveToAssets={() => {
+                const block = page.blocks.find((item) => item.template === openAsset.templateId)
+                void saveComponentToAssets(openAsset.templateId, block?.name ?? openAsset.blockName)
+              }}
+            />
+          ) : (
+            <>
+          {pendingSaveTemplateId &&
+          !savedAssetComponents.some((item) => item.templateId === pendingSaveTemplateId) ? (
+            <div
+              className="flex shrink-0 items-center justify-between gap-3 px-3 py-2 text-xs"
+              style={{ borderBottom: `1px solid ${t.divider}`, background: `${t.accent}14`, color: t.textSecondary }}
+            >
+              <span>
+                New component <strong style={{ color: t.text }}>{pendingSaveTemplateId}</strong> is on the canvas.
+                Save it to Assets to reuse and export to Bitrix.
+              </span>
+              <button
+                type="button"
+                className="shrink-0 rounded-md px-2.5 py-1 text-[11px] font-medium"
+                style={{
+                  background: t.accent,
+                  color: '#fff',
+                  border: 'none',
+                  cursor: savingToAssets ? 'wait' : 'pointer',
+                  opacity: savingToAssets ? 0.75 : 1
+                }}
+                disabled={savingToAssets}
+                onClick={() => {
+                  const block = page.blocks.find((item) => item.template === pendingSaveTemplateId)
+                  void saveComponentToAssets(pendingSaveTemplateId, block?.name)
+                }}
+              >
+                Save to Assets
+              </button>
+            </div>
+          ) : null}
           <div
             className="flex h-9 shrink-0 items-center justify-between gap-2 px-3"
             style={{ borderBottom: `1px solid ${t.divider}`, background: t.panelElevated }}
@@ -886,7 +1249,7 @@ export default function BuilderEditor() {
                   zoom={zoom}
                   viewportSize={frameWidth}
                   theme={theme}
-                  frameOrigin={CANVAS_WORKSPACE_PAD}
+                  contentOrigin={rulerOrigin.x}
                 />
               </div>
             ) : null}
@@ -896,7 +1259,7 @@ export default function BuilderEditor() {
               style={showRuler ? { display: 'grid', gridTemplateColumns: `${RULER_SIZE}px 1fr` } : undefined}
             >
               {showRuler ? (
-                <CanvasRulerVertical scrollOffset={canvasScroll.top} zoom={zoom} theme={theme} frameOrigin={CANVAS_WORKSPACE_PAD} />
+                <CanvasRulerVertical scrollOffset={canvasScroll.top} zoom={zoom} theme={theme} contentOrigin={rulerOrigin.y} />
               ) : null}
 
               <div
@@ -905,6 +1268,8 @@ export default function BuilderEditor() {
                 style={{
                   cursor: canvasTool === 'pan' ? (isPanning ? 'grabbing' : 'grab') : 'default',
                   padding: CANVAS_PADDING,
+                  overscrollBehavior: 'contain',
+                  ...(canvasTool === 'pan' ? CANVAS_PAN_TOUCH_STYLES : CANVAS_TOUCH_STYLES),
                   ...(showGrid
                     ? canvasGridStyle(
                         Math.max(4, gridSize * frameScale),
@@ -915,7 +1280,9 @@ export default function BuilderEditor() {
                     : {})
                 }}
                 onScroll={onCanvasScroll}
-                onMouseDown={onCanvasMouseDown}
+                onPointerDown={onCanvasPointerDown}
+                onPointerUp={onCanvasPointerUp}
+                onPointerCancel={onCanvasPointerUp}
               >
             <div
               className="mx-auto"
@@ -976,10 +1343,25 @@ export default function BuilderEditor() {
                       }}
                     >
                       {canvasTool === 'select' ? (
-                        <div className="absolute right-2 top-2 z-10 flex gap-1 opacity-0 transition group-hover:opacity-100">
+                        <div
+                          className={`builder-block-toolbar absolute right-2 top-2 z-10 flex gap-1 transition ${activeId === item.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                        >
                           <button
                             type="button"
-                            className="flex h-7 w-7 items-center justify-center rounded bg-white text-neutral-700 shadow"
+                            className="builder-touch-target flex h-11 w-11 items-center justify-center rounded bg-white text-neutral-700 shadow sm:h-7 sm:w-7"
+                            aria-label="Edit block"
+                            title="Edit"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              store.getState().selectBlock(item.id)
+                              setRightOpen(true)
+                            }}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            className="builder-touch-target flex h-11 w-11 items-center justify-center rounded bg-white text-neutral-700 shadow sm:h-7 sm:w-7"
                             onClick={(event) => {
                               event.stopPropagation()
                               store.getState().duplicateBlock(item.id)
@@ -989,7 +1371,7 @@ export default function BuilderEditor() {
                           </button>
                           <button
                             type="button"
-                            className="flex h-7 w-7 items-center justify-center rounded bg-white text-red-600 shadow"
+                            className="builder-touch-target flex h-11 w-11 items-center justify-center rounded bg-white text-red-600 shadow sm:h-7 sm:w-7"
                             onClick={(event) => {
                               event.stopPropagation()
                               store.getState().removeBlock(item.id)
@@ -1032,6 +1414,7 @@ export default function BuilderEditor() {
               >
                 <button
                   type="button"
+                  className="builder-touch-target"
                   style={toolbarBtnStyle(canvasTool === 'select')}
                   onClick={() => setCanvasTool('select')}
                   aria-label="Select"
@@ -1042,6 +1425,7 @@ export default function BuilderEditor() {
                 </button>
                 <button
                   type="button"
+                  className="builder-touch-target"
                   style={toolbarBtnStyle(canvasTool === 'pan')}
                   onClick={() => setCanvasTool('pan')}
                   aria-label="Pan"
@@ -1056,6 +1440,7 @@ export default function BuilderEditor() {
 
               <button
                 type="button"
+                className="builder-touch-target"
                 style={toolbarBtnStyle()}
                 onClick={() => setTheme((value) => (value === 'dark' ? 'light' : 'dark'))}
                 aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
@@ -1072,7 +1457,7 @@ export default function BuilderEditor() {
                   style={{ color: t.text, background: 'transparent', border: 'none', cursor: 'pointer' }}
                   onClick={() => setZoomOpen((value) => !value)}
                 >
-                  {zoom}%
+                  {Math.round(zoom)}%
                   <ChevronDown className="h-3.5 w-3.5" style={{ color: t.textMuted }} />
                 </button>
 
@@ -1147,6 +1532,8 @@ export default function BuilderEditor() {
               </div>
             </div>
           </footer>
+            </>
+          )}
         </section>
 
         {rightOpen ? (
@@ -1293,6 +1680,7 @@ export default function BuilderEditor() {
           </aside>
         ) : null}
       </div>
+      </BlockVendorProvider>
 
       {!leftOpen ? (
         <button

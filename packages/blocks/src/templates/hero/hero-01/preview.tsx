@@ -21,6 +21,7 @@ export function Hero01Preview({ block }: BlockTemplatePreviewProps) {
         aria-hidden="true"
       />
       <p className="randee-hero-01__label">{block.template}</p>
+      <p>test</p>
       <h1 className="randee-hero-01__title">{title}</h1>
       <p className="randee-hero-01__description">{description}</p>
       <button type="button" className="randee-hero-01__button">

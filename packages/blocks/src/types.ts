@@ -8,6 +8,10 @@ export type BlockTemplateManifest = {
   name: string
   description: string
   defaultProps: Record<string, string>
+  /** Saved to Assets library and ready for Bitrix export */
+  savedToAssets?: boolean
+  /** External libraries required by this block (GSAP, Swiper, etc.) */
+  dependencies?: import('./vendors/registry').VendorId[]
 }
 
 export type BlockTemplateAssets = {

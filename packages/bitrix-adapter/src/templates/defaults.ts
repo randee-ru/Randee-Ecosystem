@@ -39,7 +39,7 @@ ${Object.keys(params).length > 0 ? renderParams(params) : ''}
 );
 `
 
-  const templatePhp = `<?php
+  const templatePhp = descriptor.templatePhp ?? `<?php
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 ${Object.keys(templateData).length > 0 ? renderTemplateData(templateData) : ''}
 ?>

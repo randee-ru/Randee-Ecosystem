@@ -5,3 +5,5 @@ declare module '*.js' {
 declare module '*/script.js' {
   export function init(root: HTMLElement | null): void | Promise<void>
 }
+
+declare module 'swiper/css/bundle'

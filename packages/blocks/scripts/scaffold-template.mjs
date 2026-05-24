@@ -41,6 +41,7 @@ export const manifest: BlockTemplateManifest = {
   defaultProps: {
     title: '${name}'
   }
+  // dependencies: ['gsap'] // optional: GSAP, Swiper, etc.
 }
 
 export const assets = {

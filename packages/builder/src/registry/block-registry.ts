@@ -64,6 +64,14 @@ const registry: Record<BlockType, BlockDefinition> = {
     defaultProps: {
       title: 'Новости'
     }
+  },
+  component: {
+    type: 'component',
+    label: 'Component',
+    defaultTemplate: 'component-01',
+    defaultProps: {
+      title: 'New Component'
+    }
   }
 }
 

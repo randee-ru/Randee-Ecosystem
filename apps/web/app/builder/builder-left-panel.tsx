@@ -3,9 +3,8 @@
 import * as React from 'react'
 import {
   Component,
-  GripVertical,
   Home,
-  LayoutTemplate,
+  Package,
   PanelLeftClose,
   Plus,
   Search
@@ -13,9 +12,18 @@ import {
 import type { BlockType, PageBlock } from '@randee/builder'
 import type { BuilderStore } from '@randee/builder'
 import type { StoreApi } from 'zustand'
+import { BuilderLayerTree } from './builder-layer-tree'
+import { BuilderAssetsComponentTree } from './builder-assets-component-tree'
+import type { BuilderAssetTarget } from './builder-asset-types'
+
+export type SavedAssetComponent = {
+  templateId: string
+  name: string
+  description: string
+}
 
 type LeftTab = 'pages' | 'layers' | 'assets'
-type AssetSection = 'templates' | 'components' | 'styles' | 'vectors' | 'code'
+type AssetSection = 'libraries' | 'components' | 'styles' | 'vectors' | 'code'
 
 type LibraryVariant = {
   type: BlockType
@@ -23,6 +31,13 @@ type LibraryVariant = {
   name: string
   template: string
   description: string
+}
+
+type VendorLibrary = {
+  id: string
+  label: string
+  description: string
+  website: string
 }
 
 type PanelTheme = {
@@ -47,7 +62,7 @@ const LEFT_TABS: Array<{ id: LeftTab; label: string }> = [
 ]
 
 const ASSET_SECTIONS: Array<{ id: AssetSection; label: string }> = [
-  { id: 'templates', label: 'Templates' },
+  { id: 'libraries', label: 'Libraries' },
   { id: 'components', label: 'Components' },
   { id: 'styles', label: 'Styles' },
   { id: 'vectors', label: 'Vectors' },
@@ -71,6 +86,14 @@ type BuilderLeftPanelProps = {
   groupedVariants: Record<string, LibraryVariant[]>
   onAddVariant: (item: LibraryVariant) => void
   onClose: () => void
+  vendorLibraries: VendorLibrary[]
+  pageVendors: string[]
+  requiredVendors: string[]
+  onToggleVendor: (vendorId: string) => void
+  onOpenAsset: (asset: BuilderAssetTarget) => void
+  activeAssetPath: string | null
+  savedAssetComponents: SavedAssetComponent[]
+  onAddSavedComponent: (templateId: string, name: string) => void
 }
 
 function searchPlaceholder(tab: LeftTab) {
@@ -93,10 +116,18 @@ export function BuilderLeftPanel({
   filteredVariants,
   groupedVariants,
   onAddVariant,
-  onClose
+  onClose,
+  vendorLibraries,
+  pageVendors,
+  requiredVendors,
+  onToggleVendor,
+  onOpenAsset,
+  activeAssetPath,
+  savedAssetComponents,
+  onAddSavedComponent
 }: BuilderLeftPanelProps) {
   const [expandedSections, setExpandedSections] = React.useState<Record<AssetSection, boolean>>({
-    templates: true,
+    libraries: true,
     components: false,
     styles: false,
     vectors: false,
@@ -105,22 +136,39 @@ export function BuilderLeftPanel({
 
   const searchQuery = librarySearch.trim().toLowerCase()
 
-  const filteredLayers = page.blocks.filter((item) => {
-    if (!searchQuery) return true
-    return [item.type, item.template, item.id].join(' ').toLowerCase().includes(searchQuery)
-  })
-
   const filteredPages = React.useMemo(() => {
     if (!searchQuery) return true
     return [page.page, page.slug].join(' ').toLowerCase().includes(searchQuery)
   }, [page.page, page.slug, searchQuery])
 
+  const filteredVendors = React.useMemo(() => {
+    if (!searchQuery) return vendorLibraries
+    return vendorLibraries.filter((vendor) =>
+      [vendor.label, vendor.description, vendor.id].join(' ').toLowerCase().includes(searchQuery)
+    )
+  }, [vendorLibraries, searchQuery])
+
   const toggleSection = (id: AssetSection) => {
     setExpandedSections((prev) => ({ ...prev, [id]: !prev[id] }))
   }
 
+  const builtInVariants = React.useMemo(
+    () => filteredVariants.filter((item) => item.group !== 'Custom'),
+    [filteredVariants]
+  )
+
+  const groupedBuiltInVariants = React.useMemo(() => {
+    return builtInVariants.reduce<Record<string, LibraryVariant[]>>((acc, item) => {
+      acc[item.group] = [...(acc[item.group] ?? []), item]
+      return acc
+    }, {})
+  }, [builtInVariants])
+
   const isSectionOpen = (id: AssetSection) => {
-    if (id === 'components' && searchQuery && filteredVariants.length > 0) return true
+    if (id === 'components' && searchQuery && (builtInVariants.length > 0 || savedAssetComponents.length > 0)) {
+      return true
+    }
+    if (id === 'libraries' && searchQuery && filteredVendors.length > 0) return true
     return expandedSections[id]
   }
 
@@ -208,51 +256,18 @@ export function BuilderLeftPanel({
         ) : null}
 
         {leftTab === 'layers' ? (
-          <div className="py-1">
-            {filteredLayers.map((item) => {
-              const layerIndex = page.blocks.findIndex((entry) => entry.id === item.id)
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  draggable
-                  onDragStart={() => onDragIdChange(item.id)}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={() => {
-                    if (!dragId) return
-                    const from = page.blocks.findIndex((entry) => entry.id === dragId)
-                    if (from >= 0 && from !== layerIndex) store.getState().moveBlock(from, layerIndex)
-                    onDragIdChange(null)
-                  }}
-                  onClick={() => store.getState().selectBlock(item.id)}
-                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left"
-                  style={{
-                    background: activeId === item.id ? `${t.accent}18` : 'transparent',
-                    color: activeId === item.id ? t.text : t.textSecondary,
-                    border: 'none',
-                    cursor: 'pointer'
-                  }}
-                  onMouseEnter={(event) => {
-                    if (activeId !== item.id) event.currentTarget.style.background = t.hover
-                  }}
-                  onMouseLeave={(event) => {
-                    if (activeId !== item.id) event.currentTarget.style.background = 'transparent'
-                  }}
-                >
-                  <GripVertical className="h-3.5 w-3.5 shrink-0" style={{ color: t.textMuted }} />
-                  <span className="min-w-0 flex-1 truncate text-xs">{item.type}</span>
-                  <span className="text-[10px]" style={{ color: t.textMuted }}>
-                    {layerIndex + 1}
-                  </span>
-                </button>
-              )
-            })}
-            {filteredLayers.length === 0 ? (
-              <p className="px-3 py-4 text-xs" style={{ color: t.textMuted }}>
-                {page.blocks.length === 0 ? 'No layers yet. Add components from Assets.' : 'No layers found.'}
-              </p>
-            ) : null}
-          </div>
+          <BuilderLayerTree
+            t={t}
+            pageName={page.page}
+            blocks={page.blocks}
+            activeId={activeId}
+            dragId={dragId}
+            store={store}
+            onDragIdChange={onDragIdChange}
+            searchQuery={searchQuery}
+            onOpenAsset={onOpenAsset}
+            activeAssetPath={activeAssetPath}
+          />
         ) : null}
 
         {leftTab === 'assets' ? (
@@ -285,30 +300,65 @@ export function BuilderLeftPanel({
 
                   {open ? (
                     <div className="pb-2">
-                      {id === 'templates' ? (
-                        <button
-                          type="button"
-                          className="flex w-full items-center gap-2 px-3 py-1.5 text-left"
-                          style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-                          onMouseEnter={(event) => {
-                            event.currentTarget.style.background = t.hover
-                          }}
-                          onMouseLeave={(event) => {
-                            event.currentTarget.style.background = 'transparent'
-                          }}
-                        >
-                          <LayoutTemplate className="h-3.5 w-3.5 shrink-0" style={{ color: '#7c3aed' }} />
-                          <span className="text-xs" style={{ color: t.textSecondary }}>
-                            Template
-                          </span>
-                        </button>
+                      {id === 'libraries' ? (
+                        <>
+                          {filteredVendors.map((vendor) => {
+                            const required = requiredVendors.includes(vendor.id)
+                            const enabled = required || pageVendors.includes(vendor.id)
+
+                            return (
+                              <button
+                                key={vendor.id}
+                                type="button"
+                                className="flex w-full items-start gap-2 px-3 py-1.5 text-left"
+                                style={{
+                                  background: enabled ? `${t.accent}12` : 'transparent',
+                                  border: 'none',
+                                  cursor: required ? 'default' : 'pointer',
+                                  opacity: required ? 0.85 : 1
+                                }}
+                                disabled={required}
+                                onClick={() => onToggleVendor(vendor.id)}
+                                onMouseEnter={(event) => {
+                                  if (!required && !enabled) event.currentTarget.style.background = t.hover
+                                }}
+                                onMouseLeave={(event) => {
+                                  if (!required && !enabled) event.currentTarget.style.background = 'transparent'
+                                }}
+                              >
+                                <Package
+                                  className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                                  style={{ color: enabled ? t.accent : t.textMuted }}
+                                />
+                                <span className="min-w-0 flex-1">
+                                  <span className="flex items-center gap-1.5 text-xs" style={{ color: t.textSecondary }}>
+                                    {vendor.label}
+                                    {required ? (
+                                      <span className="text-[9px] font-medium uppercase" style={{ color: t.accent }}>
+                                        auto
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                  <span className="mt-0.5 block text-[10px] leading-snug" style={{ color: t.textMuted }}>
+                                    {vendor.description}
+                                  </span>
+                                </span>
+                              </button>
+                            )
+                          })}
+                          {filteredVendors.length === 0 ? (
+                            <p className="px-3 py-1 text-xs" style={{ color: t.textMuted }}>
+                              No libraries found.
+                            </p>
+                          ) : null}
+                        </>
                       ) : null}
 
                       {id === 'components' ? (
                         <>
-                          {Object.entries(groupedVariants).map(([group, items]) => (
+                          {Object.entries(groupedBuiltInVariants).map(([group, items]) => (
                             <div key={group}>
-                              {Object.keys(groupedVariants).length > 1 ? (
+                              {Object.keys(groupedBuiltInVariants).length > 0 ? (
                                 <p
                                   className="px-3 pb-0.5 pt-1 text-[10px] font-medium uppercase tracking-wide"
                                   style={{ color: t.textMuted }}
@@ -338,7 +388,23 @@ export function BuilderLeftPanel({
                               ))}
                             </div>
                           ))}
-                          {filteredVariants.length === 0 ? (
+
+                          <p
+                            className="px-3 pb-0.5 pt-2 text-[10px] font-medium uppercase tracking-wide"
+                            style={{ color: t.textMuted }}
+                          >
+                            Saved
+                          </p>
+                          <BuilderAssetsComponentTree
+                            components={savedAssetComponents}
+                            t={t}
+                            searchQuery={searchQuery}
+                            activeAssetPath={activeAssetPath}
+                            onOpenAsset={onOpenAsset}
+                            onAddComponent={onAddSavedComponent}
+                          />
+
+                          {builtInVariants.length === 0 && savedAssetComponents.length === 0 ? (
                             <p className="px-3 py-1 text-xs" style={{ color: t.textMuted }}>
                               No components found.
                             </p>
@@ -346,7 +412,7 @@ export function BuilderLeftPanel({
                         </>
                       ) : null}
 
-                      {id !== 'templates' && id !== 'components' ? (
+                      {id !== 'libraries' && id !== 'components' ? (
                         <p className="px-3 py-1 text-xs" style={{ color: t.textMuted }}>
                           No {label.toLowerCase()} yet.
                         </p>

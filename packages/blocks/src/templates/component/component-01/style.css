@@ -1,0 +1,18 @@
+.randee-component-01 {
+  padding: 2.5rem;
+  color: #171717;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.randee-component-01__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.randee-component-01__hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #737373;
+}
