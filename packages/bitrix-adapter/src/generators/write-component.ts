@@ -1,5 +1,5 @@
 import { mkdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import type { BitrixComponentDescriptor, BitrixWriteOptions } from '../types'
 import { buildBitrixComponentFiles } from '../templates/defaults'
 
@@ -20,6 +20,12 @@ export async function writeBitrixComponent(
   await writeFile(join(templateDir, 'template.php'), files.templatePhp, 'utf8')
   await writeFile(join(templateDir, 'style.css'), files.styleCss, 'utf8')
   await writeFile(join(templateDir, 'script.js'), files.scriptJs, 'utf8')
+
+  for (const asset of descriptor.staticAssets ?? []) {
+    const assetPath = join(templateDir, asset.path)
+    await mkdir(dirname(assetPath), { recursive: true })
+    await writeFile(assetPath, asset.content)
+  }
 
   return componentDir
 }

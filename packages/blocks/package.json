@@ -7,7 +7,9 @@
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./server": "./src/server.ts"
+    "./server": "./src/server.ts",
+    "./server-cli": "./src/server-cli.ts",
+    "./template-assets": "./src/template-assets.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",
@@ -17,7 +19,10 @@
     "scaffold": "node scripts/scaffold-template.mjs"
   },
   "dependencies": {
+    "@randee/bitrix-adapter": "0.1.0",
     "@randee/builder": "0.1.0",
+    "@randee/exporter": "0.1.0",
+    "@randee/ui": "0.1.0",
     "gsap": "^3.15.0",
     "swiper": "^11.2.8"
   },

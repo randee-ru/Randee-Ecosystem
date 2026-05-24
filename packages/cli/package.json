@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "@randee/bitrix-adapter": "0.1.0",
+    "@randee/blocks": "0.1.0",
+    "@randee/builder": "0.1.0",
     "@randee/cloud": "0.1.0",
     "@randee/core": "0.1.0",
     "@randee/exporter": "0.1.0",

@@ -55,6 +55,7 @@ type BuilderAssetEditorProps = {
   savedToAssets?: boolean
   savingToAssets?: boolean
   onSaveToAssets?: () => void
+  onAssetSaved?: (asset: BuilderAssetTarget) => void
 }
 
 function languageExtension(asset: BuilderAssetTarget) {
@@ -86,9 +87,8 @@ function isEditorFindKey(event: KeyboardEvent) {
 function emmetSyntaxForAsset(asset: BuilderAssetTarget): EmmetKnownSyntax | null {
   const path = asset.path.toLowerCase()
   if (asset.kind === 'style') return EmmetKnownSyntax.css
-  if (path.endsWith('.tsx')) return EmmetKnownSyntax.jsx
+  if (asset.kind === 'preview' || path.endsWith('.tsx')) return EmmetKnownSyntax.jsx
   if (path.endsWith('.svg')) return EmmetKnownSyntax.html
-  if (path.endsWith('.js')) return EmmetKnownSyntax.jsx
   return null
 }
 
@@ -97,10 +97,18 @@ function emmetExtensions(asset: BuilderAssetTarget) {
   if (!syntax) return []
 
   return [
-    emmetConfig.of({ syntax }),
+    emmetConfig.of({
+      syntax,
+      mark: true,
+      previewEnabled: ['markup', 'stylesheet']
+    }),
     abbreviationTracker({ syntax }),
     wrapWithAbbreviation('Mod-Alt-w'),
     keymap.of([
+      {
+        key: 'Tab',
+        run: (view) => expandAbbreviation(view) || indentWithTab(view)
+      },
       { key: 'Mod-e', run: expandAbbreviation },
       { key: 'Mod-Shift-a', run: enterAbbreviationMode },
       { key: 'Mod-Alt-/', run: toggleComment },
@@ -124,7 +132,8 @@ export function BuilderAssetEditor({
   canSaveToAssets,
   savedToAssets,
   savingToAssets,
-  onSaveToAssets
+  onSaveToAssets,
+  onAssetSaved
 }: BuilderAssetEditorProps) {
   const [fontSize, setFontSize] = React.useState(EDITOR_FONT_DEFAULT)
   const editorViewRef = React.useRef<EditorView | null>(null)
@@ -138,10 +147,13 @@ export function BuilderAssetEditor({
 
   React.useEffect(() => {
     let cancelled = false
+    const controller = new AbortController()
+    const loadTimeout = window.setTimeout(() => controller.abort(), 15000)
+
     setLoading(true)
     setError(null)
 
-    fetch(asset.url)
+    fetch(asset.url, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error('Failed to load file')
         return response.text()
@@ -153,16 +165,23 @@ export function BuilderAssetEditor({
       })
       .catch((loadError) => {
         if (cancelled) return
+        if (loadError instanceof Error && loadError.name === 'AbortError') {
+          setError('File load timed out. Restart dev server and try again.')
+          return
+        }
         setError(loadError instanceof Error ? loadError.message : 'Failed to load file')
       })
       .finally(() => {
+        window.clearTimeout(loadTimeout)
         if (!cancelled) setLoading(false)
       })
 
     return () => {
       cancelled = true
+      controller.abort()
+      window.clearTimeout(loadTimeout)
     }
-  }, [asset.url])
+  }, [asset.templateId, asset.path, asset.url])
 
   const save = React.useCallback(async () => {
     setSaving(true)
@@ -175,12 +194,13 @@ export function BuilderAssetEditor({
       })
       if (!response.ok) throw new Error('Failed to save file')
       setSavedContent(content)
+      onAssetSaved?.(asset)
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'Failed to save file')
     } finally {
       setSaving(false)
     }
-  }, [asset.url, content])
+  }, [asset.url, content, asset, onAssetSaved])
 
   const saveRef = React.useRef(save)
   const isDirtyRef = React.useRef(isDirty)
@@ -373,8 +393,7 @@ export function BuilderAssetEditor({
         ...historyKeymap,
         ...foldKeymap,
         ...completionKeymap,
-        ...lintKeymap,
-        indentWithTab
+        ...lintKeymap
       ])
     ],
     [asset, fontSizeTheme, saveKeymap, searchTheme, zoomKeymap]
@@ -410,6 +429,11 @@ export function BuilderAssetEditor({
           <span className="truncate font-medium" style={{ color: t.text }}>
             {asset.label}
           </span>
+          {emmetSyntaxForAsset(asset) ? (
+            <span className="hidden text-[10px] sm:inline" style={{ color: t.textMuted }} title="Emmet">
+              Tab — развернуть · ⌘E
+            </span>
+          ) : null}
         </div>
 
         <button

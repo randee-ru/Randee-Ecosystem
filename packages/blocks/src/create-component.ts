@@ -5,7 +5,7 @@ import { isUserComponentTemplateId, USER_COMPONENT_ASSETS } from './component-te
 import { componentsRoot, getUserComponentDirectory, type CreatedComponentTemplate } from './component-io'
 
 export type { CreatedComponentTemplate } from './component-io'
-export { saveComponentToAssets, listComponentTemplatesFromDisk, listSavedComponentsFromDisk } from './component-io'
+export { saveComponentToAssets, listComponentTemplatesFromDisk, listSavedComponentsFromDisk, duplicateComponentTemplate, renameComponentTemplate, deleteComponentTemplate } from './component-io'
 
 function nextComponentId(): string {
   const root = componentsRoot()
@@ -46,7 +46,8 @@ export function createComponentTemplate(customName?: string): CreatedComponentTe
     savedToAssets: false,
     defaultProps: {
       title: displayName
-    }
+    },
+    propsSchema: [{ name: 'title', label: 'Title', type: 'text' }]
   }
 
   writeFileSync(join(root, 'meta.json'), `${JSON.stringify(manifest, null, 2)}\n`)
@@ -150,7 +151,7 @@ export function ${componentName}({ block }: BlockTemplatePreviewProps) {
         height={80}
       />
       <h2 className="randee-${cls}__title">{title}</h2>
-      <p className="randee-${cls}__hint">Edit preview.tsx, style.css and script.js in Layers</p>
+      <p className="randee-${cls}__hint">Edit preview.tsx, style.css and script.js in Blocks</p>
     </TemplateFrame>
   )
 }

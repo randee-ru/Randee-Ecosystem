@@ -2,6 +2,23 @@
 
 import * as React from 'react'
 import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  type DragEndEvent,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
   Braces,
   ChevronRight,
   Component,
@@ -16,6 +33,7 @@ import type { StoreApi } from 'zustand'
 import {
   getBlockLayerAssets,
   isEditableLayerAsset,
+  isUserComponentTemplateId,
   type BlockLayerAssetFile,
   type BlockLayerAssets
 } from '@randee/blocks'
@@ -38,12 +56,12 @@ type BuilderLayerTreeProps = {
   pageName: string
   blocks: PageBlock[]
   activeId: string | null
-  dragId: string | null
   store: StoreApi<BuilderStore>
-  onDragIdChange: (id: string | null) => void
   searchQuery: string
   onOpenAsset: (asset: BuilderAssetTarget) => void
   activeAssetPath: string | null
+  onDuplicateComponent?: (templateId: string) => void
+  onExportBlock?: (blockId: string) => void
 }
 
 function assetMatchesSearch(asset: BlockLayerAssetFile, query: string): boolean {
@@ -191,20 +209,19 @@ function LayerAssetRow({
   )
 }
 
-function LayerBlockRow({
+function LayerBlockRowInner({
   item,
   layerIndex,
   t,
   activeId,
-  dragId,
   store,
-  onDragIdChange,
   expanded,
   onToggleExpand,
   searchQuery,
   onOpenAsset,
   activeAssetPath,
   isRenaming,
+  sortable,
   onBlockContextMenu,
   onOpenContextMenu,
   onFinishRename,
@@ -214,15 +231,19 @@ function LayerBlockRow({
   layerIndex: number
   t: LayerTheme
   activeId: string | null
-  dragId: string | null
   store: StoreApi<BuilderStore>
-  onDragIdChange: (id: string | null) => void
   expanded: boolean
   onToggleExpand: () => void
   searchQuery: string
   onOpenAsset: (asset: BuilderAssetTarget) => void
   activeAssetPath: string | null
   isRenaming: boolean
+  sortable?: {
+    setNodeRef: (node: HTMLElement | null) => void
+    style: React.CSSProperties
+    attributes: React.HTMLAttributes<HTMLElement>
+    listeners: Record<string, unknown> | undefined
+  }
   onBlockContextMenu: (event: React.MouseEvent, blockId: string) => void
   onOpenContextMenu: (blockId: string, x: number, y: number) => void
   onFinishRename: (blockId: string, name: string) => void
@@ -298,7 +319,7 @@ function LayerBlockRow({
     ) : null
 
   return (
-    <div>
+    <div ref={sortable?.setNodeRef} style={sortable?.style}>
       <div
         className="flex w-full items-center"
         style={{
@@ -324,18 +345,11 @@ function LayerBlockRow({
       >
         <button
           type="button"
-          draggable
-          className="flex h-8 w-6 shrink-0 cursor-grab items-center justify-center"
-          style={{ background: 'transparent', border: 'none', color: t.textMuted }}
-          onDragStart={() => onDragIdChange(item.id)}
-          onDragOver={(event) => event.preventDefault()}
-          onDrop={() => {
-            if (!dragId) return
-            const from = store.getState().page.blocks.findIndex((entry) => entry.id === dragId)
-            if (from >= 0 && from !== layerIndex) store.getState().moveBlock(from, layerIndex)
-            onDragIdChange(null)
-          }}
+          className={`flex h-8 w-6 shrink-0 items-center justify-center touch-none ${sortable ? 'cursor-grab active:cursor-grabbing' : 'cursor-default opacity-60'}`}
+          style={{ background: 'transparent', border: 'none', color: t.textMuted, touchAction: 'none' }}
+          {...(sortable ? { ...sortable.attributes, ...sortable.listeners } : {})}
           aria-label="Reorder layer"
+          disabled={!sortable}
         >
           <GripVertical className="h-3.5 w-3.5" />
         </button>
@@ -427,22 +441,80 @@ function LayerBlockRow({
   )
 }
 
+type LayerBlockRowCommonProps = Omit<React.ComponentProps<typeof LayerBlockRowInner>, 'sortable'>
+
+function SortableLayerBlockRow({
+  sortDisabled,
+  ...props
+}: LayerBlockRowCommonProps & { sortDisabled: boolean }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.item.id,
+    disabled: sortDisabled || props.isRenaming
+  })
+
+  return (
+    <LayerBlockRowInner
+      {...props}
+      sortable={{
+        setNodeRef,
+        style: {
+          transform: CSS.Transform.toString(transform),
+          transition,
+          opacity: isDragging ? 0.55 : 1
+        },
+        attributes,
+        listeners
+      }}
+    />
+  )
+}
+
+function StaticLayerBlockRow(props: LayerBlockRowCommonProps) {
+  return <LayerBlockRowInner {...props} />
+}
+
+function useClientDndReady(): boolean {
+  return React.useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false
+  )
+}
+
 export function BuilderLayerTree({
   t,
   pageName,
   blocks,
   activeId,
-  dragId,
   store,
-  onDragIdChange,
   searchQuery,
   onOpenAsset,
-  activeAssetPath
+  activeAssetPath,
+  onDuplicateComponent,
+  onExportBlock
 }: BuilderLayerTreeProps) {
   const [expandedLayers, setExpandedLayers] = React.useState<Record<string, boolean>>({})
   const [pageExpanded, setPageExpanded] = React.useState(true)
   const [contextMenu, setContextMenu] = React.useState<{ x: number; y: number; blockId: string } | null>(null)
   const [renamingBlockId, setRenamingBlockId] = React.useState<string | null>(null)
+
+  const sortDisabled = Boolean(searchQuery)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const from = blocks.findIndex((entry) => entry.id === active.id)
+    const to = blocks.findIndex((entry) => entry.id === over.id)
+    if (from >= 0 && to >= 0 && from !== to) {
+      store.getState().moveBlock(from, to)
+    }
+  }
 
   const handleBlockContextMenu = (event: React.MouseEvent, blockId: string) => {
     event.preventDefault()
@@ -500,6 +572,44 @@ export function BuilderLayerTree({
     return activeId === blockId
   }
 
+  const dndReady = useClientDndReady()
+
+  const renderBlockRows = (RowComponent: typeof SortableLayerBlockRow | typeof StaticLayerBlockRow) => (
+    <div style={{ paddingLeft: 8 }}>
+      {filteredBlocks.map((item) => {
+        const layerIndex = blocks.findIndex((entry) => entry.id === item.id)
+        const rowProps = {
+          item,
+          layerIndex,
+          t,
+          activeId,
+          store,
+          expanded: isLayerExpanded(item.id),
+          onToggleExpand: () => toggleLayer(item.id),
+          searchQuery,
+          onOpenAsset,
+          activeAssetPath,
+          isRenaming: renamingBlockId === item.id,
+          onBlockContextMenu: handleBlockContextMenu,
+          onOpenContextMenu: openBlockContextMenu,
+          onFinishRename: finishRename,
+          onCancelRename: cancelRename
+        }
+
+        return RowComponent === SortableLayerBlockRow ? (
+          <SortableLayerBlockRow key={item.id} {...rowProps} sortDisabled={sortDisabled} />
+        ) : (
+          <StaticLayerBlockRow key={item.id} {...rowProps} />
+        )
+      })}
+      {filteredBlocks.length === 0 ? (
+        <p className="px-3 py-4 text-xs" style={{ color: t.textMuted }}>
+          {blocks.length === 0 ? 'No blocks yet. Add components from Assets.' : 'No blocks found.'}
+        </p>
+      ) : null}
+    </div>
+  )
+
   return (
     <div className="py-1">
       <div>
@@ -532,43 +642,25 @@ export function BuilderLayerTree({
         </div>
 
         {pageExpanded ? (
-          <div style={{ paddingLeft: 8 }}>
-            {filteredBlocks.map((item) => {
-              const layerIndex = blocks.findIndex((entry) => entry.id === item.id)
-              return (
-                <LayerBlockRow
-                  key={item.id}
-                  item={item}
-                  layerIndex={layerIndex}
-                  t={t}
-                  activeId={activeId}
-                  dragId={dragId}
-                  store={store}
-                  onDragIdChange={onDragIdChange}
-                  expanded={isLayerExpanded(item.id)}
-                  onToggleExpand={() => toggleLayer(item.id)}
-                  searchQuery={searchQuery}
-                  onOpenAsset={onOpenAsset}
-                  activeAssetPath={activeAssetPath}
-                  isRenaming={renamingBlockId === item.id}
-                  onBlockContextMenu={handleBlockContextMenu}
-                  onOpenContextMenu={openBlockContextMenu}
-                  onFinishRename={finishRename}
-                  onCancelRename={cancelRename}
-                />
-              )
-            })}
-            {filteredBlocks.length === 0 ? (
-              <p className="px-3 py-4 text-xs" style={{ color: t.textMuted }}>
-                {blocks.length === 0 ? 'No layers yet. Add components from Assets.' : 'No layers found.'}
-              </p>
-            ) : null}
-          </div>
+          dndReady ? (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={filteredBlocks.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+                {renderBlockRows(SortableLayerBlockRow)}
+              </SortableContext>
+            </DndContext>
+          ) : (
+            renderBlockRows(StaticLayerBlockRow)
+          )
         ) : null}
       </div>
 
       {contextMenu ? (() => {
         const layerIndex = blocks.findIndex((entry) => entry.id === contextMenu.blockId)
+        const contextBlock = blocks[layerIndex]
+        const canDuplicateComponent =
+          contextBlock &&
+          isUserComponentTemplateId(contextBlock.template) &&
+          typeof onDuplicateComponent === 'function'
         return (
         <LayerContextMenu
           x={contextMenu.x}
@@ -581,6 +673,26 @@ export function BuilderLayerTree({
                 setRenamingBlockId(contextMenu.blockId)
               }
             },
+            ...(canDuplicateComponent
+              ? [
+                  {
+                    label: 'Duplicate component',
+                    onSelect: () => {
+                      onDuplicateComponent(contextBlock.template)
+                    }
+                  }
+                ]
+              : []),
+            ...(typeof onExportBlock === 'function'
+              ? [
+                  {
+                    label: 'Export block',
+                    onSelect: () => {
+                      onExportBlock(contextMenu.blockId)
+                    }
+                  }
+                ]
+              : []),
             {
               label: 'Выше',
               disabled: layerIndex <= 0,

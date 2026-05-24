@@ -9,11 +9,12 @@ import {
   Plus,
   Search
 } from 'lucide-react'
-import type { BlockType, PageBlock } from '@randee/builder'
+import type { BlockType, ElementVariant, PageBlock } from '@randee/builder'
 import type { BuilderStore } from '@randee/builder'
 import type { StoreApi } from 'zustand'
 import { BuilderLayerTree } from './builder-layer-tree'
 import { BuilderAssetsComponentTree } from './builder-assets-component-tree'
+import { BuilderElementPicker } from './builder-element-picker'
 import type { BuilderAssetTarget } from './builder-asset-types'
 
 export type SavedAssetComponent = {
@@ -22,7 +23,7 @@ export type SavedAssetComponent = {
   description: string
 }
 
-type LeftTab = 'pages' | 'layers' | 'assets'
+type LeftTab = 'pages' | 'blocks' | 'assets'
 type AssetSection = 'libraries' | 'components' | 'styles' | 'vectors' | 'code'
 
 type LibraryVariant = {
@@ -57,7 +58,7 @@ type PanelTheme = {
 
 const LEFT_TABS: Array<{ id: LeftTab; label: string }> = [
   { id: 'pages', label: 'Pages' },
-  { id: 'layers', label: 'Layers' },
+  { id: 'blocks', label: 'Blocks' },
   { id: 'assets', label: 'Assets' }
 ]
 
@@ -80,8 +81,6 @@ type BuilderLeftPanelProps = {
   page: { page: string; slug: string; blocks: PageBlock[] }
   store: StoreApi<BuilderStore>
   activeId: string | null
-  dragId: string | null
-  onDragIdChange: (id: string | null) => void
   filteredVariants: LibraryVariant[]
   groupedVariants: Record<string, LibraryVariant[]>
   onAddVariant: (item: LibraryVariant) => void
@@ -93,12 +92,19 @@ type BuilderLeftPanelProps = {
   onOpenAsset: (asset: BuilderAssetTarget) => void
   activeAssetPath: string | null
   savedAssetComponents: SavedAssetComponent[]
+  canvasTemplateIds: string[]
   onAddSavedComponent: (templateId: string, name: string) => void
+  onRenameSavedComponent?: (templateId: string, name: string) => void
+  onDeleteSavedComponent?: (templateId: string) => void
+  onDuplicateComponent?: (templateId: string) => void
+  onExportBlock?: (blockId: string) => void
+  componentEditMode?: boolean
+  onAddElement?: (variant: ElementVariant) => void
 }
 
 function searchPlaceholder(tab: LeftTab) {
   if (tab === 'pages') return 'Search pages...'
-  if (tab === 'layers') return 'Search layers...'
+  if (tab === 'blocks') return 'Search blocks...'
   return 'Search...'
 }
 
@@ -111,8 +117,6 @@ export function BuilderLeftPanel({
   page,
   store,
   activeId,
-  dragId,
-  onDragIdChange,
   filteredVariants,
   groupedVariants,
   onAddVariant,
@@ -124,7 +128,14 @@ export function BuilderLeftPanel({
   onOpenAsset,
   activeAssetPath,
   savedAssetComponents,
-  onAddSavedComponent
+  canvasTemplateIds,
+  onAddSavedComponent,
+  onRenameSavedComponent,
+  onDeleteSavedComponent,
+  onDuplicateComponent,
+  onExportBlock,
+  componentEditMode,
+  onAddElement
 }: BuilderLeftPanelProps) {
   const [expandedSections, setExpandedSections] = React.useState<Record<AssetSection, boolean>>({
     libraries: true,
@@ -255,23 +266,42 @@ export function BuilderLeftPanel({
           )
         ) : null}
 
-        {leftTab === 'layers' ? (
+        {leftTab === 'blocks' ? (
           <BuilderLayerTree
             t={t}
             pageName={page.page}
             blocks={page.blocks}
             activeId={activeId}
-            dragId={dragId}
             store={store}
-            onDragIdChange={onDragIdChange}
             searchQuery={searchQuery}
             onOpenAsset={onOpenAsset}
             activeAssetPath={activeAssetPath}
+            onDuplicateComponent={onDuplicateComponent}
+            onExportBlock={onExportBlock}
           />
         ) : null}
 
         {leftTab === 'assets' ? (
           <div className="py-0">
+            {componentEditMode && typeof onAddElement === 'function' ? (
+              <section className="pb-2">
+                <div className="px-3 py-2">
+                  <p className="text-xs font-semibold" style={{ color: t.text }}>
+                    UI Elements
+                  </p>
+                  <p className="mt-0.5 text-[10px]" style={{ color: t.textMuted }}>
+                    Button, Modal, Form, Accordion… — для сборки component
+                  </p>
+                </div>
+                <BuilderElementPicker
+                  searchQuery={searchQuery}
+                  t={t}
+                  onSelect={onAddElement}
+                  maxHeightClassName="max-h-[420px]"
+                />
+                <div className="mx-3 my-2 h-px" style={{ background: t.divider }} />
+              </section>
+            ) : null}
             {ASSET_SECTIONS.map(({ id, label }, index) => {
               const open = isSectionOpen(id)
               const hasDivider = index > 0
@@ -400,8 +430,11 @@ export function BuilderLeftPanel({
                             t={t}
                             searchQuery={searchQuery}
                             activeAssetPath={activeAssetPath}
+                            canvasTemplateIds={canvasTemplateIds}
                             onOpenAsset={onOpenAsset}
                             onAddComponent={onAddSavedComponent}
+                            onRenameComponent={onRenameSavedComponent}
+                            onDeleteComponent={onDeleteSavedComponent}
                           />
 
                           {builtInVariants.length === 0 && savedAssetComponents.length === 0 ? (

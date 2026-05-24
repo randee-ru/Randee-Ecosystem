@@ -1,9 +1,10 @@
-import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { dirname, join, normalize } from 'node:path'
+import { readFileSync, existsSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { BuilderPage } from '@randee/builder'
-import { exportPageToJson } from '@randee/builder'
-import { getBlockTemplate, getTemplateFolderName } from './registry'
+import { exportPageToJson, inlineStyleHtmlAttribute } from '@randee/builder'
+import { resolveTemplateAssets } from './template-path'
+import { readTemplateAssetText } from './template-assets'
 import { collectPageVendors } from './vendors/collect'
 import {
   findVendorFile,
@@ -19,41 +20,7 @@ function monorepoRoot(): string {
   return join(packageRoot, '..', '..')
 }
 
-function templateRoot(templateId: string): string | null {
-  const folder = getTemplateFolderName(templateId)
-  if (!folder) return null
-  return join(packageRoot, 'src', 'templates', folder)
-}
-
-export function readTemplateAssetFile(templateId: string, relativePath: string): Buffer | null {
-  const root = templateRoot(templateId)
-  if (!root) return null
-  const filePath = join(root, relativePath)
-  if (!existsSync(filePath)) return null
-  return readFileSync(filePath)
-}
-
-export function readTemplateAssetText(templateId: string, relativePath: string): string | null {
-  const file = readTemplateAssetFile(templateId, relativePath)
-  return file ? file.toString('utf8') : null
-}
-
-function resolveTemplateAssetPath(templateId: string, relativePath: string): string | null {
-  const root = templateRoot(templateId)
-  if (!root) return null
-
-  const normalizedRoot = normalize(root)
-  const filePath = normalize(join(root, relativePath.replace(/^\/+/, '')))
-  if (!filePath.startsWith(normalizedRoot)) return null
-  return filePath
-}
-
-export function writeTemplateAssetText(templateId: string, relativePath: string, content: string): boolean {
-  const filePath = resolveTemplateAssetPath(templateId, relativePath)
-  if (!filePath) return false
-  writeFileSync(filePath, content, 'utf8')
-  return true
-}
+export { getTemplateAssetMime, readTemplateAssetFile, readTemplateAssetText, writeTemplateAssetText } from './template-assets'
 
 export function readVendorAssetFile(vendorId: VendorId, basename: string): Buffer | null {
   const fileRef = findVendorFile(vendorId, basename)
@@ -66,18 +33,6 @@ export function readVendorAssetFile(vendorId: VendorId, basename: string): Buffe
 
 export function getVendorAssetUrl(vendorId: VendorId, basename: string): string {
   return `/api/vendor-assets/${vendorId}/${basename}`
-}
-
-export function getTemplateAssetMime(relativePath: string): string {
-  if (relativePath.endsWith('.css')) return 'text/css; charset=utf-8'
-  if (relativePath.endsWith('.js')) return 'text/javascript; charset=utf-8'
-  if (relativePath.endsWith('.ts')) return 'text/typescript; charset=utf-8'
-  if (relativePath.endsWith('.tsx')) return 'text/typescript; charset=utf-8'
-  if (relativePath.endsWith('.svg')) return 'image/svg+xml'
-  if (relativePath.endsWith('.png')) return 'image/png'
-  if (relativePath.endsWith('.jpg') || relativePath.endsWith('.jpeg')) return 'image/jpeg'
-  if (relativePath.endsWith('.webp')) return 'image/webp'
-  return 'application/octet-stream'
 }
 
 function escapeHtml(value: string): string {
@@ -127,26 +82,27 @@ function vendorTags(vendorIds: VendorId[]): { head: string; body: string } {
 }
 
 function blockToHtml(block: BuilderPage['blocks'][number]): string {
-  const entry = getBlockTemplate(block.template)
+  const assets = resolveTemplateAssets(block.template)
   const attrs = Object.entries(block.props)
     .map(([key, value]) => `data-${key}="${escapeHtml(value)}"`)
     .join(' ')
 
-  const style = entry ? readTemplateAssetText(block.template, entry.assets.stylePath) : null
+  const style = assets ? readTemplateAssetText(block.template, assets.stylePath) : null
   const styleTag = style ? `<style data-randee-template="${block.template}">\n${style}\n</style>` : ''
-  const rootClass = entry ? `randee-${block.template.replace(/\./g, '-')}` : 'randee-block-root'
+  const rootClass = assets ? `randee-${block.template.replace(/\./g, '-')}` : 'randee-block-root'
+  const designStyle = inlineStyleHtmlAttribute(block.design)
 
   return `${styleTag}
 <section class="randee-block randee-${block.type.replace('.', '-')}" data-randee-block="${block.template}">
-  <div class="${rootClass}" data-randee-template="${block.template}" ${attrs}></div>
+  <div class="${rootClass}" data-randee-template="${block.template}"${designStyle} ${attrs}></div>
 </section>`
 }
 
 function blockInitScripts(blocks: BuilderPage['blocks']): string {
   return blocks
     .map((block) => {
-      const entry = getBlockTemplate(block.template)
-      const script = entry ? readTemplateAssetText(block.template, entry.assets.scriptPath) : null
+      const assets = resolveTemplateAssets(block.template)
+      const script = assets ? readTemplateAssetText(block.template, assets.scriptPath) : null
       return script ? wrapBlockScript(block.template, script) : ''
     })
     .filter(Boolean)
@@ -180,9 +136,19 @@ export {
   createComponentTemplate,
   listComponentTemplatesFromDisk,
   listSavedComponentsFromDisk,
-  saveComponentToAssets
+  saveComponentToAssets,
+  duplicateComponentTemplate,
+  renameComponentTemplate,
+  deleteComponentTemplate
 } from './create-component'
-export { mapUserComponentBlockToBitrix } from './bitrix-export'
+export { mapUserComponentBlockToBitrix, mapBuiltinBlockToBitrix, mapPageBlockToBitrix } from './bitrix-export'
+export {
+  exportBlockPackage,
+  exportFilenameForBlock,
+  createBlockSnapshotFromTemplate,
+  type BlockExportManifest,
+  type BlockExportResult
+} from './export-block'
 export type { CreatedComponentTemplate } from './component-io'
 
 export type { VendorFileRef }

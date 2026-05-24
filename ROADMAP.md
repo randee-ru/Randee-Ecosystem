@@ -94,13 +94,18 @@
 - `packages/builder` + `packages/exporter`.
 - E2E сценарии на Playwright.
 
-### Execution Status (2026-05-23)
+### Execution Status (2026-05-24)
 - [x] Block CRUD and JSON schema editing.
 - [x] Responsive preview modes in `apps/web`.
 - [x] JSON/HTML export from Builder state.
 - [x] Builder package (`@randee/builder`) and web route `/builder`.
-- [~] Drag-and-drop reorder (native DnD; dnd-kit integration pending).
-- [~] Live preview (focused block; full-stack page preview pending).
+- [x] User components: create, code editor, Save to Assets, Edit Component.
+- [x] Bitrix export API for library + saved custom components.
+- [~] Drag-and-drop reorder (native DnD + touch fallback; dnd-kit pending).
+- [~] Live preview (code save reload pending).
+- [ ] Page persistence API, Bitrix zip download, block marketplace export.
+
+**Blocks roadmap (RU):** [docs/builder/blocks-roadmap-ru.md](./docs/builder/blocks-roadmap-ru.md)
 
 ## Phase 5 — Dynamic CMS Layer
 

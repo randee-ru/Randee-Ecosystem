@@ -51,4 +51,19 @@ describe('builder store', () => {
     store.getState().duplicateBlock('a')
     expect(store.getState().page.blocks[1].name).toBe('My Hero')
   })
+
+  it('inserts UI elements into component blocks', () => {
+    const store = createBuilderStore({
+      page: 'Home',
+      slug: '/',
+      seo: { title: 'Home', description: 'Desc' },
+      blocks: [{ id: 'cmp', type: 'component', template: 'component-01', props: { title: 'Card' } }]
+    })
+
+    store.getState().insertElement('cmp', 'button', { label: 'Click' }, 'Button')
+    const block = store.getState().page.blocks[0]
+    expect(block.elements).toHaveLength(1)
+    expect(block.elements?.[0].elementId).toBe('button')
+    expect(store.getState().selectedElementId).toBe(block.elements?.[0].id)
+  })
 })

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, cpSync, rmSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { BlockTemplateAssets, BlockTemplateManifest } from './types'
@@ -111,4 +111,101 @@ export function listComponentTemplatesFromDisk(): CreatedComponentTemplate[] {
 
 export function listSavedComponentsFromDisk(): CreatedComponentTemplate[] {
   return listComponentTemplatesFromDisk().filter((entry) => entry.manifest.savedToAssets === true)
+}
+
+const DUPLICATE_ASSET_FILES = ['preview.tsx', 'style.css', 'script.js', 'init.ts'] as const
+
+function previewComponentName(templateId: string): string {
+  return (
+    templateId
+      .split(/[-.]/)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join('') + 'Preview'
+  )
+}
+
+function replaceTemplateIdInContent(content: string, fromId: string, toId: string): string {
+  const fromCls = fromId.replace(/\./g, '-')
+  const toCls = toId.replace(/\./g, '-')
+  const fromName = previewComponentName(fromId)
+  const toName = previewComponentName(toId)
+  return content.replaceAll(fromId, toId).replaceAll(fromCls, toCls).replaceAll(fromName, toName)
+}
+
+export function duplicateComponentTemplate(
+  sourceTemplateId: string,
+  options?: { name?: string }
+): CreatedComponentTemplate | null {
+  const sourceDir = getUserComponentDirectory(sourceTemplateId)
+  const sourceMeta = readComponentMeta(sourceTemplateId)
+  if (!sourceDir || !sourceMeta || !existsSync(sourceDir)) return null
+
+  const root = componentsRoot()
+  if (!existsSync(root)) mkdirSync(root, { recursive: true })
+  const existing = readdirSync(root).filter((name) => isUserComponentTemplateId(name))
+  const max = existing.reduce((acc, name) => {
+    const value = Number(name.replace('component-', ''))
+    return Number.isFinite(value) ? Math.max(acc, value) : acc
+  }, 0)
+  const templateId = `component-${String(max + 1).padStart(2, '0')}`
+  const targetDir = join(root, templateId)
+  const displayName = options?.name?.trim() || `${sourceMeta.name} Copy`
+
+  cpSync(sourceDir, targetDir, { recursive: true })
+
+  for (const file of DUPLICATE_ASSET_FILES) {
+    const filePath = join(targetDir, file)
+    if (!existsSync(filePath)) continue
+    const content = readFileSync(filePath, 'utf8')
+    writeFileSync(filePath, replaceTemplateIdInContent(content, sourceTemplateId, templateId))
+  }
+
+  const updated: BlockTemplateManifest = {
+    ...sourceMeta,
+    id: templateId,
+    name: displayName,
+    savedToAssets: false,
+    defaultProps: {
+      ...sourceMeta.defaultProps,
+      title: displayName
+    }
+  }
+
+  writeComponentMeta(templateId, updated)
+  syncManifestTs(templateId, updated)
+
+  return { templateId, manifest: updated, assets: USER_COMPONENT_ASSETS }
+}
+
+export function renameComponentTemplate(
+  templateId: string,
+  options: { name: string; description?: string }
+): CreatedComponentTemplate | null {
+  const meta = readComponentMeta(templateId)
+  if (!meta) return null
+
+  const name = options.name.trim()
+  if (!name) return null
+
+  const updated: BlockTemplateManifest = {
+    ...meta,
+    name,
+    description: options.description?.trim() || meta.description,
+    defaultProps: {
+      ...meta.defaultProps,
+      title: name
+    }
+  }
+
+  writeComponentMeta(templateId, updated)
+  syncManifestTs(templateId, updated)
+
+  return { templateId, manifest: updated, assets: USER_COMPONENT_ASSETS }
+}
+
+export function deleteComponentTemplate(templateId: string): boolean {
+  const dir = getUserComponentDirectory(templateId)
+  if (!dir || !existsSync(dir)) return false
+  rmSync(dir, { recursive: true, force: true })
+  return true
 }

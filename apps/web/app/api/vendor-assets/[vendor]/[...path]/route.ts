@@ -1,4 +1,5 @@
-import { getTemplateAssetMime, readVendorAssetFile } from '@randee/blocks/server'
+import { getTemplateAssetMime } from '@randee/blocks/template-assets'
+import { readVendorAssetFile } from '@randee/blocks/server'
 import { isVendorId } from '@randee/blocks'
 
 type RouteParams = {

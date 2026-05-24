@@ -10,7 +10,12 @@ export const manifest: BlockTemplateManifest = {
     title: 'Новый Hero блок',
     description: 'Добавьте описание',
     buttonText: 'Подробнее'
-  }
+  },
+  propsSchema: [
+    { name: 'title', label: 'Заголовок', type: 'text' },
+    { name: 'description', label: 'Описание', type: 'text' },
+    { name: 'buttonText', label: 'Текст кнопки', type: 'text' }
+  ]
 }
 
 export const assets = {

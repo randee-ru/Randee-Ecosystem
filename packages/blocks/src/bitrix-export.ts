@@ -1,10 +1,90 @@
 import type { BitrixComponentDescriptor } from '@randee/bitrix-adapter'
 import type { PageBlock } from '@randee/builder'
+import { inlineStyleHtmlAttribute } from '@randee/builder'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { isUserComponentTemplateId } from './component-template-id'
-import { readComponentMeta, readTemplateAssetText } from './component-io'
+import { getUserComponentDirectory, readComponentMeta, readTemplateAssetText } from './component-io'
+import {
+  buildBitrixTemplateFromPreview,
+  readTemplateSourceFile,
+  stripBitrixScript
+} from './bitrix-preview-template'
+import { resolveTemplateAssets, resolveTemplateFolder, resolveTemplateManifest } from './template-path'
 
-function escapePhpString(value: string): string {
-  return value.replace(/'/g, "\\'")
+const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
+
+function bitrixComponentName(block: PageBlock): string {
+  if (block.type === 'component' && isUserComponentTemplateId(block.template)) {
+    return block.template.replace(/-/g, '_')
+  }
+
+  if (block.type === 'hero' && block.template.startsWith('hero-')) return 'hero'
+  if (block.type === 'faq') return 'faq'
+  if (block.type === 'catalog.section') return 'catalog.section'
+
+  return block.template.replace(/-/g, '_').replace(/\./g, '_')
+}
+
+function collectStaticAssets(
+  templateId: string,
+  folder: string | null,
+  userComponentDir: string | null
+): BitrixComponentDescriptor['staticAssets'] {
+  const assets = resolveTemplateAssets(templateId)
+  if (!assets) return []
+
+  return assets.images
+    .map((relativePath) => {
+      const content = readTemplateSourceFile(packageRoot, templateId, folder, userComponentDir, relativePath)
+      if (!content) return null
+      return { path: relativePath, content }
+    })
+    .filter((entry): entry is { path: string; content: string } => entry !== null)
+}
+
+function buildDescriptorFromPreview(
+  block: PageBlock,
+  meta: { name: string; description: string; propsSchema?: Array<{ name: string; label: string }> }
+): BitrixComponentDescriptor | null {
+  const folder = resolveTemplateFolder(block.template)
+  const userComponentDir = getUserComponentDirectory(block.template)
+  const previewTsx =
+    readTemplateAssetText(block.template, 'preview.tsx') ??
+    readTemplateSourceFile(packageRoot, block.template, folder, userComponentDir, 'preview.tsx')
+
+  if (!previewTsx) return null
+
+  const paramLabels = Object.fromEntries((meta.propsSchema ?? []).map((field) => [field.name, field.label]))
+  const previewTemplate = buildBitrixTemplateFromPreview(previewTsx, {
+    templateId: block.template,
+    blockType: block.type,
+    blockProps: block.props,
+    paramLabels,
+    designStyleAttribute: inlineStyleHtmlAttribute(block.design)
+  })
+
+  const css =
+    readTemplateAssetText(block.template, 'style.css') ??
+    readTemplateSourceFile(packageRoot, block.template, folder, userComponentDir, 'style.css') ??
+    ''
+  const scriptSource =
+    readTemplateAssetText(block.template, 'script.js') ??
+    readTemplateSourceFile(packageRoot, block.template, folder, userComponentDir, 'script.js') ??
+    ''
+
+  return {
+    namespace: 'randee',
+    name: bitrixComponentName(block),
+    title: meta.name,
+    description: meta.description,
+    params: previewTemplate.params,
+    templateData: previewTemplate.templateData,
+    css,
+    js: scriptSource ? stripBitrixScript(scriptSource, block.template) : undefined,
+    templatePhp: previewTemplate.templatePhp,
+    staticAssets: collectStaticAssets(block.template, folder, userComponentDir)
+  }
 }
 
 export function mapUserComponentBlockToBitrix(block: PageBlock): BitrixComponentDescriptor | null {
@@ -13,29 +93,23 @@ export function mapUserComponentBlockToBitrix(block: PageBlock): BitrixComponent
   const meta = readComponentMeta(block.template)
   if (!meta?.savedToAssets) return null
 
-  const cls = block.template.replace(/\./g, '-')
-  const title = block.props.title ?? meta.name
-  const css = readTemplateAssetText(block.template, 'style.css') ?? ''
-  const js = readTemplateAssetText(block.template, 'script.js') ?? ''
-  const bitrixName = block.template.replace(/-/g, '_')
-
-  const templatePhp = `<?php
-if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
-$TITLE = htmlspecialcharsbx($arParams['TITLE'] ?? '${escapePhpString(title)}');
-?>
-<div class="randee-${cls}" data-randee-template="${block.template}">
-  <h2 class="randee-${cls}__title"><?= $TITLE ?></h2>
-</div>`
-
-  return {
-    namespace: 'randee',
-    name: bitrixName,
-    title: meta.name,
-    description: meta.description,
-    params: { TITLE: 'Title' },
-    templateData: { TITLE: title },
-    css,
-    js,
-    templatePhp
-  }
+  return buildDescriptorFromPreview(block, meta)
 }
+
+export function mapBuiltinBlockToBitrix(block: PageBlock): BitrixComponentDescriptor | null {
+  const manifest = resolveTemplateManifest(block.template)
+  if (!manifest) return null
+
+  return buildDescriptorFromPreview(block, manifest)
+}
+
+export function mapPageBlockToBitrix(block: PageBlock): BitrixComponentDescriptor | null {
+  if (block.type === 'component' && isUserComponentTemplateId(block.template)) {
+    return mapUserComponentBlockToBitrix(block)
+  }
+
+  return mapBuiltinBlockToBitrix(block)
+}
+
+// Legacy export name used by existing mappers/tests.
+export { mapPageBlockToBitrix as mapBlockTemplateToBitrix }

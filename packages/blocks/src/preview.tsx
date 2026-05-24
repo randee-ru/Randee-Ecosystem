@@ -6,9 +6,13 @@ import { getBlockTemplate } from './registry'
 
 type BlockPreviewProps = {
   block: PageBlock
+  elementOptions?: {
+    selectedElementId?: string | null
+    onSelectElement?: (elementId: string) => void
+  }
 }
 
-export function BlockPreview({ block }: BlockPreviewProps) {
+export function BlockPreview({ block, elementOptions }: BlockPreviewProps) {
   const entry = getBlockTemplate(block.template)
 
   if (!entry) {
@@ -21,5 +25,8 @@ export function BlockPreview({ block }: BlockPreviewProps) {
   }
 
   const Preview = entry.Preview
+  if (block.type === 'component' && block.elements?.length) {
+    return <Preview block={block} elementOptions={elementOptions} />
+  }
   return <Preview block={block} />
 }

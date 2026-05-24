@@ -9,6 +9,7 @@
 3. [03. Экспорт в Bitrix](./03-экспорт-в-bitrix.md)
 4. [04. Core и обновления](./04-core-и-обновления.md)
 5. [05. SEO и Dynamic CMS](./05-seo-и-dynamic-cms.md)
+6. [06. Roadmap блоков Builder](./06-блоки-roadmap.md)
 
 ## Практические примеры
 

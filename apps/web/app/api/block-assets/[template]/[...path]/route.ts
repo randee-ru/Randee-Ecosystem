@@ -1,4 +1,4 @@
-import { getTemplateAssetMime, readTemplateAssetFile, writeTemplateAssetText } from '@randee/blocks/server'
+import { getTemplateAssetMime, readTemplateAssetFile, writeTemplateAssetText } from '@randee/blocks/template-assets'
 
 type RouteParams = {
   params: Promise<{ template: string; path: string[] }>
@@ -13,10 +13,13 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return new Response('Not found', { status: 404 })
   }
 
+  const cacheControl =
+    process.env.NODE_ENV === 'production' ? 'public, max-age=3600' : 'no-store'
+
   return new Response(new Uint8Array(file), {
     headers: {
       'Content-Type': getTemplateAssetMime(relativePath),
-      'Cache-Control': 'public, max-age=3600'
+      'Cache-Control': cacheControl
     }
   })
 }

@@ -1,6 +1,15 @@
 import type { BlockType, PageBlock } from '@randee/builder'
 import type { ComponentType } from 'react'
 
+export type BlockPropFieldType = 'text' | 'number' | 'boolean' | 'select'
+
+export type BlockPropField = {
+  name: string
+  label: string
+  type: BlockPropFieldType
+  options?: string[]
+}
+
 export type BlockTemplateManifest = {
   id: string
   type: BlockType
@@ -8,6 +17,8 @@ export type BlockTemplateManifest = {
   name: string
   description: string
   defaultProps: Record<string, string>
+  /** Typed props for Inspector */
+  propsSchema?: BlockPropField[]
   /** Saved to Assets library and ready for Bitrix export */
   savedToAssets?: boolean
   /** External libraries required by this block (GSAP, Swiper, etc.) */

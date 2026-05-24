@@ -16,6 +16,7 @@ export interface BitrixComponentDescriptor {
   css?: string
   js?: string
   templatePhp?: string
+  staticAssets?: Array<{ path: string; content: string | Buffer }>
 }
 
 export interface BitrixWriteOptions {

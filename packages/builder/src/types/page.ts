@@ -1,3 +1,6 @@
+import type { ComponentDesignSettings } from './component-design'
+import type { ComponentElement } from './component-element'
+
 export type BlockType =
   | 'hero'
   | 'features'
@@ -25,6 +28,10 @@ export interface PageBlock {
   name?: string
   props: Record<string, string>
   bindings?: BlockBindings
+  /** Visual layout/style settings for component edit mode */
+  design?: ComponentDesignSettings
+  /** UI primitives inserted in Edit Component mode */
+  elements?: ComponentElement[]
 }
 
 export interface SeoMetadata {

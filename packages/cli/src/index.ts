@@ -6,6 +6,7 @@ import { CloudService } from '@randee/cloud'
 import { MarketplaceService, type MarketplacePackage } from '@randee/marketplace'
 import { writeBitrixComponent } from '@randee/bitrix-adapter'
 import { exportPageToBitrix, type RandeePageSchema } from '@randee/exporter'
+import { createBlockSnapshotFromTemplate, exportBlockPackage } from '@randee/blocks/server-cli'
 
 function parseArgs(argv: string[]): Record<string, string | boolean> {
   const args: Record<string, string | boolean> = {}
@@ -57,6 +58,7 @@ Cloud commands:
 Bitrix commands:
   randee bitrix:component --name hero --title "Hero" --out ./dist
   randee export --input ./samples/pages/home.json --out ./dist/bitrix-site
+  randee export:block --template hero-01 --out ./dist/block-export
 `)
 }
 
@@ -318,6 +320,28 @@ async function run(): Promise<void> {
     process.stdout.write(
       `Export finished. Generated ${manifest.items.length} components at ${resolve(out)}\n`
     )
+    return
+  }
+
+  if (command === 'export:block') {
+    const template = String(args.template ?? '')
+    const out = String(args.out ?? '')
+
+    if (!template || !out) {
+      throw new Error('export:block requires --template and --out')
+    }
+
+    const block = createBlockSnapshotFromTemplate(template)
+    if (!block) {
+      throw new Error(`Unknown template: ${template}`)
+    }
+
+    const result = await exportBlockPackage(block, resolve(out))
+    process.stdout.write(`Exported block "${template}" to ${resolve(out)}\n`)
+    process.stdout.write(`Manifest files: ${result.manifest.files.length}\n`)
+    if (result.bitrixComponentDir) {
+      process.stdout.write(`Bitrix component: ${result.bitrixComponentDir}\n`)
+    }
     return
   }
 

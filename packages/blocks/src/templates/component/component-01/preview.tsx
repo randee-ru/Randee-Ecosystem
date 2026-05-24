@@ -19,7 +19,7 @@ export function Component01Preview({ block }: BlockTemplatePreviewProps) {
         height={80}
       />
       <h2 className="randee-component-01__title">{title}</h2>
-      <p className="randee-component-01__hint">Edit preview.tsx, style.css and script.js in Layers</p>
+      <p className="randee-component-01__hint">Edit preview.tsx, style.css and script.js in Blocks</p>
     </TemplateFrame>
   )
 }
