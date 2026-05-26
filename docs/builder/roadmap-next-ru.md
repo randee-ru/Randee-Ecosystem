@@ -177,26 +177,120 @@ YouTube/Vimeo embed по URL. Props: `url`, `aspectRatio`.
 
 ---
 
+## R14 — Стабильный canvas в режиме Редактора 🟠 P0
+
+> Сейчас canvas в Edit Mode работает, но ненадёжно: drag глючит, оверлеи смещаются при масштабировании, нет undo, сложно попасть внутрь контейнера.
+
+### Диагностика: что конкретно плохо
+
+| Проблема | Причина |
+|----------|---------|
+| Drag-and-drop элементов глючит / не работает на iPad | Используется нативный HTML5 drag API — он ненадёжен и не работает на iOS/touch |
+| Нет визуального индикатора куда упадёт элемент | Нет drop-line при перетаскивании |
+| Рамка выделения смещается при zoom < 100% | Canvas масштабируется через `transform: scale()`, а оверлеи позиционируются в screen-пространстве |
+| Контекстное меню появляется не там | `clientX/Y` используется без учёта `frameScale` и scroll offset |
+| Удалил/переместил → нельзя отменить | Нет undo/redo для операций с элементами |
+| Непонятно: бросить элемент ВНУТРЬ контейнера или ПОСЛЕ него | Нет раздельной визуализации «drop inside» vs «drop after» |
+| При выходе из Редактора выделение элемента остаётся | `selectedElementId` не сбрасывается при смене блока |
+| Двойной клик для text-edit конфликтует с одиночным select | Race condition между `click` и `dblclick` |
+
+---
+
+### R14.1 — Pointer Events drag вместо HTML5 🟠 P0
+**Что:** заменить `draggable={true}` + `onDragStart/onDragOver/onDrop` на Pointer Events drag (как у dnd-kit, который уже используется для page blocks).  
+**Результат:** drag работает на iPad, не «дёргается», нет браузерного ghost-image.  
+**Как:** подключить `@dnd-kit/sortable` для элементов в artboard — аналогично тому, как `SortableCanvasBlock` уже сделан для page canvas.  
+**Файлы:** `builder-editor.tsx` (artboardElementOptions drag handlers), `builder-component-editor-left.tsx`  
+**Сложность:** 4–5 ч
+
+---
+
+### R14.2 — Drop-line indicator 🟠 P0
+**Что:** при перетаскивании элемента показывать синюю горизонтальную линию между элементами — куда упадёт.  
+**Раздельно:** `insert before` (линия сверху) / `insert after` (линия снизу) / `insert inside container` (dashed border вокруг).  
+**Как:** dnd-kit `DragOverlay` + кастомный `over` handler, который вычисляет позицию по `clientY` относительно target-элемента.  
+**Сложность:** 3–4 ч (зависит от R14.1)
+
+---
+
+### R14.3 — Zoom-корректные оверлеи 🟡 P1
+**Что:** рамка выделения элемента и контекстное меню должны учитывать `frameScale`.  
+**Сейчас:** оверлей рендерится в screen-пространстве, а `clientX/Y` для контекстного меню не делится на `frameScale`.  
+**Как:**  
+```ts
+// При позиционировании context menu:
+const x = (event.clientX - artboardRect.left) / frameScale
+const y = (event.clientY - artboardRect.top) / frameScale
+```
+Оверлей элементов переместить внутрь artboard (в масштабируемое пространство), а не снаружи.  
+**Файлы:** `builder-component-editor-left.tsx`, artboard section в `builder-editor.tsx`  
+**Сложность:** 3–4 ч
+
+---
+
+### R14.4 — Undo / Redo для элементов 🟡 P1
+**Что:** ⌘Z отменяет последнее действие (добавление, удаление, перемещение, rename элемента).  
+**Как:** добавить в Zustand store history stack для операций с элементами:
+```ts
+// store: past[] / future[] / undo() / redo()
+addElement   → push snapshot
+removeElement → push snapshot  
+moveElement  → push snapshot
+```
+Горячие клавиши `⌘Z` / `⌘⇧Z` уже есть в keyboard handler — добавить `undo`/`redo` вызов.  
+**Файлы:** `packages/builder/src/store.ts`, `builder-editor.tsx` (keydown handler)  
+**Сложность:** 4–5 ч
+
+---
+
+### R14.5 — Чёткие зоны drop: inside vs after 🟡 P1
+**Что:** когда тащишь на container/columns — верхняя половина = "вставить перед", нижняя = "вставить после", центр = "вставить внутрь".  
+**Визуал:**
+```
+[ Container ]  ← верхняя зона: синяя линия ПЕРЕД
+  [ Button ]   ← центр: dashed border = ВНУТРЬ  
+[ Container ]  ← нижняя зона: синяя линия ПОСЛЕ
+```
+**Сложность:** 2–3 ч (поверх R14.1/R14.2)
+
+---
+
+### R14.6 — Сброс выделения при смене блока 🟢 P2
+**Что:** при переключении на другой блок или выходе из Редактора → `selectedElementId = null`.  
+**Как:** `useEffect` на `block?.id` → `store.getState().selectElement('')`  
+**Сложность:** 30 мин
+
+---
+
+### R14.7 — Надёжный double-click для text edit 🟢 P2
+**Что:** сейчас одиночный клик выделяет элемент, двойной — входит в inline text edit. Иногда срабатывает неправильно.  
+**Как:** обрабатывать `dblclick` через `clickCount` или `setTimeout` — если второй клик пришёл за 300 мс, это double-click, не одиночный.  
+**Сложность:** 1–2 ч
+
+---
+
 ## Порядок выполнения
 
 ```
-R7.1  nav-01              ~4 ч
-  → R7.2  footer-01       ~4 ч
-  → R7.3  pricing-01      ~5 ч
-  → R8.1  stack element   ~6 ч
-  → R8.2  grid element    ~3 ч
-  → R9    variants A/B/C  ~4 ч + обновление шаблонов
-  → R10.1 logos-01        ~3 ч
-  → R10.2 testimonial-01  ~3 ч
-  → R10.3 hero-04         ~3 ч
-  → R13.1 CMS search      ~1 ч
-  → R13.3 CMS multi-card  ~3 ч
-  → R11   video/icon/form ~8 ч
-  → R12   fork built-in   ~2 ч
-  → R13.2 CMS drag        ~4 ч
+R14.1 Pointer Events drag   ~5 ч  ← сначала, всё остальное зависит
+  → R14.2 Drop-line         ~4 ч
+  → R7.1  nav-01            ~4 ч
+  → R7.2  footer-01         ~4 ч
+  → R7.3  pricing-01        ~5 ч
+  → R8.1  stack element     ~6 ч
+  → R14.3 Zoom overlays     ~4 ч
+  → R14.4 Undo/Redo         ~5 ч
+  → R9    variants A/B/C    ~4 ч
+  → R10   logos/testimonial ~6 ч
+  → R14.5 Drop zones        ~3 ч
+  → R13   CMS backlog       ~5 ч
+  → R11   video/icon/form   ~8 ч
+  → R12   Fork built-in     ~2 ч
+  → R14.6 Selection reset   ~0.5 ч
+  → R14.7 Double-click      ~2 ч
 ```
 
-**Итого оценка: ~53 часа** (реалистично за 2–3 недели при работе по 3–5 ч в день)
+**Итого оценка: ~68 часов** (2–3 недели при работе по 3–5 ч в день)
 
 ---
 
