@@ -159,6 +159,33 @@ const SECTIONS: GuideSection[] = [
     example: `# Минимальный сценарий\n\n1) Bitrix module settings:\nAPI key = ваш ключ\nEndpoint = /local/modules/randee.connector/tools/connector.php\n\n2) Builder CMS:\nSite URL = https://example.com\nAPI key = тот же ключ\nConnector Path = /local/modules/randee.connector/tools/connector.php\n\n3) Нажмите:\nSave CMS settings → Проверить подключение → Обновить инфоблоки`
   },
   {
+    id: 'bitrix-cms-workflow',
+    icon: Database,
+    title: '🔌 Битрикс CMS: полный сценарий',
+    subtitle: 'Подключить инфоблок → привязать поля → увидеть реальные данные → получить PHP. Всё за 5 шагов.',
+    visual: 'cms-workflow',
+    flow: ['CMS: подключить', 'Выбрать инфоблок', 'Привязать поля', 'Живой превью', 'Export PHP'],
+    steps: [
+      '**Вкладка CMS** → Site URL + API Key + Connector Path → **Сохранить** → **Проверить подключение**.',
+      '**Обновить инфоблоки** — появится список инфоблоков. Выберите нужный (например «Новости [ID:5]»).',
+      'В Редакторе компонента кликните элемент (заголовок, текст, картинка) → Inspector → **CMS привязка**.',
+      'Выберите поле инфоблока: NAME → title, PREVIEW_TEXT → текст, PREVIEW_PICTURE → src.',
+      'Canvas покажет реальные данные из Битрикса. **Export Bitrix** → в zip будет `component.php` с `CIBlockElement::GetList`.',
+      'Кнопка **Открыть в IDE** откроет `component.php` в VS Code / Cursor прямо из Builder.'
+    ],
+    cards: [
+      { label: 'A) Где подключить', detail: 'Вкладка CMS в верхней панели. Site URL + API key + Connector Path.' },
+      { label: 'B) Привязка полей', detail: 'Редактор ON → кликнуть элемент → Inspector → CMS привязка → выбрать поле.' },
+      { label: 'C) Реальные данные', detail: 'После привязки canvas показывает данные из первого элемента инфоблока.' },
+      { label: 'D) PHP экспорт', detail: 'Export Bitrix → component.php содержит CIBlockElement::GetList с нужными полями.' }
+    ],
+    tips: [
+      'Connector Path по умолчанию: `/local/modules/randee.connector/tools/connector.php`',
+      'Если видите «Load failed» — проверьте CORS (`allowed_origins` в настройках модуля) и HTTPS сайта.',
+      'Кнопка «Открыть в IDE» (иконка в Blocks) открывает файл компонента в VS Code через vscode:// ссылку.'
+    ]
+  },
+  {
     id: 'cms-element-binding',
     icon: Database,
     title: 'CMS: привязка UI-элементов',
@@ -213,40 +240,57 @@ const SECTIONS: GuideSection[] = [
   {
     id: 'newbie-block-flow',
     icon: Layers,
-    title: 'Новичку: блоки, props и переменные',
-    subtitle: 'Быстрая схема: как добавлять блоки, какие поля менять и где живут переменные.',
-    flow: ['Insert → блок', 'Клик по блоку', 'Component / CMS Slider Controls', 'Save page now', 'JSON при необходимости'],
+    title: '🖱️ Редактирование блоков — без кода',
+    subtitle: 'Кликните блок → Inspector справа → меняйте тексты и настройки. Изменения видны сразу.',
+    visual: 'quick-inspector',
+    flow: ['Insert → блок', 'Клик по блоку', 'Inspector: title / subtitle', 'Save page now'],
     steps: [
-      'Во вкладке **Pages** используйте кнопку **+ New page** для создания новой страницы (имя + slug).',
-      'Во вкладке **Pages** рядом со страницей доступны действия: **Duplicate**, **Rename**, **Delete**.',
-      'Добавление блока: нажмите **Insert** и выберите блок из списка Components.',
-      'Выбор блока: кликните по блоку на canvas — справа откроется Inspector.',
-      'Редактирование данных: в секции **Component** (или **CMS Slider Controls**) меняйте поля props.',
-      'Что такое props: это переменные блока (`title`, `subtitle`, `cmsIblockId`, `cmsLimit` и т.д.), они влияют на preview и экспорт.',
-      'Для CMS Slider: сначала откройте экран **CMS**, подключите сайт, затем в правой панели нажмите **Configure as Swiper announcements**.',
-      'Сохранение: используйте кнопку **Save page now** в шапке, чтобы зафиксировать текущее состояние сразу.',
-      'IDE-режим: в панели Blocks откройте `preview.tsx`, `style.css`, `script.js` и редактируйте компонент кодом.'
+      'Нажмите **Insert** вверху → выберите блок из списка (Hero, FAQ, Features, Pricing…)',
+      'Кликните по блоку на canvas — он выделится рамкой, справа откроется **Inspector**.',
+      'В Inspector меняйте поля: **title** (заголовок), **subtitle** (подзаголовок), **buttonText** (кнопка) — всё сразу отображается на canvas.',
+      'Для смены картинки — поле **image** или **src** в Inspector: вставьте URL или путь к файлу.',
+      'Сохранить: кнопка **Save page now** в шапке, или ⌘S. Статус «Saved» подтвердит.',
+      'Для CMS Slider: сначала вкладка **CMS** (подключить Битрикс), потом в Inspector → **Configure as Swiper**.'
     ],
     cards: [
-      { label: 'Где переменные', detail: 'В правой панели Inspector, секция Component/CMS Slider Controls.' },
-      { label: 'Где код', detail: 'Слева в Blocks: preview.tsx, init.ts, style.css, script.js.' },
-      { label: 'Быстрый safe-save', detail: 'Кнопка Save page now в верхней панели.' },
-      { label: 'Проверка CMS', detail: 'Экран CMS → Проверить подключение → Обновить инфоблоки.' }
+      { label: 'Что такое props', detail: 'Переменные блока: title, subtitle, buttonText, image, variant… Всё в Inspector.' },
+      { label: 'Где код блока', detail: 'Блоки панель слева → откройте preview.tsx, style.css — для правок кодом.' },
+      { label: 'Быстрый save', detail: '⌘S или кнопка «Save page now» в верхней панели.' },
+      { label: 'CMS данные', detail: 'Inspector → секция «CMS привязка» → выбрать инфоблок и поле.' }
+    ]
+  },
+  {
+    id: 'quick-edit',
+    icon: Pencil,
+    title: '⚡ Быстрое редактирование блоков',
+    subtitle: 'Меняйте варианты, фоны и тексты в один клик — Inspector всегда рядом.',
+    visual: 'block-variants',
+    steps: [
+      'Кликните блок на canvas — Inspector открывается справа автоматически.',
+      'Найдите поле **Variant** (или Style) в Inspector — переключите на A / B / C чтобы сменить вид блока.',
+      'Меняйте **background** — цвет фона или URL картинки.',
+      'Поле **buttonText** — текст кнопки. **buttonUrl** — ссылка.',
+      'Для перестановки блоков: в панели **Blocks** слева перетащите блок выше/ниже.',
+      'Для копии блока: правая кнопка на canvas → **Дублировать**, или в Blocks → значок копии.'
+    ],
+    cards: [
+      { label: 'Variant A / B / C', detail: 'Готовые стили одного блока — тёмный, светлый, акцентный. Переключите в Inspector.' },
+      { label: 'Drag в Blocks', detail: 'Панель Blocks слева — перетащите блок для смены порядка на странице.' },
+      { label: 'Дублировать', detail: 'ПКМ на canvas или кнопка в Blocks → создаёт точную копию блока.' },
+      { label: 'Удалить', detail: 'ПКМ → Удалить, или выбрать блок + Delete на клавиатуре.' }
     ]
   },
   {
     id: 'start',
     icon: BookOpen,
-    title: 'Быстрый старт',
-    subtitle: 'Пять минут — и вы уже собрали первую страницу.',
-    visual: ['layout', 'page-block'],
+    title: '🚀 Быстрый старт для новичка',
+    subtitle: 'Первая страница за 5 шагов — без написания кода. Нажимайте стрелки и смотрите.',
+    visual: ['newbie-first-page', 'layout'],
     flow: ['Insert → Hero', 'Клик по блоку', 'Inspector → текст', 'Save страницы', 'Export Bitrix'],
-    steps: [
-      'Откройте Builder: `/builder` или `/builder?slug=имя-страницы`.',
-      'Через **Insert** добавьте готовый блок (Hero, FAQ, Features).',
-      'Выберите блок на canvas — справа в **Inspector** меняйте заголовки и тексты.',
-      'Страница сохраняется автоматически; статус **Saved** виден в шапке.',
-      'Когда готово — **Export Bitrix** скачает zip для Bitrix.'
+    tips: [
+      'Страница сохраняется автоматически — статус «Saved» в шапке.',
+      'Можно открыть Builder на iPad и работать жестами (pinch = zoom, long press = меню).',
+      'Все блоки сделаны готовыми — менять нужно только тексты и картинки в Inspector.'
     ]
   },
   {
@@ -326,18 +370,18 @@ export default function Preview({ title = 'Hello' }) {
   {
     id: 'panels',
     icon: Layers,
-    title: 'Панели Builder',
-    subtitle: 'Где что искать — схема интерфейса.',
-    visual: 'layout',
+    title: '🗺️ Панели Builder — что где',
+    subtitle: 'Три панели слева + Inspector справа. Всё что нужно — всегда под рукой.',
+    visual: ['panels-map', 'layout'],
     cards: [
-      { label: 'Blocks', detail: 'Структура страницы, код файлов, reorder, export block.' },
-      { label: 'Assets', detail: 'Сохранённые компоненты, UI Elements (в Редактор), vendor CSS/JS.' },
-      { label: 'Pages', detail: 'Список страниц (при подключённом API).' },
-      { label: 'Inspector', detail: 'Props блока, props элемента, design artboard.' }
+      { label: '← Blocks', detail: 'Структура страницы, код файлов (preview.tsx, style.css), rename, export block.' },
+      { label: '← Assets', detail: 'Компоненты из библиотеки, UI Elements (только в режиме Редактора), CSS/JS.' },
+      { label: '← Pages', detail: 'Список страниц: создать, переименовать, удалить, переключиться.' },
+      { label: '→ Inspector', detail: 'Props блока, CMS привязка, Artboard (размер), Variant.' }
     ],
     tips: [
-      'Тяните край панели — меняется ширина. Скрыть/показать — иконки у краёв canvas.',
-      'Инструмент **Pan (H)** — двигать canvas; **Select (V)** — выбирать блоки.'
+      'Потяните край панели — изменится ширина. Иконки у краёв canvas скрывают/показывают панели.',
+      '**Pan (H)** — двигать canvas; **Select (V)** — выбирать блоки. Hotkeys как во Framer.'
     ]
   },
   {
@@ -676,26 +720,26 @@ export function BuilderInstructions({ t, onClose }: BuilderInstructionsProps) {
           </div>
 
           <div className="randee-instructions__hero">
-            <p className="randee-instructions__hero-kicker">Randee Builder</p>
-            <h2 className="randee-instructions__hero-title">Соберите страницу без IDE</h2>
+            <p className="randee-instructions__hero-kicker">Randee Builder · Инструкция</p>
+            <h2 className="randee-instructions__hero-title">Страница за 5 минут — без кода</h2>
             <p className="randee-instructions__hero-text">
-              Готовые секции (Hero, FAQ) — через <strong>Insert</strong>. Свои блоки — через{' '}
-              <strong>New → Component</strong> и редактор кода. Кнопки и формы внутри компонента — через{' '}
-              <strong>Редактор</strong> и каталог UI Elements.{' '}
-              <strong>Верстальщику элементов</strong> — начните с раздела 1 в меню слева.
+              Добавляйте готовые блоки через <strong>Insert</strong>, меняйте тексты в <strong>Inspector</strong>,
+              подключайте данные из <strong>Битрикс CMS</strong> — и экспортируйте сайт одной кнопкой.
+              Новичку — раздел «🚀 Быстрый старт». Разработчику — раздел «Верстальщик».
             </p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
               {[
-                { icon: FolderOpen, label: 'Blocks — структура' },
-                { icon: Layers, label: 'Assets — библиотека' },
-                { icon: Code2, label: 'Код + Emmet' }
+                { icon: MousePointer2, label: '1. Insert → блок' },
+                { icon: Pencil, label: '2. Кликнуть → Inspector' },
+                { icon: Database, label: '3. CMS данные' },
+                { icon: Download, label: '4. Export Bitrix' }
               ].map(({ icon: Icon, label }) => (
                 <span
                   key={label}
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px]"
+                  className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-[11px] font-medium"
                   style={{ background: t.inputBg, color: t.textSecondary, border: `1px solid ${t.divider}` }}
                 >
-                  <Icon className="h-3 w-3" style={{ color: t.accent }} />
+                  <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: t.accent }} />
                   {label}
                 </span>
               ))}

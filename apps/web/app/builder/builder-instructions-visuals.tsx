@@ -620,6 +620,504 @@ export function GuideTouchVisual({ t }: { t: InstructionsTheme }) {
   )
 }
 
+/** ── CMS workflow: подключить → инфоблок → привязать → превью → PHP ── */
+export function GuideCmsWorkflowVisual({ t }: { t: InstructionsTheme }) {
+  const [step, setStep] = React.useState(0)
+
+  const steps = [
+    { num: '1', emoji: '🔌', title: 'Подключить', color: '#3b82f6', desc: 'CMS таб → URL сайта + API key → Сохранить → Проверить' },
+    { num: '2', emoji: '📋', title: 'Инфоблок', color: '#8b5cf6', desc: 'Обновить список → выбрать нужный инфоблок (например «Новости [ID:5]»)' },
+    { num: '3', emoji: '🔗', title: 'Привязать', color: '#06b6d4', desc: 'NAME → заголовок · PREVIEW_TEXT → текст · PREVIEW_PICTURE → картинка' },
+    { num: '4', emoji: '👁️', title: 'Превью', color: '#10b981', desc: 'Реальные данные из Битрикса отображаются прямо на canvas' },
+    { num: '5', emoji: '📦', title: 'PHP', color: '#f59e0b', desc: 'Export Bitrix → component.php с CIBlockElement::GetList' }
+  ]
+
+  const current = steps[step]
+
+  return (
+    <div className="mb-4">
+      <VisualLabel t={t}>Битрикс CMS — пошаговый сценарий</VisualLabel>
+
+      <div className="mb-3 flex items-center gap-1 overflow-x-auto pb-1">
+        {steps.map((s, i) => (
+          <React.Fragment key={s.num}>
+            <button
+              type="button"
+              onClick={() => setStep(i)}
+              className="flex shrink-0 flex-col items-center gap-1 rounded-xl p-2 text-center"
+              style={{
+                background: step === i ? `${s.color}20` : t.inputBg,
+                border: `2px solid ${step === i ? s.color : t.divider}`,
+                cursor: 'pointer',
+                minWidth: 66
+              }}
+            >
+              <span className="text-xl">{s.emoji}</span>
+              <span className="text-[9px] font-bold" style={{ color: step === i ? s.color : t.textMuted }}>
+                {s.title}
+              </span>
+            </button>
+            {i < steps.length - 1 ? (
+              <ChevronRight className="h-3 w-3 shrink-0" style={{ color: t.textMuted }} />
+            ) : null}
+          </React.Fragment>
+        ))}
+      </div>
+
+      <div className="rounded-xl p-4" style={{ background: t.inputBg, border: `2px solid ${current.color}44` }}>
+        <div className="mb-3 flex items-start gap-3">
+          <span className="text-3xl">{current.emoji}</span>
+          <div>
+            <p className="text-sm font-bold" style={{ color: current.color }}>
+              Шаг {step + 1}: {current.title}
+            </p>
+            <p className="mt-1 text-[12px] leading-relaxed" style={{ color: t.textSecondary }}>
+              {current.desc}
+            </p>
+          </div>
+        </div>
+
+        {step === 0 ? (
+          <div className="rounded-lg p-3" style={{ background: t.bg, border: `1px solid ${t.divider}` }}>
+            {[
+              { label: 'Site URL', value: 'https://example.com' },
+              { label: 'API Key', value: '●●●●●●●●●●●●' },
+              { label: 'Connector Path', value: '/local/modules/randee.connector/...' }
+            ].map((field) => (
+              <div key={field.label} className="mb-2 flex items-center gap-2">
+                <span className="w-24 shrink-0 text-[10px]" style={{ color: t.textMuted }}>
+                  {field.label}
+                </span>
+                <div
+                  className="flex-1 rounded px-2 py-1.5 text-[10px] font-mono"
+                  style={{ background: t.inputBg, border: `1px solid ${t.divider}`, color: t.text }}
+                >
+                  {field.value}
+                </div>
+              </div>
+            ))}
+            <span
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-medium"
+              style={{ background: '#3b82f618', color: '#3b82f6', border: '1px solid #3b82f640' }}
+            >
+              ✓ Подключено
+            </span>
+          </div>
+        ) : step === 1 ? (
+          <div className="overflow-hidden rounded-lg" style={{ border: `1px solid ${t.divider}` }}>
+            {[
+              { id: '5', name: 'Новости', active: true },
+              { id: '8', name: 'Каталог', active: false },
+              { id: '12', name: 'Акции', active: false }
+            ].map((ib) => (
+              <div
+                key={ib.id}
+                className="flex items-center gap-2 px-3 py-2 text-[11px]"
+                style={{
+                  background: ib.active ? '#8b5cf618' : 'transparent',
+                  borderLeft: `3px solid ${ib.active ? '#8b5cf6' : 'transparent'}`,
+                  borderBottom: `1px solid ${t.divider}`,
+                  color: ib.active ? '#8b5cf6' : t.textSecondary
+                }}
+              >
+                <span style={{ color: t.textMuted }}>ID:{ib.id}</span>
+                <span className="font-medium">{ib.name}</span>
+                {ib.active ? <span className="ml-auto text-[9px]">✓ выбран</span> : null}
+              </div>
+            ))}
+          </div>
+        ) : step === 2 ? (
+          <div className="grid gap-1.5">
+            {[
+              { prop: 'Заголовок (title)', field: 'NAME', bg: '#06b6d4' },
+              { prop: 'Текст (text)', field: 'PREVIEW_TEXT', bg: '#06b6d4' },
+              { prop: 'Картинка (src)', field: 'PREVIEW_PICTURE', bg: '#06b6d4' }
+            ].map((b) => (
+              <div
+                key={b.prop}
+                className="flex items-center gap-2 rounded-lg px-3 py-2"
+                style={{ background: t.bg, border: `1px solid ${t.divider}` }}
+              >
+                <span className="flex-1 text-[11px]" style={{ color: t.text }}>
+                  {b.prop}
+                </span>
+                <ArrowRight className="h-3 w-3 shrink-0" style={{ color: b.bg }} />
+                <span
+                  className="rounded px-2 py-0.5 text-[10px] font-mono font-semibold"
+                  style={{ background: `${b.bg}18`, color: b.bg }}
+                >
+                  {b.field}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : step === 3 ? (
+          <div className="rounded-lg p-3" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+            <p className="mb-2 text-[9px] font-bold uppercase text-green-600">Живой превью — реальные данные из Битрикса</p>
+            {[
+              { title: 'Новый продукт запущен', text: 'Краткое описание из инфоблока' },
+              { title: 'Акция на лето', text: 'Специальное предложение...' }
+            ].map((item, i) => (
+              <div key={i} className="mb-2 flex gap-2 rounded-lg bg-white p-2">
+                <div
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-lg"
+                  style={{ background: '#e5e7eb' }}
+                >
+                  🖼️
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-neutral-800">{item.title}</p>
+                  <p className="text-[10px] text-neutral-500">{item.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <pre
+            className="overflow-x-auto rounded-lg p-3 text-[10px] leading-relaxed"
+            style={{ background: '#1e1e1e', color: '#9cdcfe', fontFamily: 'ui-monospace, Menlo, monospace' }}
+          >
+            {`$rs = CIBlockElement::GetList(\n  array('SORT' => 'ASC', 'ID' => 'DESC'),\n  array('IBLOCK_ID' => 5, 'ACTIVE' => 'Y'),\n  false,\n  array('nTopCount' => 10),\n  array('ID', 'NAME', 'PREVIEW_TEXT',\n        'PREVIEW_PICTURE')\n);`}
+          </pre>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** ── Варианты блоков A/B/C ── */
+export function GuideBlockVariantsVisual({ t }: { t: InstructionsTheme }) {
+  const [variant, setVariant] = React.useState<'A' | 'B' | 'C'>('A')
+
+  const variants = {
+    A: { bg: 'linear-gradient(135deg,#1e40af,#3b82f6)', text: 'Вариант A — тёмный', btn: '#fff', btnText: '#1e40af' },
+    B: { bg: 'linear-gradient(135deg,#f0fdf4,#dcfce7)', text: 'Вариант B — светлый', btn: '#16a34a', btnText: '#fff' },
+    C: {
+      bg: 'linear-gradient(135deg,#fefce8,#fef9c3)',
+      text: 'Вариант C — акцентный',
+      btn: '#ca8a04',
+      btnText: '#fff'
+    }
+  }
+
+  const v = variants[variant]
+
+  return (
+    <div className="mb-4">
+      <VisualLabel t={t}>Переключение вариантов блока — нажмите A / B / C</VisualLabel>
+
+      <div className="mb-2 flex gap-1.5">
+        {(['A', 'B', 'C'] as const).map((letter) => (
+          <button
+            key={letter}
+            type="button"
+            onClick={() => setVariant(letter)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[13px] font-bold"
+            style={{
+              background: variant === letter ? t.accent : t.inputBg,
+              color: variant === letter ? '#fff' : t.textSecondary,
+              border: `2px solid ${variant === letter ? t.accent : t.divider}`,
+              cursor: 'pointer'
+            }}
+          >
+            {letter}
+          </button>
+        ))}
+        <span className="ml-2 self-center text-[11px]" style={{ color: t.textMuted }}>
+          Inspector → Variant
+        </span>
+      </div>
+
+      <div
+        className="overflow-hidden rounded-xl transition-all"
+        style={{ background: v.bg, border: `1px solid ${t.divider}` }}
+      >
+        <div className="px-6 py-8">
+          <p
+            className="text-[10px] font-semibold uppercase opacity-70"
+            style={{ color: variant === 'A' ? '#93c5fd' : '#6b7280' }}
+          >
+            Hero — {v.text}
+          </p>
+          <h3
+            className="mt-1 text-lg font-bold"
+            style={{ color: variant === 'A' ? '#fff' : '#111827' }}
+          >
+            Заголовок лендинга
+          </h3>
+          <p
+            className="mt-1 text-sm"
+            style={{ color: variant === 'A' ? '#bfdbfe' : '#6b7280' }}
+          >
+            Подзаголовок блока
+          </p>
+          <button
+            type="button"
+            className="mt-4 rounded-lg px-4 py-2 text-sm font-semibold"
+            style={{ background: v.btn, color: v.btnText, border: 'none', cursor: 'default' }}
+          >
+            Начать →
+          </button>
+        </div>
+      </div>
+
+      <p className="mt-2 text-[10px]" style={{ color: t.textMuted }}>
+        Выберите вариант в Inspector → поле Variant — блок перерисуется без правки кода.
+      </p>
+    </div>
+  )
+}
+
+/** ── Быстрое редактирование на canvas без Редактора ── */
+export function GuideQuickInspectorVisual({ t }: { t: InstructionsTheme }) {
+  const [selected, setSelected] = React.useState(false)
+  const [title, setTitle] = React.useState('Добро пожаловать')
+  const [subtitle, setSubtitle] = React.useState('Ваш новый лендинг')
+
+  return (
+    <div className="mb-4">
+      <VisualLabel t={t}>Кликните по блоку на canvas → Inspector справа</VisualLabel>
+      <div className="grid gap-3 lg:grid-cols-[1fr_180px]">
+        {/* Canvas */}
+        <button
+          type="button"
+          onClick={() => setSelected(true)}
+          className="overflow-hidden rounded-xl text-left"
+          style={{
+            border: `2px solid ${selected ? t.accent : t.divider}`,
+            background: '#f0f4ff',
+            cursor: 'pointer',
+            boxShadow: selected ? `0 0 0 3px ${t.accent}33` : 'none'
+          }}
+        >
+          <div className="px-6 py-8">
+            {selected ? (
+              <span
+                className="mb-2 inline-block rounded px-2 py-0.5 text-[9px] font-bold"
+                style={{ background: t.accent, color: '#fff' }}
+              >
+                ✓ выбран
+              </span>
+            ) : (
+              <span
+                className="mb-2 inline-block rounded px-2 py-0.5 text-[9px]"
+                style={{ background: t.inputBg, color: t.textMuted, border: `1px solid ${t.divider}` }}
+              >
+                кликните
+              </span>
+            )}
+            <h3 className="text-lg font-bold text-gray-800">{title}</h3>
+            <p className="text-sm text-gray-500">{subtitle}</p>
+            <div
+              className="mt-3 inline-block rounded-lg px-4 py-2 text-sm font-semibold text-white"
+              style={{ background: t.accent }}
+            >
+              Начать
+            </div>
+          </div>
+        </button>
+
+        {/* Inspector */}
+        <div className="rounded-xl p-3" style={{ background: t.panel, border: `1px solid ${selected ? t.accent : t.divider}` }}>
+          <p className="mb-2 text-[9px] font-bold uppercase" style={{ color: t.textMuted }}>
+            Inspector
+          </p>
+          {selected ? (
+            <div className="space-y-2">
+              <div>
+                <label className="block text-[9px] mb-0.5" style={{ color: t.textMuted }}>title</label>
+                <input
+                  className="w-full rounded px-2 py-1 text-[11px]"
+                  style={{ background: t.inputBg, border: `1px solid ${t.accent}`, color: t.text }}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-[9px] mb-0.5" style={{ color: t.textMuted }}>subtitle</label>
+                <input
+                  className="w-full rounded px-2 py-1 text-[11px]"
+                  style={{ background: t.inputBg, border: `1px solid ${t.divider}`, color: t.text }}
+                  value={subtitle}
+                  onChange={(e) => setSubtitle(e.target.value)}
+                />
+              </div>
+              <div
+                className="rounded px-2 py-1 text-[10px]"
+                style={{ background: `${t.accent}12`, color: t.accent, border: `1px solid ${t.accent}30` }}
+              >
+                ✓ Изменения сразу на canvas
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-20 items-center justify-center rounded-lg" style={{ background: t.inputBg }}>
+              <p className="text-center text-[10px]" style={{ color: t.textMuted }}>
+                ← кликните блок
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** ── Большой онбординг для новичка: первая страница за 5 шагов ── */
+export function GuideNewbieFirstPageVisual({ t }: { t: InstructionsTheme }) {
+  const [step, setStep] = React.useState(0)
+
+  const steps = [
+    {
+      emoji: '🗂️',
+      title: 'Insert → Hero',
+      desc: 'Нажмите Insert вверху → выберите Hero. Блок появится на странице.',
+      color: '#3b82f6'
+    },
+    {
+      emoji: '🖱️',
+      title: 'Кликните блок',
+      desc: 'Кликните по блоку Hero на canvas. Справа откроется Inspector.',
+      color: '#8b5cf6'
+    },
+    {
+      emoji: '✏️',
+      title: 'Правим текст',
+      desc: 'В Inspector найдите поле title — введите свой заголовок. Изменение видно сразу.',
+      color: '#06b6d4'
+    },
+    {
+      emoji: '💾',
+      title: 'Сохранить',
+      desc: 'Нажмите «Save page now» в шапке или ⌘S. Статус «Saved» — всё в порядке.',
+      color: '#10b981'
+    },
+    {
+      emoji: '📤',
+      title: 'Export Bitrix',
+      desc: 'Нажмите «Export Bitrix» — скачается zip для загрузки на ваш сайт Битрикс.',
+      color: '#f59e0b'
+    }
+  ]
+
+  return (
+    <div className="mb-4">
+      <VisualLabel t={t}>Первая страница — 5 шагов для новичка</VisualLabel>
+
+      <div className="mb-3 grid grid-cols-5 gap-1">
+        {steps.map((s, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => setStep(i)}
+            className="flex flex-col items-center gap-1 rounded-xl py-2 px-1 text-center"
+            style={{
+              background: step === i ? `${s.color}18` : t.inputBg,
+              border: `2px solid ${step === i ? s.color : t.divider}`,
+              cursor: 'pointer'
+            }}
+          >
+            <span className="text-xl">{s.emoji}</span>
+            <span
+              className="flex h-5 w-5 items-center justify-center rounded-full text-[9px] font-bold"
+              style={{ background: step === i ? s.color : t.panelElevated, color: step === i ? '#fff' : t.textMuted }}
+            >
+              {i + 1}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <div
+        className="rounded-xl p-5"
+        style={{ background: `${steps[step].color}0c`, border: `2px solid ${steps[step].color}33` }}
+      >
+        <div className="flex items-start gap-4">
+          <span className="text-4xl">{steps[step].emoji}</span>
+          <div>
+            <p className="text-base font-bold" style={{ color: steps[step].color }}>
+              {step + 1}. {steps[step].title}
+            </p>
+            <p className="mt-1.5 text-sm leading-relaxed" style={{ color: t.textSecondary }}>
+              {steps[step].desc}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 flex gap-2">
+          {step > 0 ? (
+            <button
+              type="button"
+              onClick={() => setStep(step - 1)}
+              className="rounded-lg px-3 py-1.5 text-[11px] font-medium"
+              style={{ background: t.inputBg, color: t.textSecondary, border: `1px solid ${t.divider}`, cursor: 'pointer' }}
+            >
+              ← Назад
+            </button>
+          ) : null}
+          {step < steps.length - 1 ? (
+            <button
+              type="button"
+              onClick={() => setStep(step + 1)}
+              className="rounded-lg px-3 py-1.5 text-[11px] font-medium"
+              style={{ background: steps[step].color, color: '#fff', border: 'none', cursor: 'pointer' }}
+            >
+              Далее →
+            </button>
+          ) : (
+            <span
+              className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-[11px] font-bold"
+              style={{ background: '#10b98118', color: '#10b981', border: '1px solid #10b98140' }}
+            >
+              🎉 Готово! Первая страница создана
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** ── Схема панелей со стрелками и подписями ── */
+export function GuidePanelsMapVisual({ t }: { t: InstructionsTheme }) {
+  const panels = [
+    { side: 'left', name: 'Blocks', color: '#3b82f6', items: ['Структура страницы', 'Код файлов', 'Rename / Delete'] },
+    { side: 'left', name: 'Assets', color: '#8b5cf6', items: ['Компоненты', 'UI Elements', 'CSS/JS библиотеки'] },
+    { side: 'left', name: 'Pages', color: '#06b6d4', items: ['Список страниц', 'New / Rename', 'Delete'] },
+    { side: 'right', name: 'Inspector', color: '#f59e0b', items: ['Props блока', 'CMS привязка', 'Artboard size'] }
+  ]
+
+  return (
+    <div className="mb-4">
+      <VisualLabel t={t}>Панели интерфейса</VisualLabel>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {panels.map((p) => (
+          <div
+            key={p.name}
+            className="rounded-xl p-3"
+            style={{ background: `${p.color}0c`, border: `1px solid ${p.color}30` }}
+          >
+            <div className="mb-2 flex items-center gap-2">
+              <span
+                className="rounded px-2 py-0.5 text-[10px] font-bold"
+                style={{ background: p.color, color: '#fff' }}
+              >
+                {p.side === 'left' ? '← ' : '→ '}{p.name}
+              </span>
+            </div>
+            <ul className="space-y-0.5">
+              {p.items.map((item) => (
+                <li key={item} className="flex items-center gap-1 text-[11px]" style={{ color: t.textSecondary }}>
+                  <span style={{ color: p.color }}>·</span> {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export type GuideVisualId =
   | 'layout'
   | 'insert-compare'
@@ -632,6 +1130,11 @@ export type GuideVisualId =
   | 'export'
   | 'touch'
   | 'panels'
+  | 'cms-workflow'
+  | 'block-variants'
+  | 'quick-inspector'
+  | 'newbie-first-page'
+  | 'panels-map'
 
 export function GuideSectionVisual({ visualId, t }: { visualId: GuideVisualId; t: InstructionsTheme }) {
   switch (visualId) {
@@ -657,6 +1160,16 @@ export function GuideSectionVisual({ visualId, t }: { visualId: GuideVisualId; t
       return <GuideTouchVisual t={t} />
     case 'panels':
       return <GuideBuilderLayoutVisual t={t} />
+    case 'cms-workflow':
+      return <GuideCmsWorkflowVisual t={t} />
+    case 'block-variants':
+      return <GuideBlockVariantsVisual t={t} />
+    case 'quick-inspector':
+      return <GuideQuickInspectorVisual t={t} />
+    case 'newbie-first-page':
+      return <GuideNewbieFirstPageVisual t={t} />
+    case 'panels-map':
+      return <GuidePanelsMapVisual t={t} />
     default:
       return null
   }
