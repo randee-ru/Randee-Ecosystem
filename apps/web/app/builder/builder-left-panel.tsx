@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import {
+  Boxes,
   Component,
   FileText,
   Home,
@@ -9,6 +10,9 @@ import {
   Layers,
   Search,
 } from 'lucide-react'
+import type { BuilderCmsConnection } from '@randee/builder'
+import { BuilderCmsBrowser } from './builder-cms-browser'
+import { isCmsConnectionConfigured } from './builder-cms-utils'
 import type { ElementVariant, PageBlock } from '@randee/builder'
 import type { BuilderStore } from '@randee/builder'
 import type { LibraryVariant } from '@randee/blocks'
@@ -16,7 +20,7 @@ import type { StoreApi } from 'zustand'
 import { BuilderLayerTree } from './builder-layer-tree'
 import { BuilderAssetsComponentTree } from './builder-assets-component-tree'
 import type { BuilderAssetTarget } from './builder-asset-types'
-import { BuilderInsertPanel } from './builder-insert-panel'
+import { BuilderAssetsPanel } from './builder-assets-panel'
 import { ComponentEditorLeftPanel } from './builder-component-editor-left'
 
 export type SavedAssetComponent = {
@@ -25,7 +29,7 @@ export type SavedAssetComponent = {
   description: string
 }
 
-type LeftTab = 'pages' | 'blocks' | 'assets' | 'media'
+type LeftTab = 'pages' | 'blocks' | 'assets' | 'cms' | 'media'
 
 type VendorLibrary = {
   id: string
@@ -54,6 +58,7 @@ const NAV_TABS: Array<{ id: LeftTab; icon: React.ComponentType<{ className?: str
   { id: 'pages',  icon: FileText,  label: 'Страницы'    },
   { id: 'blocks', icon: Layers,    label: 'Слои'        },
   { id: 'assets', icon: Component, label: 'Компоненты'  },
+  { id: 'cms',    icon: Boxes,     label: 'CMS'         },
   { id: 'media',  icon: Image,     label: 'Медиа'       },
 ]
 
@@ -99,6 +104,12 @@ type BuilderLeftPanelProps = {
   onDuplicatePage?: (slug: string) => void
   onRenamePage?: (slug: string) => void
   onDeletePage?: (slug: string) => void
+  cmsConnection?: BuilderCmsConnection
+  onOpenCmsSettings?: () => void
+  onEditComponent?: () => void
+  onNewComponent?: () => void
+  onOpenComponentCode?: (block: PageBlock) => void
+  onExitComponentEdit?: () => void
 }
 
 /** Отдельный компонент кнопки nav — локальный useState для tooltip */
@@ -116,6 +127,7 @@ function NavButton({
   return (
     <button
       type="button"
+      data-testid={`left-tab-${id}`}
       aria-label={label}
       aria-pressed={active}
       className="flex h-7 w-7 items-center justify-center rounded-md"
@@ -203,6 +215,7 @@ function searchPlaceholder(tab: LeftTab) {
   if (tab === 'pages')  return 'Поиск страниц…'
   if (tab === 'blocks') return 'Поиск слоёв…'
   if (tab === 'assets') return 'Поиск компонентов…'
+  if (tab === 'cms') return 'CMS Bitrix…'
   return 'Поиск…'
 }
 
@@ -245,7 +258,13 @@ export function BuilderLeftPanel({
   onOpenPage,
   onDuplicatePage,
   onRenamePage,
-  onDeletePage
+  onDeletePage,
+  cmsConnection,
+  onOpenCmsSettings,
+  onEditComponent,
+  onNewComponent,
+  onOpenComponentCode,
+  onExitComponentEdit
 }: BuilderLeftPanelProps) {
   const searchQuery = librarySearch.trim().toLowerCase()
 
@@ -292,7 +311,7 @@ export function BuilderLeftPanel({
     return Object.fromEntries(entries)
   }, [filteredVariants])
 
-  const showSearch = leftTab !== 'media'
+  const showSearch = leftTab !== 'media' && leftTab !== 'cms'
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -514,10 +533,13 @@ export function BuilderLeftPanel({
                 onSelectElement={onSelectElement}
                 onAddElement={onAddElement}
                 elementVariants={elementVariants}
+                onExitEdit={onExitComponentEdit}
               />
             ) : (
-              <BuilderInsertPanel
+              <BuilderAssetsPanel
                 t={t}
+                page={page}
+                activeBlockId={activeId}
                 groupedVariants={groupedBuiltInVariants}
                 vendorLibraries={filteredVendors}
                 pageVendors={pageVendors}
@@ -530,8 +552,49 @@ export function BuilderLeftPanel({
                 onDeleteSavedComponent={onDeleteSavedComponent}
                 onDuplicateComponent={onDuplicateComponent}
                 searchQuery={searchQuery}
+                onSelectBlock={(id) => store.getState().selectBlock(id)}
+                onEditComponent={() => onEditComponent?.()}
+                onNewComponent={() => onNewComponent?.()}
+                onOpenComponentCode={onOpenComponentCode}
               />
             )
+          ) : null}
+
+          {/* ── CMS Bitrix browser ─────────────────────────────── */}
+          {leftTab === 'cms' ? (
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+              <div className="shrink-0 border-b px-3 py-2" style={{ borderColor: t.divider }}>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[11px] font-semibold" style={{ color: t.text }}>
+                    Bitrix CMS
+                  </p>
+                  {onOpenCmsSettings ? (
+                    <button
+                      type="button"
+                      className="rounded px-2 py-0.5 text-[10px] font-medium"
+                      style={{ color: t.accent, background: `${t.accent}18`, border: 'none', cursor: 'pointer' }}
+                      onClick={onOpenCmsSettings}
+                    >
+                      Настройки
+                    </button>
+                  ) : null}
+                </div>
+                <p className="mt-0.5 text-[10px]" style={{ color: t.textMuted }}>
+                  {cmsConnection && isCmsConnectionConfigured(cmsConnection)
+                    ? cmsConnection.siteUrl
+                    : 'Подключение не настроено'}
+                </p>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                {cmsConnection ? (
+                  <BuilderCmsBrowser connection={cmsConnection} t={t} compact />
+                ) : (
+                  <p className="p-3 text-[10px]" style={{ color: t.textMuted }}>
+                    Откройте настройки CMS для подключения к сайту.
+                  </p>
+                )}
+              </div>
+            </div>
           ) : null}
 
           {/* ── Media (placeholder) ────────────────────────────── */}

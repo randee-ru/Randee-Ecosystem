@@ -1,6 +1,9 @@
 import type { BlockPropField } from './types'
 import type { ElementVariant } from '@randee/builder'
 
+/** Composition primitives rendered in ElementTreePreview (not @randee/ui) */
+export const COMPOSITION_ELEMENT_IDS = new Set(['heading', 'text', 'paragraph', 'image'])
+
 /** Elements with live preview via @randee/ui */
 export const UI_READY_ELEMENT_IDS = new Set([
   'accordion',
@@ -26,6 +29,7 @@ export const UI_READY_ELEMENT_IDS = new Set([
 ])
 
 const ELEMENT_CATALOG: Record<string, string[]> = {
+  Content: ['Heading', 'Text', 'Paragraph', 'Image'],
   Actions: [
     'Button',
     'ButtonGroup',
@@ -131,6 +135,15 @@ function defaultPropsFor(name: string): Record<string, string> {
   if (id === 'table') {
     return { caption: 'Table' }
   }
+  if (id === 'heading') {
+    return { label: 'Заголовок' }
+  }
+  if (id === 'text' || id === 'paragraph') {
+    return { label: 'Текст', text: 'Текст' }
+  }
+  if (id === 'image') {
+    return { src: '', alt: 'Изображение' }
+  }
   if (id === 'container') {
     return {}
   }
@@ -180,7 +193,7 @@ const ELEMENT_VARIANTS: ElementVariant[] = Object.entries(ELEMENT_CATALOG).flatM
       group,
       description: `UI ${name} for component composition`,
       defaultProps: defaultPropsFor(name),
-      ready: UI_READY_ELEMENT_IDS.has(id)
+      ready: UI_READY_ELEMENT_IDS.has(id) || COMPOSITION_ELEMENT_IDS.has(id)
     }
   })
 )

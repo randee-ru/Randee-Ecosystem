@@ -57,6 +57,8 @@ type BuilderInsertPanelProps = {
   onDeleteSavedComponent?: (templateId: string) => void
   onDuplicateComponent?: (templateId: string) => void
   searchQuery: string
+  /** sections = только Hero/FAQ… без сохранённых компонентов */
+  variant?: 'full' | 'sections'
 }
 
 // ─── Static data ─────────────────────────────────────────────────────────────
@@ -298,15 +300,17 @@ export function BuilderInsertPanel({
   onAddSavedComponent,
   onDeleteSavedComponent,
   onDuplicateComponent,
-  searchQuery
+  searchQuery,
+  variant = 'full'
 }: BuilderInsertPanelProps) {
-  const allGroups = Object.keys(groupedVariants)
+  const allGroups = Object.keys(groupedVariants).filter((g) => variant !== 'sections' || g !== 'Custom')
   const sortedGroups = allGroups.sort((a, b) => {
     const ORDER = ['Hero', 'Features', 'FAQ', 'CTA', 'Catalog', 'News', 'Custom']
     return (ORDER.indexOf(a) ?? 99) - (ORDER.indexOf(b) ?? 99)
   })
 
   const [activeTab, setActiveTab] = React.useState<string>(() => sortedGroups[0] ?? '_libs')
+  const showSavedTab = variant === 'full'
 
   const isGroupTab = (tab: string): tab is string => !SPECIAL_TABS.includes(tab as SpecialTab)
 
@@ -338,6 +342,11 @@ export function BuilderInsertPanel({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      {variant === 'sections' ? (
+        <p className="shrink-0 px-3 py-2 text-[10px] leading-snug" style={{ color: t.textMuted, borderBottom: `1px solid ${t.divider}` }}>
+          Готовые секции целиком: герой, FAQ, каталог. Для кнопок и карточек своей вёрстки переключитесь на вкладку «Компоненты».
+        </p>
+      ) : null}
       {/* Category tabs — horizontal scroll */}
       <div
         className="flex gap-1 overflow-x-auto px-2 py-2"
@@ -375,7 +384,7 @@ export function BuilderInsertPanel({
         })}
 
         {/* Saved tab */}
-        {savedComponents.length > 0 ? (
+        {showSavedTab && savedComponents.length > 0 ? (
           <button
             type="button"
             className="flex shrink-0 flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all"

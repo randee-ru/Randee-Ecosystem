@@ -42,6 +42,8 @@ export interface ElementDesignSettings {
   fill?: string
 }
 
+import type { CmsPropBindingState } from './cms-binding'
+
 export interface ComponentElement {
   id: string
   /** Catalog id, e.g. `button`, `modal` */
@@ -51,6 +53,8 @@ export interface ComponentElement {
   parentId?: string | null
   props: Record<string, string>
   design?: ElementDesignSettings
+  /** Per-prop CMS bindings (label, src, placeholder, …) */
+  cmsBindings?: Record<string, CmsPropBindingState>
 }
 
 export type ElementVariant = {

@@ -1,4 +1,5 @@
 import type { BitrixComponentDescriptor } from '@randee/bitrix-adapter'
+import { applyCmsListComponentPhp } from './bitrix-cms-php'
 import type { PageBlock } from '@randee/builder'
 import { inlineStyleHtmlAttribute } from '@randee/builder'
 import { dirname, join } from 'node:path'
@@ -73,7 +74,7 @@ function buildDescriptorFromPreview(
     readTemplateSourceFile(packageRoot, block.template, folder, userComponentDir, 'script.js') ??
     ''
 
-  return {
+  const descriptor: BitrixComponentDescriptor = {
     namespace: 'randee',
     name: bitrixComponentName(block),
     title: meta.name,
@@ -85,6 +86,7 @@ function buildDescriptorFromPreview(
     templatePhp: previewTemplate.templatePhp,
     staticAssets: collectStaticAssets(block.template, folder, userComponentDir)
   }
+  return applyCmsListComponentPhp(descriptor, block)
 }
 
 export function mapUserComponentBlockToBitrix(block: PageBlock): BitrixComponentDescriptor | null {

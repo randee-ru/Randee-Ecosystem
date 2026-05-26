@@ -45,9 +45,17 @@ type ElementPreviewOptions = {
   selectedElementId?: string | null
   onSelectElement?: (elementId: string) => void
   onDeleteElement?: (elementId: string) => void
+  onDuplicateElement?: (elementId: string) => void
+  onRenameElement?: (elementId: string, name: string) => void
+  onMoveElement?: (elementId: string, direction: 'up' | 'down') => void
   onDropElement?: (
     catalogElementId: string,
-    placement?: { parentId?: string | null; afterElementId?: string | null; beforeElementId?: string | null }
+    placement?: {
+      parentId?: string | null
+      afterElementId?: string | null
+      beforeElementId?: string | null
+      columnIndex?: number | null
+    }
   ) => void
   onDropDebug?: (payload: {
     phase: 'dragover' | 'drop'
@@ -59,6 +67,24 @@ type ElementPreviewOptions = {
   /** Double-click inline edit пропсов элемента */
   onPatchElementProps?: (elementId: string, props: Record<string, string>) => void
   viewport?: 'desktop' | 'macbook' | 'tablet' | 'mobile'
+  /** CMS-resolved prop values for live preview */
+  cmsPreviewValues?: Record<string, Record<string, string>>
+  forceVisual?: boolean
+}
+
+function resolveElementProp(
+  element: ComponentElement,
+  propKey: string,
+  cmsPreviewValues?: Record<string, Record<string, string>>
+): string {
+  const binding = element.cmsBindings?.[propKey]
+  if (binding?.mode === 'binding') {
+    const preview = cmsPreviewValues?.[element.id]?.[propKey]
+    if (preview !== undefined && preview !== '') return preview
+    if (binding.binding?.fallback) return binding.binding.fallback
+    if (binding.staticValue) return binding.staticValue
+  }
+  return String(element.props[propKey] ?? '')
 }
 
 function buildElementDesignStyle(design: ComponentElement['design']): React.CSSProperties {
@@ -147,6 +173,41 @@ const QUICK_INSERT_ELEMENTS: Array<{ id: string; label: string; char: string; co
   { id: 'link',      label: 'Link',      char: '↗', color: '#eab308' },
 ]
 
+function computeColumnInsertPlacement(
+  parentId: string,
+  colIndex: number,
+  columnsCount: number,
+  siblings: ComponentElement[]
+): {
+  parentId: string
+  afterElementId?: string | null
+  beforeElementId?: string | null
+  columnIndex?: number | null
+} {
+  if (siblings.length === 0) {
+    return colIndex === 0 ? { parentId } : { parentId, columnIndex: colIndex }
+  }
+
+  const buckets: ComponentElement[][] = Array.from({ length: columnsCount }, () => [])
+  siblings.forEach((child, index) => {
+    buckets[index % columnsCount].push(child)
+  })
+  const columnItems = buckets[colIndex]
+  if (columnItems.length > 0) {
+    return { parentId, afterElementId: columnItems[columnItems.length - 1].id }
+  }
+
+  for (let flat = 0; flat <= siblings.length; flat++) {
+    if (flat % columnsCount !== colIndex) continue
+    if (flat >= siblings.length) {
+      return { parentId, afterElementId: siblings[siblings.length - 1].id }
+    }
+    return { parentId, beforeElementId: siblings[flat].id }
+  }
+
+  return { parentId }
+}
+
 function readDraggedElementId(event: React.DragEvent<HTMLElement>, fallbackId?: string | null): string {
   return (
     event.dataTransfer.getData('application/x-randee-element-id') ||
@@ -159,9 +220,11 @@ function readDraggedElementId(event: React.DragEvent<HTMLElement>, fallbackId?: 
 function renderReadyElement(
   element: ComponentElement,
   isEditMode: boolean,
-  viewport: 'desktop' | 'macbook' | 'tablet' | 'mobile' = 'desktop'
+  viewport: 'desktop' | 'macbook' | 'tablet' | 'mobile' = 'desktop',
+  options?: ElementPreviewOptions
 ) {
   const props = element.props
+  const cms = options?.cmsPreviewValues
   const id = element.elementId
   const renderId = id.startsWith('custom:') ? (props.__baseElementId ?? 'container') : id
 
@@ -183,12 +246,20 @@ function renderReadyElement(
             lineHeight: 1.1
           }}
         >
-          {props.label ?? 'Button'}
+          {resolveElementProp(element, 'label', cms) || 'Button'}
         </button>
       )
     case 'input':
     case 'text-field':
-      return <Input placeholder={props.placeholder ?? props.label ?? 'Input'} />
+      return (
+        <Input
+          placeholder={
+            resolveElementProp(element, 'placeholder', cms) ||
+            resolveElementProp(element, 'label', cms) ||
+            'Input'
+          }
+        />
+      )
     case 'card':
       return (
         <Card>
@@ -363,6 +434,70 @@ function renderReadyElement(
         </div>
       )
     }
+    case 'heading':
+      return (
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 28,
+            fontWeight: 700,
+            lineHeight: 1.2,
+            color: '#111827'
+          }}
+        >
+          {resolveElementProp(element, 'label', cms) ||
+            resolveElementProp(element, 'text', cms) ||
+            'Заголовок'}
+        </h2>
+      )
+    case 'text':
+    case 'paragraph':
+      return (
+        <p
+          style={{
+            margin: 0,
+            fontSize: 15,
+            lineHeight: 1.55,
+            color: '#374151'
+          }}
+        >
+          {resolveElementProp(element, 'text', cms) ||
+            resolveElementProp(element, 'label', cms) ||
+            'Текст'}
+        </p>
+      )
+    case 'image': {
+      const src = resolveElementProp(element, 'src', cms)
+      const alt = resolveElementProp(element, 'alt', cms) || 'Изображение'
+      if (src) {
+        return (
+          <img
+            src={src}
+            alt={alt}
+            style={{ display: 'block', maxWidth: '100%', height: 'auto', borderRadius: 8 }}
+          />
+        )
+      }
+      return (
+        <div
+          style={{
+            display: 'flex',
+            minHeight: 120,
+            width: '100%',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 8,
+            border: '1px dashed rgba(148,163,184,0.7)',
+            background: 'rgba(148,163,184,0.12)',
+            color: '#64748b',
+            fontSize: 13,
+            fontWeight: 600
+          }}
+        >
+          {alt}
+        </div>
+      )
+    }
     case 'breadcrumbs':
       return <Breadcrumbs items={[{ label: 'Home' }, { label: props.label ?? 'Page' }]} />
     case 'badge':
@@ -408,29 +543,67 @@ function ElementNode({
   const variant = getElementVariant(element.elementId)
   const selected = options?.selectedElementId === element.id
   const isEditMode = Boolean(options?.onDropElement || options?.onSelectElement)
-  const readyNode = variant?.ready ? renderReadyElement(element, isEditMode, options?.viewport ?? 'desktop') : null
+  const readyNode = variant?.ready
+    ? renderReadyElement(element, isEditMode, options?.viewport ?? 'desktop', options)
+    : null
   const [dropZone, setDropZone] = React.useState<'inside' | 'before' | 'after' | null>(null)
   const [showColumnsPicker, setShowColumnsPicker] = React.useState(false)
   const [hovered, setHovered] = React.useState(false)
   const [insertMenuOpen, setInsertMenuOpen] = React.useState(false)
   const [insertMenuPos, setInsertMenuPos] = React.useState({ x: 0, y: 0 })
+  const [insertMenuPlacement, setInsertMenuPlacement] = React.useState<{
+    parentId?: string | null
+    afterElementId?: string | null
+    beforeElementId?: string | null
+    columnIndex?: number | null
+  } | null>(null)
+
+  const openInsertMenu = React.useCallback(
+    (
+      x: number,
+      y: number,
+      placement: {
+        parentId?: string | null
+        afterElementId?: string | null
+        beforeElementId?: string | null
+        columnIndex?: number | null
+      }
+    ) => {
+      setInsertMenuPlacement(placement)
+      setInsertMenuPos({ x, y })
+      setInsertMenuOpen(true)
+    },
+    []
+  )
+
+  const closeInsertMenu = React.useCallback(() => {
+    setInsertMenuOpen(false)
+    setInsertMenuPlacement(null)
+  }, [])
   const [inlineEdit, setInlineEdit] = React.useState<{ field: string; value: string } | null>(null)
   const inlineRef = React.useRef<HTMLTextAreaElement & HTMLInputElement>(null)
+  const inlineEditSessionRef = React.useRef<string | null>(null)
 
-  // Авто-фокус при открытии inline-edit
+  // Фокус и выделение только при открытии редактора (не на каждый символ — иначе select() затирает ввод)
   React.useEffect(() => {
-    if (inlineEdit) {
-      setTimeout(() => {
-        inlineRef.current?.focus()
-        inlineRef.current?.select()
-      }, 30)
+    if (!inlineEdit) {
+      inlineEditSessionRef.current = null
+      return
     }
-  }, [inlineEdit])
+    const sessionKey = `${element.id}:${inlineEdit.field}`
+    if (inlineEditSessionRef.current === sessionKey) return
+    inlineEditSessionRef.current = sessionKey
+    const frame = window.requestAnimationFrame(() => {
+      inlineRef.current?.focus()
+      inlineRef.current?.select()
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [element.id, inlineEdit?.field])
 
   // Закрыть инлайн-меню по клику вне
   React.useEffect(() => {
     if (!insertMenuOpen) return
-    const close = () => setInsertMenuOpen(false)
+    const close = () => closeInsertMenu()
     window.addEventListener('pointerdown', close, { once: true })
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setInsertMenuOpen(false) }
     window.addEventListener('keydown', onKey)
@@ -438,7 +611,7 @@ function ElementNode({
       window.removeEventListener('pointerdown', close)
       window.removeEventListener('keydown', onKey)
     }
-  }, [insertMenuOpen])
+  }, [closeInsertMenu, insertMenuOpen])
   const nestable = isNestableElement(element)
   const isDragging = Boolean(dragFallbackId)
   const isBeingDragged = dragFallbackId === element.id   // именно этот элемент тащат
@@ -464,7 +637,7 @@ function ElementNode({
       window.removeEventListener('randee:element-drag', onDragState as EventListener)
     }
   }, [])
-  const columnPresets = [2, 3, 4, 6]
+  const columnPresets = [1, 2, 3, 4] as const
 
   return (
     <div
@@ -516,7 +689,11 @@ function ElementNode({
         const el = element.elementId
         // Text-like elements: редактируем prop 'label'
         if (['heading', 'text', 'paragraph', 'button', 'link', 'badge'].includes(el)) {
-          setInlineEdit({ field: 'label', value: String(element.props.label ?? '') })
+          const field = el === 'text' || el === 'paragraph' ? 'text' : 'label'
+          setInlineEdit({
+            field,
+            value: String(element.props[field] ?? element.props.label ?? '')
+          })
           return
         }
         // Image: редактируем prop 'src'
@@ -625,18 +802,6 @@ function ElementNode({
       }}
       onContextMenu={(event) => {
         if (!onOpenContextMenu) return
-        event.preventDefault()
-        event.stopPropagation()
-        onOpenContextMenu(element.id, event.clientX, event.clientY)
-      }}
-      onMouseDown={(event) => {
-        if (!onOpenContextMenu || event.button !== 2) return
-        event.preventDefault()
-        event.stopPropagation()
-        onOpenContextMenu(element.id, event.clientX, event.clientY)
-      }}
-      onAuxClick={(event) => {
-        if (!onOpenContextMenu || event.button !== 2) return
         event.preventDefault()
         event.stopPropagation()
         onOpenContextMenu(element.id, event.clientX, event.clientY)
@@ -823,10 +988,14 @@ function ElementNode({
                 outline: 'none',
                 fontFamily: 'inherit',
               }}
-              onChange={(e) => setInlineEdit({ ...inlineEdit, value: e.target.value })}
+              onChange={(e) =>
+                setInlineEdit((prev) => (prev ? { ...prev, value: e.target.value } : null))
+              }
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  options?.onPatchElementProps?.(element.id, { [inlineEdit.field]: inlineEdit.value })
+                  options?.onPatchElementProps?.(element.id, {
+                    [inlineEdit.field]: e.currentTarget.value
+                  })
                   setInlineEdit(null)
                 }
                 if (e.key === 'Escape') setInlineEdit(null)
@@ -850,11 +1019,15 @@ function ElementNode({
                 fontFamily: 'inherit',
                 lineHeight: 1.5,
               }}
-              onChange={(e) => setInlineEdit({ ...inlineEdit, value: e.target.value })}
+              onChange={(e) =>
+                setInlineEdit((prev) => (prev ? { ...prev, value: e.target.value } : null))
+              }
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()
-                  options?.onPatchElementProps?.(element.id, { [inlineEdit.field]: inlineEdit.value })
+                  options?.onPatchElementProps?.(element.id, {
+                    [inlineEdit.field]: e.currentTarget.value
+                  })
                   setInlineEdit(null)
                 }
                 if (e.key === 'Escape') setInlineEdit(null)
@@ -890,8 +1063,10 @@ function ElementNode({
             e.preventDefault()
             e.stopPropagation()
             const rect = e.currentTarget.getBoundingClientRect()
-            setInsertMenuPos({ x: rect.left + rect.width / 2, y: rect.bottom + 6 })
-            setInsertMenuOpen(true)
+            openInsertMenu(rect.left + rect.width / 2, rect.bottom + 6, {
+              parentId,
+              afterElementId: element.id
+            })
           }}
           style={{
             position: 'absolute',
@@ -1028,7 +1203,17 @@ function ElementNode({
                                 onClick={(event) => {
                                   event.preventDefault()
                                   event.stopPropagation()
-                                  options?.onDropElement?.('button', { parentId: element.id })
+                                  const rect = event.currentTarget.getBoundingClientRect()
+                                  openInsertMenu(
+                                    rect.left + rect.width / 2,
+                                    rect.bottom + 6,
+                                    computeColumnInsertPlacement(
+                                      element.id,
+                                      colIndex,
+                                      columnsCount,
+                                      sourceChildren
+                                    )
+                                  )
                                 }}
                                 style={{
                                   width: 30,
@@ -1148,7 +1333,7 @@ function ElementNode({
             </NestDropZone>
           ) : null}
         </div>
-      ) : (
+      ) : inlineEdit ? null : (
         readyNode ?? <ElementPlaceholder element={element} />
       )}
       {showColumnsPicker && typeof document !== 'undefined'
@@ -1248,7 +1433,9 @@ function ElementNode({
                           />
                         ))}
                       </div>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#475569' }}>{count} columns</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: '#475569' }}>
+                        {count === 1 ? '1 блок' : `${count} блока`}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -1280,7 +1467,7 @@ function ElementNode({
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#374151' }}>Вставить элемент</span>
                 <button
                   type="button"
-                  onClick={() => setInsertMenuOpen(false)}
+                  onClick={() => closeInsertMenu()}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: 16, lineHeight: 1 }}
                   aria-label="Закрыть"
                 >×</button>
@@ -1292,8 +1479,9 @@ function ElementNode({
                     key={id}
                     type="button"
                     onClick={() => {
-                      options?.onDropElement?.(id, { parentId, afterElementId: element.id })
-                      setInsertMenuOpen(false)
+                      const placement = insertMenuPlacement ?? { parentId, afterElementId: element.id }
+                      options?.onDropElement?.(id, placement)
+                      closeInsertMenu()
                     }}
                     style={{
                       display: 'flex',
@@ -1544,10 +1732,14 @@ export function ElementTreePreview({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close()
     }
-    window.addEventListener('pointerdown', close)
+    const onPointerDown = (event: PointerEvent) => {
+      if (event.button !== 0) return
+      close()
+    }
+    window.addEventListener('pointerdown', onPointerDown)
     window.addEventListener('keydown', onKeyDown)
     return () => {
-      window.removeEventListener('pointerdown', close)
+      window.removeEventListener('pointerdown', onPointerDown)
       window.removeEventListener('keydown', onKeyDown)
     }
   }, [menu])
@@ -1713,9 +1905,10 @@ export function ElementTreePreview({
         ) : null}
           {renderBranch(null)}
       </div>
-      {portalReady && menu && options?.onDeleteElement
+      {portalReady && menu
         ? createPortal(
         <div
+          data-context-menu
           style={{
             position: 'fixed',
             left: menu.x + 6,
@@ -1740,54 +1933,62 @@ export function ElementTreePreview({
             <input
               value={menuQuery}
               onChange={(event) => setMenuQuery(event.target.value)}
-              placeholder="Type to search..."
+              placeholder="Поиск действия…"
               className="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none"
               style={{ color: '#e5e7eb', border: 'none' }}
             />
           </div>
           {(() => {
+            const menuElement = elements.find((item) => item.id === menu.elementId)
             const rows: Array<{
               type: 'item' | 'separator'
               label?: string
               shortcut?: string
-              submenu?: boolean
               disabled?: boolean
               destructive?: boolean
               onClick?: () => void
             }> = [
-              { type: 'item', label: 'Create Component', shortcut: '⌥ ⌘ K', disabled: true },
-              { type: 'item', label: 'Create Layout Template', disabled: true },
-              { type: 'item', label: 'Add To Layout Template', disabled: true },
-              { type: 'separator' },
-              { type: 'item', label: 'Fit Content', shortcut: '⇧ A', disabled: true },
-              { type: 'separator' },
-              { type: 'item', label: 'Select', submenu: true, disabled: true },
-              { type: 'item', label: 'Align', submenu: true, disabled: true },
-              { type: 'item', label: 'Replace With', submenu: true, disabled: true },
-              { type: 'separator' },
-              { type: 'item', label: 'Copy', submenu: true, disabled: true },
-              { type: 'item', label: 'Paste', submenu: true, disabled: true },
-              { type: 'item', label: 'Move', submenu: true, disabled: true },
-              { type: 'item', label: 'Duplicate', shortcut: '⌘ D', disabled: true },
               {
                 type: 'item',
-                label: 'Delete',
-                destructive: true,
+                label: 'Дублировать',
+                shortcut: '⌘D',
+                disabled: !options?.onDuplicateElement,
+                onClick: () => options?.onDuplicateElement?.(menu.elementId)
+              },
+              {
+                type: 'item',
+                label: 'Переименовать',
+                shortcut: '⌘R',
+                disabled: !options?.onRenameElement,
                 onClick: () => {
-                  options.onDeleteElement?.(menu.elementId)
-                  setMenu(null)
+                  const current = menuElement?.name ?? menuElement?.elementId ?? 'Элемент'
+                  const next = window.prompt('Имя элемента', current)?.trim()
+                  if (next) options?.onRenameElement?.(menu.elementId, next)
                 }
               },
               { type: 'separator' },
-              { type: 'item', label: 'Rename', shortcut: '⌘ R', disabled: true },
-              { type: 'item', label: 'Auto Rename', shortcut: '⌥ R', disabled: true },
-              { type: 'item', label: 'Lock', shortcut: '⌘ L', disabled: true },
-              { type: 'item', label: 'Hide', shortcut: '⌘ ;', disabled: true },
-              { type: 'item', label: 'Overflow', submenu: true, disabled: true },
+              {
+                type: 'item',
+                label: 'Выше',
+                shortcut: '↑',
+                disabled: !options?.onMoveElement,
+                onClick: () => options?.onMoveElement?.(menu.elementId, 'up')
+              },
+              {
+                type: 'item',
+                label: 'Ниже',
+                shortcut: '↓',
+                disabled: !options?.onMoveElement,
+                onClick: () => options?.onMoveElement?.(menu.elementId, 'down')
+              },
               { type: 'separator' },
-              { type: 'item', label: 'Add Frame', shortcut: '⌘ ↩', disabled: true },
-              { type: 'item', label: 'Add Stack', shortcut: '⌥ ⌘ ↩', disabled: true },
-              { type: 'item', label: 'Remove Frame', shortcut: '⌘ ⌫', disabled: true }
+              {
+                type: 'item',
+                label: 'Удалить',
+                destructive: true,
+                disabled: !options?.onDeleteElement,
+                onClick: () => options?.onDeleteElement?.(menu.elementId)
+              }
             ]
             const query = menuQuery.trim().toLowerCase()
             const filtered = query
@@ -1815,10 +2016,12 @@ export function ElementTreePreview({
                         color: row.disabled ? '#6b7280' : row.destructive ? '#ffffff' : '#f3f4f6',
                         opacity: row.disabled ? 0.6 : 1
                       }}
-                      onClick={() => row.onClick?.()}
+                      onClick={() => {
+                        row.onClick?.()
+                        setMenu(null)
+                      }}
                     >
                       <span className="min-w-0 flex-1 truncate">{row.label}</span>
-                      {row.submenu ? <span style={{ color: '#9ca3af' }}>›</span> : null}
                       {row.shortcut ? (
                         <span className="ml-2 shrink-0 text-xs" style={{ color: row.destructive ? '#e5f4ff' : '#9ca3af' }}>
                           {row.shortcut}

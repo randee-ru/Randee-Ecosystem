@@ -16,7 +16,8 @@ import {
   Plus,
   LayoutGrid,
   Palette,
-  Settings2
+  Settings2,
+  Type
 } from 'lucide-react'
 import type { ComponentElement, ElementDesignSettings } from '@randee/builder'
 import type { InspectorTheme } from './builder-inspector-ui'
@@ -576,32 +577,61 @@ export function BuilderElementInspector({
   compactTabs = false
 }: BuilderElementInspectorProps) {
   const design = element.design ?? {}
-  const [tab, setTab] = React.useState<'layout' | 'style' | 'advanced'>('layout')
+  const [tab, setTab] = React.useState<'content' | 'layout' | 'style' | 'advanced'>('content')
+
+  const typeLabels: Record<string, string> = {
+    container: 'Контейнер',
+    columns: 'Колонки',
+    heading: 'Заголовок',
+    text: 'Текст',
+    paragraph: 'Параграф',
+    button: 'Кнопка',
+    image: 'Изображение',
+    link: 'Ссылка',
+    'text-field': 'Поле ввода',
+    input: 'Поле ввода',
+  }
+  const typeRu = typeLabels[element.elementId] ?? element.elementId
 
   return (
     <ThemeCtx.Provider value={theme}>
       <InspectorThemeProvider theme={theme}>
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="shrink-0 px-3 py-1.5 text-[10px] leading-snug" style={{ color: theme.textMuted, borderBottom: `1px solid ${theme.divider}` }}>
+            Тип: <span style={{ color: theme.textSecondary }}>{typeRu}</span>
+            {' · '}
+            Двойной клик на artboard — быстрая правка текста
+          </div>
           <InspectorTabs
             value={tab}
             compact={compactTabs}
-            onChange={(value) => setTab(value as 'layout' | 'style' | 'advanced')}
+            onChange={(value) => setTab(value as 'content' | 'layout' | 'style' | 'advanced')}
             tabs={[
+              { value: 'content', label: 'Текст', icon: Type },
               { value: 'layout', label: 'Макет', icon: LayoutGrid },
               { value: 'style', label: 'Стиль', icon: Palette },
-              { value: 'advanced', label: 'Дополнительно', icon: Settings2 },
+              { value: 'advanced', label: 'Ещё', icon: Settings2 },
             ]}
           />
 
           <div className="min-h-0 flex-1 overflow-y-auto">
+            {tab === 'content' ? (
+              <>
+                {contentFields ? (
+                  <InspectorSection title="Текст и данные">
+                    {contentFields}
+                  </InspectorSection>
+                ) : (
+                  <p className="px-3 py-4 text-[11px]" style={{ color: theme.textMuted }}>
+                    У этого элемента нет редактируемых полей содержимого.
+                  </p>
+                )}
+              </>
+            ) : null}
+
             {tab === 'layout' ? (
               <>
                 <ElementAlignToolbar />
-                {contentFields ? (
-                  <InspectorSection title={`Содержимое · ${element.name ?? element.elementId}`}>
-                    {contentFields}
-                  </InspectorSection>
-                ) : null}
                 <PositionSection design={design} onPatch={onPatch} />
                 <SizeSection design={design} onPatch={onPatch} />
                 <LayoutSection design={design} onPatch={onPatch} />

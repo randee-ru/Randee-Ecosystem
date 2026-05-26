@@ -49,9 +49,11 @@ export function BlockPreview({ block, elementOptions }: BlockPreviewProps) {
     return <Preview block={block} elementOptions={{
       selectedElementId: elementOptions?.selectedElementId,
       onSelectElement: elementOptions?.onSelectElement,
+      onDeleteElement: elementOptions?.onDeleteElement,
       onDropElement: elementOptions?.onDropElement,
       onPatchElementProps: elementOptions?.onPatchElementProps,
-      viewport: elementOptions?.viewport
+      viewport: elementOptions?.viewport,
+      cmsPreviewValues: elementOptions?.cmsPreviewValues
     }} />
   }
   return <Preview block={block} />

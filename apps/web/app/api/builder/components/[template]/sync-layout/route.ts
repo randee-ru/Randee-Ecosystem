@@ -142,6 +142,12 @@ export async function POST(request: Request, context: RouteContext) {
       return Response.json({ error: `Component "${template}" not found` }, { status: 404 })
     }
 
+    writeTemplateAssetText(
+      template,
+      'elements.snapshot.json',
+      `${JSON.stringify({ version: 1, syncedAt: new Date().toISOString(), elements }, null, 2)}\n`
+    )
+
     // Создаём init.ts если его нет (может быть нужен preview.tsx)
     const existingInit = readTemplateAssetText(template, 'init.ts')
     if (!existingInit) {

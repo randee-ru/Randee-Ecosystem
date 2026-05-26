@@ -7,6 +7,7 @@ import {
   Boxes,
   ChevronRight,
   Code2,
+  Database,
   Download,
   FolderOpen,
   Hand,
@@ -53,10 +54,10 @@ const SECTIONS: GuideSection[] = [
     title: 'Для верстальщика элементов',
     subtitle: 'Ваш сценарий: собрать UI внутри component — кнопки, формы, карточки — без сборки всей страницы.',
     visual: ['element-workflow', 'insert-compare', 'element-canvas', 'element-gallery'],
-    flow: ['New → Component', 'Edit Component ON', 'UI Elements → Button / Form…', 'Inspector → props', 'preview.tsx + CSS при необходимости'],
+    flow: ['New → Component', 'Редактор ON', 'UI Elements → Button / Form…', 'Inspector → props', 'preview.tsx + CSS при необходимости'],
     steps: [
       'Вам не нужны Hero/FAQ, если вы верстаете **примитивы**. Создайте **New → Component** — это ваш «холст».',
-      'Включите **Edit Component** — без этого Insert покажет Page blocks, а не UI Elements.',
+      'Включите **Редактор** — без этого Insert покажет Page blocks, а не UI Elements.',
       'Добавляйте элементы: **Insert** или **Assets → UI Elements** (Button, Input, Modal, Card, Tabs…).',
       'Клик по элементу на canvas → **Inspector справа**: label, placeholder, title, variant — без лезания в код.',
       'Нужна точная вёрстка? Откройте **preview.tsx** в Blocks и допишите разметку; **style.css** — стили. **Tab** в preview — Emmet (`.row`, `div.card>h2+p`).',
@@ -71,7 +72,7 @@ const SECTIONS: GuideSection[] = [
     ],
     example: `# Типичный день верстальщика элементов:
 
-1. Edit Component ON
+1. Редактор ON
 2. Insert → Card, затем → Button внутри (или в preview.tsx)
 3. Inspector: title карточки, label кнопки
 4. style.css: .my-card { padding: 1rem; }
@@ -158,6 +159,37 @@ const SECTIONS: GuideSection[] = [
     example: `# Минимальный сценарий\n\n1) Bitrix module settings:\nAPI key = ваш ключ\nEndpoint = /local/modules/randee.connector/tools/connector.php\n\n2) Builder CMS:\nSite URL = https://example.com\nAPI key = тот же ключ\nConnector Path = /local/modules/randee.connector/tools/connector.php\n\n3) Нажмите:\nSave CMS settings → Проверить подключение → Обновить инфоблоки`
   },
   {
+    id: 'cms-element-binding',
+    icon: Database,
+    title: 'CMS: привязка UI-элементов',
+    subtitle: 'Картинка, текст и кнопка внутри component могут брать данные из инфоблока Bitrix.',
+    flow: [
+      'CMS → подключение и «Обновить»',
+      'Редактор component → выбрать элемент',
+      'Inspector → CMS привязка → инфоблок',
+      '→ CMS на поле Src / label',
+      'Превью на канвасе'
+    ],
+    steps: [
+      'Сначала настройте connector во вкладке **CMS** (см. раздел выше) и нажмите **Обновить** — появится список инфоблоков.',
+      'Включите **Редактор**, выберите component и кликните элемент (картинка, текст, кнопка).',
+      'Справа в **CMS привязка** выберите **Инфоблок** — видно название и ID источника.',
+      'Укажите режим: **Первый из списка** (для превью) или **Конкретный элемент**.',
+      'Для каждого prop нажмите **→ CMS**, выберите поле (например PREVIEW_PICTURE для src). Кнопка **Авто** подберёт поле по имени.',
+      'На канвасе в режиме component появятся данные из инфоблока (live preview).'
+    ],
+    cards: [
+      { label: 'Источник', detail: 'Блок «Источник данных» в Inspector: инфоблок + режим списка/элемента.' },
+      { label: 'Поля', detail: 'Src → PREVIEW_PICTURE, текст → NAME / PREVIEW_TEXT, alt → NAME.' },
+      { label: 'Экспорт', detail: 'При Export Bitrix в PHP попадает CIBlockElement::GetList с привязками.' },
+      { label: 'Встроенный шаблон', detail: 'У component-01…05 автосинк в .tsx может быть недоступен — метка «только IDE».' }
+    ],
+    tips: [
+      'Кнопка **Открыть вкладку CMS →** в Inspector, если список инфоблоков пустой.',
+      'Если во вкладке CMS выбран другой инфоблок, чем в привязке элемента — появится предупреждение.'
+    ]
+  },
+  {
     id: 'cms-slider-60sec',
     icon: Boxes,
     title: 'CMS Slider за 60 секунд',
@@ -240,7 +272,7 @@ const SECTIONS: GuideSection[] = [
     title: 'Свой компонент',
     subtitle: 'Пустой блок с файлами preview, style и script — ваша мини-библиотека.',
     visual: 'ide-tree',
-    flow: ['New → Component', 'Edit Component', 'Insert / Assets → UI Elements', 'Save to Assets'],
+    flow: ['New → Component', 'Редактор', 'Insert / Assets → UI Elements', 'Save to Assets'],
     steps: [
       '**New → Component** — создаёт `component-XX` на диске и ставит блок на canvas.',
       'В панели **Blocks** откройте **preview.tsx**, **style.css**, **script.js** — полноэкранный редактор.',
@@ -259,19 +291,19 @@ export default function Preview({ title = 'Hello' }) {
   {
     id: 'edit-component',
     icon: Pencil,
-    title: 'Edit Component и UI Elements',
+    title: 'Редактор и UI Elements',
     subtitle: 'Сборка интерфейса из кнопок, форм, модалок — только в режиме редактирования.',
     visual: ['insert-compare', 'element-canvas', 'element-gallery'],
     steps: [
       'На странице должен быть блок типа **component**.',
-      'Включите **Edit Component** в верхней панели — подсветится artboard и элементы.',
+      'Включите **Редактор** в верхней панели — подсветится artboard и элементы.',
       '**Insert** (в этом режиме) показывает **UI Elements** — Button, Modal, Form и др.',
       'То же в **Assets → UI Elements**, если открыта левая панель.',
       'Клик по элементу на canvas — свойства справа в Inspector (текст кнопки, заголовок модалки…).',
       '**Artboard** — размер и фон «холста» компонента (layout / fill в Inspector).'
     ],
     tips: [
-      'Без Edit Component в Insert видны только **Page blocks** (Hero, FAQ…).',
+      'Без Редактор в Insert видны только **Page blocks** (Hero, FAQ…).',
       'UI Elements — примитивы для сборки component, а не целые секции страницы.'
     ]
   },
@@ -299,7 +331,7 @@ export default function Preview({ title = 'Hello' }) {
     visual: 'layout',
     cards: [
       { label: 'Blocks', detail: 'Структура страницы, код файлов, reorder, export block.' },
-      { label: 'Assets', detail: 'Сохранённые компоненты, UI Elements (в Edit Component), vendor CSS/JS.' },
+      { label: 'Assets', detail: 'Сохранённые компоненты, UI Elements (в Редактор), vendor CSS/JS.' },
       { label: 'Pages', detail: 'Список страниц (при подключённом API).' },
       { label: 'Inspector', detail: 'Props блока, props элемента, design artboard.' }
     ],
@@ -583,7 +615,7 @@ export function BuilderInstructions({ t, onClose }: BuilderInstructionsProps) {
           </Chip>
           <Chip accent={t.accent}>
             <Pencil className="mr-1 inline h-3 w-3" />
-            Edit Component
+            Редактор
           </Chip>
           <Chip accent={t.accent}>
             <Save className="mr-1 inline h-3 w-3" />
@@ -649,7 +681,7 @@ export function BuilderInstructions({ t, onClose }: BuilderInstructionsProps) {
             <p className="randee-instructions__hero-text">
               Готовые секции (Hero, FAQ) — через <strong>Insert</strong>. Свои блоки — через{' '}
               <strong>New → Component</strong> и редактор кода. Кнопки и формы внутри компонента — через{' '}
-              <strong>Edit Component</strong> и каталог UI Elements.{' '}
+              <strong>Редактор</strong> и каталог UI Elements.{' '}
               <strong>Верстальщику элементов</strong> — начните с раздела 1 в меню слева.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">

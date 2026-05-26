@@ -1,0 +1,12 @@
+<?php
+return [
+    // Required for API authorization.
+    'api_key' => 'CHANGE_ME_TO_LONG_RANDOM_KEY',
+
+    // Optional comma-separated list. Empty means "allow all".
+    'allowed_iblock_ids' => '1,2',
+
+    // Pagination safety limits.
+    'default_page_size' => 20,
+    'max_page_size' => 100,
+];

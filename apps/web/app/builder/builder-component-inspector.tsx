@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   ChevronRight,
   Code2,
+  ExternalLink,
   LayoutGrid,
   PanelRightClose,
   Palette,
@@ -38,7 +39,9 @@ type Props = {
   onSelectElement?: (elementId: string | null) => void
   onClose: () => void
   onOpenCodeAsset?: (path: string, label: string) => void
+  onOpenInIde?: (relativePath: string, ide?: 'vscode' | 'cursor') => void
   onSyncCodeLayout?: () => Promise<void> | void
+  onOpenCmsTab?: () => void
   compactTabs?: boolean
 }
 
@@ -220,7 +223,9 @@ export function BuilderComponentInspector({
   onSelectElement,
   onClose,
   onOpenCodeAsset,
+  onOpenInIde,
   onSyncCodeLayout,
+  onOpenCmsTab,
   compactTabs = false,
 }: Props) {
   const displayName = block ? getBlockDisplayName(block, templateLabel) : 'Компонент'
@@ -477,6 +482,9 @@ export function BuilderComponentInspector({
               <p className="truncate text-[11px] font-semibold" style={{ color: theme.text }}>
                 {selectedElement.name ?? selectedElement.elementId}
               </p>
+              <p className="text-[9px]" style={{ color: theme.textMuted }}>
+                Элемент · правки во вкладке «Текст»
+              </p>
             </div>
             <button
               type="button"
@@ -515,6 +523,7 @@ export function BuilderComponentInspector({
                 store={store}
                 inputStyle={inputCss(theme)}
                 labelColor={theme.textSecondary}
+                onOpenCmsTab={onOpenCmsTab}
               />
             }
           />
@@ -564,6 +573,31 @@ export function BuilderComponentInspector({
             </p>
           ) : (
             <>
+              <div
+                className="mx-3 mt-3 rounded-lg p-2.5"
+                style={{ background: theme.inputBg, border: `1px solid ${theme.divider}` }}
+              >
+                <p className="text-[10px] font-semibold" style={{ color: theme.text }}>
+                  Что редактировать?
+                </p>
+                <ul className="mt-1.5 grid gap-1 text-[10px] leading-snug" style={{ color: theme.textMuted }}>
+                  <li>
+                    <strong style={{ color: theme.textSecondary }}>Элементы</strong> (кнопка, текст) — клик на
+                    artboard или в «Структура» слева
+                  </li>
+                  <li>
+                    <strong style={{ color: theme.textSecondary }}>Рамка компонента</strong> — вкладки ниже (макет,
+                    фон)
+                  </li>
+                  <li>
+                    <strong style={{ color: theme.textSecondary }}>Код</strong> — preview.tsx внизу в «Дополнительно»
+                  </li>
+                </ul>
+                <p className="mt-2 text-[9px]" style={{ color: theme.textMuted }}>
+                  Элементов: {block.elements?.length ?? 0}
+                  {(block.elements?.length ?? 0) === 0 ? ' — добавьте во вкладке «Добавить» слева' : ''}
+                </p>
+              </div>
               {componentTab === 'layout' ? (
                 <>
                   {/* ── Presets ───────────────────────────────── */}
@@ -878,8 +912,8 @@ export function BuilderComponentInspector({
                           </button>
                         ) : null}
 
-                        <div className="grid grid-cols-3 gap-1">
-                          {(['preview.tsx', 'style.css', 'script.js'] as const).map((file) => (
+                        <div className="grid grid-cols-2 gap-1">
+                          {(['preview.tsx', 'layout.generated.tsx', 'style.css', 'script.js'] as const).map((file) => (
                             <button
                               key={file}
                               type="button"
@@ -892,11 +926,44 @@ export function BuilderComponentInspector({
                               }}
                               onClick={() => onOpenCodeAsset(file, file)}
                             >
-                              <Code2 className="h-3 w-3" />
-                              {file}
+                              <Code2 className="h-3 w-3 shrink-0" />
+                              <span className="truncate">{file.replace('.generated', '')}</span>
                             </button>
                           ))}
                         </div>
+
+                        {onOpenInIde ? (
+                          <div className="grid grid-cols-2 gap-1">
+                            <button
+                              type="button"
+                              className="flex h-8 items-center justify-center gap-1 rounded-md text-[10px] font-medium"
+                              style={{
+                                background: theme.inputBg,
+                                color: theme.textSecondary,
+                                border: `1px solid ${theme.divider}`,
+                                cursor: 'pointer',
+                              }}
+                              onClick={() => onOpenInIde('preview.tsx')}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              VS Code
+                            </button>
+                            <button
+                              type="button"
+                              className="flex h-8 items-center justify-center gap-1 rounded-md text-[10px] font-medium"
+                              style={{
+                                background: theme.inputBg,
+                                color: theme.textSecondary,
+                                border: `1px solid ${theme.divider}`,
+                                cursor: 'pointer',
+                              }}
+                              onClick={() => onOpenInIde('preview.tsx', 'cursor')}
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              Cursor
+                            </button>
+                          </div>
+                        ) : null}
 
                         {syncStatus ? (
                           <p

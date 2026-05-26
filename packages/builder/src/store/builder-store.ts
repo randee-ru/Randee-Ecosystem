@@ -25,10 +25,21 @@ export interface BuilderActions {
     catalogElementId: string,
     defaults: Record<string, string>,
     label: string,
-    options?: { parentId?: string | null; afterElementId?: string | null; beforeElementId?: string | null }
+    options?: {
+      parentId?: string | null
+      afterElementId?: string | null
+      beforeElementId?: string | null
+      columnIndex?: number | null
+    }
   ) => void
   removeElement: (blockId: string, elementId: string) => void
   updateElementProps: (blockId: string, elementId: string, props: Record<string, string>) => void
+  updateElementCmsBinding: (
+    blockId: string,
+    elementId: string,
+    propKey: string,
+    bindingState: CmsPropBindingState
+  ) => void
   updateElementDesign: (blockId: string, elementId: string, patch: Partial<import('../types/component-element').ElementDesignSettings>) => void
   moveElement: (blockId: string, fromIndex: number, toIndex: number) => void
   moveElementWithPlacement: (
@@ -300,34 +311,79 @@ export function createBuilderStore(initialPage: BuilderPage = DEFAULT_PAGE) {
         parentId: options?.parentId ?? null,
         props: { ...defaults }
       }
+
+      const insertAtFlatList = (list: ComponentElement[]): ComponentElement[] => {
+        const beforeElementId = options?.beforeElementId ?? null
+        if (beforeElementId) {
+          const targetIndex = list.findIndex((item) => item.id === beforeElementId)
+          if (targetIndex !== -1) {
+            const next = [...list]
+            next.splice(targetIndex, 0, element)
+            return next
+          }
+        }
+        const afterElementId = options?.afterElementId ?? null
+        if (afterElementId) {
+          const targetIndex = list.findIndex((item) => item.id === afterElementId)
+          if (targetIndex !== -1) {
+            const next = [...list]
+            next.splice(targetIndex + 1, 0, element)
+            return next
+          }
+        }
+        return [...list, element]
+      }
+
+      const insertIntoColumnsSlot = (list: ComponentElement[]): ComponentElement[] | null => {
+        const columnIndex = options?.columnIndex
+        const parentId = options?.parentId ?? null
+        if (columnIndex == null || parentId == null) return null
+        const parent = list.find((item) => item.id === parentId)
+        if (parent?.elementId !== 'columns') return null
+
+        const columnsCount = Math.max(1, Math.min(16, Number(parent.props.columns ?? '2') || 2))
+        const siblingIds = new Set(
+          list.filter((item) => (item.parentId ?? null) === parentId).map((item) => item.id)
+        )
+        const siblings = list.filter((item) => siblingIds.has(item.id))
+        let targetIdx = siblings.length
+        for (let i = 0; i <= siblings.length; i++) {
+          if (i % columnsCount === columnIndex) {
+            targetIdx = i
+            break
+          }
+        }
+        const reorderedSiblings = [...siblings]
+        reorderedSiblings.splice(targetIdx, 0, element)
+
+        const nextList: ComponentElement[] = []
+        let insertedSiblings = false
+        for (const item of list) {
+          if (siblingIds.has(item.id)) {
+            if (!insertedSiblings) {
+              nextList.push(...reorderedSiblings)
+              insertedSiblings = true
+            }
+            continue
+          }
+          nextList.push(item)
+        }
+        if (!insertedSiblings) nextList.push(...reorderedSiblings)
+        return nextList
+      }
+
       set((state) => ({
         page: {
           ...state.page,
-          blocks: state.page.blocks.map((block) =>
-            block.id === blockId
-              ? (() => {
-                  const list = [...(block.elements ?? [])]
-                  const beforeElementId = options?.beforeElementId ?? null
-                  if (beforeElementId) {
-                    const targetIndex = list.findIndex((item) => item.id === beforeElementId)
-                    if (targetIndex !== -1) {
-                      list.splice(targetIndex, 0, element)
-                      return { ...block, elements: list }
-                    }
-                  }
-                  const afterElementId = options?.afterElementId ?? null
-                  if (afterElementId) {
-                    const targetIndex = list.findIndex((item) => item.id === afterElementId)
-                    if (targetIndex !== -1) {
-                      list.splice(targetIndex + 1, 0, element)
-                      return { ...block, elements: list }
-                    }
-                  }
-                  list.push(element)
-                  return { ...block, elements: list }
-                })()
-              : block
-          )
+          blocks: state.page.blocks.map((block) => {
+            if (block.id !== blockId) return block
+            const list = [...(block.elements ?? [])]
+            const columnsResult = insertIntoColumnsSlot(list)
+            return {
+              ...block,
+              elements: columnsResult ?? insertAtFlatList(list)
+            }
+          })
         },
         selectedBlockId: blockId,
         selectedElementId: element.id
@@ -375,6 +431,28 @@ export function createBuilderStore(initialPage: BuilderPage = DEFAULT_PAGE) {
                   elements: (block.elements ?? []).map((item) =>
                     item.id === elementId ? { ...item, props: { ...item.props, ...props } } : item
                   )
+                }
+              : block
+          )
+        }
+      }))
+    },
+
+    updateElementCmsBinding: (blockId, elementId, propKey, bindingState) => {
+      snap(get().page)
+      set((state) => ({
+        page: {
+          ...state.page,
+          blocks: state.page.blocks.map((block) =>
+            block.id === blockId
+              ? {
+                  ...block,
+                  elements: (block.elements ?? []).map((item) => {
+                    if (item.id !== elementId) return item
+                    const cmsBindings = { ...(item.cmsBindings ?? {}) }
+                    cmsBindings[propKey] = bindingState
+                    return { ...item, cmsBindings }
+                  })
                 }
               : block
           )

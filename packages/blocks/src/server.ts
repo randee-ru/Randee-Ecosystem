@@ -20,7 +20,14 @@ function monorepoRoot(): string {
   return join(packageRoot, '..', '..')
 }
 
-export { getTemplateAssetMime, readTemplateAssetFile, readTemplateAssetText, writeTemplateAssetText } from './template-assets'
+export {
+  getTemplateAssetAbsolutePath,
+  getTemplateAssetMime,
+  getTemplateAssetsRevision,
+  readTemplateAssetFile,
+  readTemplateAssetText,
+  writeTemplateAssetText
+} from './template-assets'
 
 export function readVendorAssetFile(vendorId: VendorId, basename: string): Buffer | null {
   const fileRef = findVendorFile(vendorId, basename)
@@ -142,6 +149,7 @@ export {
   deleteComponentTemplate
 } from './create-component'
 export { mapUserComponentBlockToBitrix, mapBuiltinBlockToBitrix, mapPageBlockToBitrix } from './bitrix-export'
+export { buildCmsListComponentPhp, pageHasCmsListBindings } from './bitrix-cms-php'
 export {
   exportBlockPackage,
   exportFilenameForBlock,

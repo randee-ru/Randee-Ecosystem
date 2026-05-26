@@ -1,0 +1,23 @@
+{
+  "format": "randee-package",
+  "format_version": "1.0",
+  "product_id": "randee.connector",
+  "type": "module",
+  "name": "Randee: Bitrix CMS Connector Module",
+  "version": "0.3.1",
+  "channel": "stable",
+  "release_tag": "v0.3.1",
+  "build_number": "2026.05.24.4",
+  "install_root": "payload",
+  "paths": [
+    "local/modules/randee.connector"
+  ],
+  "requires": {
+    "php": ">=8.1",
+    "bitrix": ">=23.0.0",
+    "modules": [
+      "main",
+      "iblock"
+    ]
+  }
+}

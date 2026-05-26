@@ -34,6 +34,7 @@ export type GenericComponentPreviewProps = BlockTemplatePreviewProps & {
   elementOptions?: {
     selectedElementId?: string | null
     onSelectElement?: (elementId: string) => void
+    onDeleteElement?: (elementId: string) => void
     onDropElement?: (
       catalogElementId: string,
       placement?: { parentId?: string | null; afterElementId?: string | null; beforeElementId?: string | null }

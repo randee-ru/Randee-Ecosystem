@@ -33,6 +33,7 @@ import {
 import { vscodeDark, vscodeLight } from '@uiw/codemirror-theme-vscode'
 import { ChevronRight, FileCode2, FolderPlus, Loader2, Save, X } from 'lucide-react'
 import type { BuilderAssetTarget } from './builder-asset-types'
+import { openTemplateAssetInIde } from './builder-ide'
 
 type EditorTheme = {
   bg: string
@@ -435,6 +436,25 @@ export function BuilderAssetEditor({
             </span>
           ) : null}
         </div>
+
+        <button
+          type="button"
+          className="hidden h-7 items-center rounded-md px-2 text-[10px] font-medium sm:flex"
+          style={{ background: t.inputBg, color: t.textMuted, border: `1px solid ${t.divider}`, cursor: 'pointer' }}
+          title="Открыть в VS Code"
+          onClick={() => void openTemplateAssetInIde(asset.templateId, asset.path, { ide: 'vscode' })}
+        >
+          VS Code
+        </button>
+        <button
+          type="button"
+          className="hidden h-7 items-center rounded-md px-2 text-[10px] font-medium sm:flex"
+          style={{ background: t.inputBg, color: t.textMuted, border: `1px solid ${t.divider}`, cursor: 'pointer' }}
+          title="Открыть в Cursor"
+          onClick={() => void openTemplateAssetInIde(asset.templateId, asset.path, { ide: 'cursor' })}
+        >
+          Cursor
+        </button>
 
         <button
           type="button"

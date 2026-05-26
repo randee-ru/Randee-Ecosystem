@@ -5,7 +5,9 @@ import type { PageBlock, BuilderStore, ElementVariant } from '@randee/builder'
 import type { StoreApi } from 'zustand'
 import { getElementVariant } from '@randee/blocks'
 import { BuilderElementPicker } from './builder-element-picker'
-import { ChevronRight, Layers, Plus, Search } from 'lucide-react'
+import { BuilderConceptsGuide, BuilderStepsStrip } from './builder-concepts-guide'
+import { getBlockDisplayName } from '@randee/builder'
+import { ChevronRight, Layers, ListTree, Plus, Search, X } from 'lucide-react'
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
 type Theme = {
@@ -30,7 +32,17 @@ type Props = {
   onSelectElement?: (id: string | null) => void
   onAddElement?: (variant: ElementVariant) => void
   elementVariants?: ElementVariant[]
+  onExitEdit?: () => void
 }
+
+const QUICK_ADD: Array<{ id: string; label: string; char: string; color: string }> = [
+  { id: 'container', label: 'Блок', char: '▣', color: '#3b82f6' },
+  { id: 'heading', label: 'Заголовок', char: 'H', color: '#22c55e' },
+  { id: 'text', label: 'Текст', char: 'T', color: '#22c55e' },
+  { id: 'button', label: 'Кнопка', char: '◉', color: '#a855f7' },
+  { id: 'image', label: 'Картинка', char: '⊟', color: '#f97316' },
+  { id: 'text-field', label: 'Поле', char: '▭', color: '#ec4899' },
+]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const ELEMENT_COLORS: Record<string, string> = {
@@ -79,9 +91,11 @@ export function ComponentEditorLeftPanel({
   onSelectElement,
   onAddElement,
   elementVariants,
+  onExitEdit,
 }: Props) {
   const elements = block?.elements ?? []
-  const [addOpen, setAddOpen] = React.useState(false)
+  const [panelTab, setPanelTab] = React.useState<'structure' | 'add'>('structure')
+  const [addOpen, setAddOpen] = React.useState(true)
   const [search, setSearch] = React.useState('')
   const [menu, setMenu] = React.useState<{ id: string; x: number; y: number } | null>(null)
   const menuRef = React.useRef<HTMLDivElement | null>(null)
@@ -229,45 +243,164 @@ export function ComponentEditorLeftPanel({
     )
   }
 
+  const displayName = block ? getBlockDisplayName(block) : 'Компонент'
+
+  function quickAdd(catalogId: string) {
+    const variant = getElementVariant(catalogId) ?? elementVariants?.find((v) => v.id === catalogId)
+    if (variant && onAddElement) {
+      onAddElement(variant)
+      setPanelTab('structure')
+    }
+  }
+
+  if (!block) {
+    return (
+      <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
+        <p className="text-[11px] font-medium" style={{ color: t.textSecondary }}>
+          Выберите компонент на странице
+        </p>
+        <p className="mt-1 text-[10px]" style={{ color: t.textMuted }}>
+          Вкладка «Компоненты» → «Редактировать»
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-
-      {/* ── Layer tree ───────────────────────────────── */}
-      <div className="flex items-center gap-2 px-3 py-2" style={{ borderBottom: `1px solid ${t.divider}` }}>
-        <Layers className="h-3.5 w-3.5 shrink-0" style={{ color: t.textMuted }} />
-        <span className="flex-1 text-[11px] font-semibold" style={{ color: t.text }}>
-          Слои компонента
-        </span>
-        {elements.length > 0 && (
-          <span
-            className="rounded-full px-1.5 py-0.5 text-[9px] font-medium"
-            style={{ background: t.inputBg, color: t.textMuted }}
-          >
-            {elements.length}
-          </span>
-        )}
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto px-1 py-1">
-        {elements.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-3 py-8 text-center">
-            <div
-              className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl"
-              style={{ background: t.inputBg }}
-            >
-              <Layers className="h-6 w-6" style={{ color: t.textMuted }} />
+      {/* Шапка компонента */}
+      <div className="shrink-0 px-2 pt-2">
+        <div
+          className="rounded-lg p-2.5"
+          style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.28)' }}
+        >
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <p className="text-[9px] font-semibold uppercase tracking-wide" style={{ color: '#A855F7' }}>
+                Редактирование
+              </p>
+              <p className="truncate text-[12px] font-semibold" style={{ color: t.text }}>
+                {displayName}
+              </p>
+              <p className="text-[9px]" style={{ color: t.textMuted }}>
+                {block.template} · элементов: {elements.length}
+              </p>
             </div>
-            <p className="text-[11px] font-medium" style={{ color: t.textSecondary }}>
-              Компонент пуст
-            </p>
-            <p className="mt-1 text-[10px]" style={{ color: t.textMuted }}>
-              Добавьте элементы через панель снизу
-            </p>
+            {onExitEdit ? (
+              <button
+                type="button"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+                style={{ background: t.inputBg, border: `1px solid ${t.divider}`, cursor: 'pointer', color: t.textMuted }}
+                title="Выйти к странице"
+                onClick={onExitEdit}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
           </div>
-        ) : (
-          renderTree(null, 0)
-        )}
+        </div>
       </div>
+
+      <BuilderConceptsGuide t={t} variant="component-edit" />
+
+      {/* Вкладки: структура / добавить */}
+      <div className="grid shrink-0 grid-cols-2 gap-1 px-2 py-1">
+        <TabChip active={panelTab === 'structure'} label="Структура" icon={ListTree} t={t} onClick={() => setPanelTab('structure')} />
+        <TabChip active={panelTab === 'add'} label="Добавить" icon={Plus} t={t} onClick={() => setPanelTab('add')} />
+      </div>
+
+      {panelTab === 'structure' ? (
+        <>
+          <div className="min-h-0 flex-1 overflow-y-auto px-1 py-1">
+            {elements.length === 0 ? (
+              <div className="flex flex-col items-center justify-center px-3 py-6 text-center">
+                <Layers className="mb-2 h-8 w-8" style={{ color: t.textMuted }} />
+                <p className="text-[11px] font-medium" style={{ color: t.textSecondary }}>
+                  Пока пусто
+                </p>
+                <button
+                  type="button"
+                  className="mt-3 rounded-lg px-3 py-1.5 text-[10px] font-semibold text-white"
+                  style={{ background: '#A855F7', border: 'none', cursor: 'pointer' }}
+                  onClick={() => setPanelTab('add')}
+                >
+                  + Добавить элемент
+                </button>
+              </div>
+            ) : (
+              renderTree(null, 0)
+            )}
+          </div>
+          <BuilderStepsStrip t={t} steps={['Выбрать', 'Править справа', 'Или dbl-click']} />
+        </>
+      ) : (
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <p className="px-3 py-1 text-[10px]" style={{ color: t.textMuted }}>
+            Быстрое добавление:
+          </p>
+          <div className="grid grid-cols-3 gap-1 px-2 pb-2">
+            {QUICK_ADD.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="flex flex-col items-center gap-0.5 rounded-lg py-2"
+                style={{ background: t.inputBg, border: `1px solid ${t.divider}`, cursor: 'pointer' }}
+                onClick={() => quickAdd(item.id)}
+              >
+                <span className="text-sm font-bold" style={{ color: item.color }}>
+                  {item.char}
+                </span>
+                <span className="text-[9px] font-medium" style={{ color: t.textSecondary }}>
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div style={{ borderTop: `1px solid ${t.divider}` }}>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 px-3 py-2"
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+              onClick={() => setAddOpen((v) => !v)}
+            >
+              <Search className="h-3.5 w-3.5" style={{ color: t.textMuted }} />
+              <span className="flex-1 text-left text-[11px] font-semibold" style={{ color: t.text }}>
+                Все элементы
+              </span>
+              <ChevronRight
+                className="h-3.5 w-3.5 transition-transform"
+                style={{ color: t.textMuted, transform: addOpen ? 'rotate(90deg)' : undefined }}
+              />
+            </button>
+            {addOpen ? (
+              <div className="border-t px-1 pb-2" style={{ borderColor: t.divider }}>
+                <div className="flex items-center gap-2 px-2 py-1.5">
+                  <input
+                    className="min-w-0 flex-1 rounded-md px-2 py-1 text-[11px] outline-none"
+                    style={{ background: t.inputBg, color: t.text, border: `1px solid ${t.divider}` }}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Поиск…"
+                  />
+                </div>
+                {onAddElement ? (
+                  <BuilderElementPicker
+                    variants={elementVariants}
+                    searchQuery={search}
+                    t={t}
+                    onSelect={(v) => {
+                      onAddElement(v)
+                      setPanelTab('structure')
+                    }}
+                    maxHeightClassName="max-h-52"
+                  />
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
 
       {/* Context menu */}
       {menu && block ? (
@@ -332,60 +465,37 @@ export function ComponentEditorLeftPanel({
         </div>
       ) : null}
 
-      {/* ── Add Element panel ─────────────────────────── */}
-      <div style={{ borderTop: `1px solid ${t.divider}` }}>
-        <button
-          type="button"
-          className="flex w-full items-center gap-2 px-3 py-2"
-          style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-          onClick={() => setAddOpen((v) => !v)}
-        >
-          <Plus className="h-3.5 w-3.5 shrink-0" style={{ color: t.accent }} />
-          <span className="flex-1 text-left text-[11px] font-semibold" style={{ color: t.text }}>
-            Добавить элемент
-          </span>
-          <ChevronRight
-            className="h-3.5 w-3.5 shrink-0 transition-transform"
-            style={{
-              color: t.textMuted,
-              transform: addOpen ? 'rotate(90deg)' : 'rotate(0deg)',
-            }}
-          />
-        </button>
-
-        {addOpen ? (
-          <div style={{ borderTop: `1px solid ${t.divider}` }}>
-            {/* Search inside element picker */}
-            <div
-              className="flex items-center gap-2 px-3 py-1.5"
-              style={{ borderBottom: `1px solid ${t.divider}` }}
-            >
-              <Search className="h-3 w-3 shrink-0" style={{ color: t.textMuted }} />
-              <input
-                className="min-w-0 flex-1 bg-transparent text-[11px] outline-none"
-                style={{ color: t.text, border: 'none' }}
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Поиск элементов…"
-              />
-            </div>
-            <div className="max-h-60 overflow-y-auto">
-              {typeof onAddElement === 'function' ? (
-                <BuilderElementPicker
-                  variants={elementVariants}
-                  searchQuery={search}
-                  t={t}
-                  onSelect={(v) => {
-                    onAddElement(v)
-                    setAddOpen(false)
-                  }}
-                  maxHeightClassName="max-h-60"
-                />
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-      </div>
     </div>
+  )
+}
+
+function TabChip({
+  active,
+  label,
+  icon: Icon,
+  t,
+  onClick
+}: {
+  active: boolean
+  label: string
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+  t: Theme
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className="flex items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] font-semibold"
+      style={{
+        background: active ? 'rgba(168,85,247,0.15)' : t.inputBg,
+        border: `1px solid ${active ? 'rgba(168,85,247,0.4)' : t.divider}`,
+        color: active ? t.text : t.textMuted,
+        cursor: 'pointer'
+      }}
+      onClick={onClick}
+    >
+      <Icon className="h-3 w-3" />
+      {label}
+    </button>
   )
 }

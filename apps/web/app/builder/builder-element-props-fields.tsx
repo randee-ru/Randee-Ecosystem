@@ -6,6 +6,7 @@ import type { BuilderStore } from '@randee/builder'
 import type { StoreApi } from 'zustand'
 import { getElementPropFields } from '@randee/blocks'
 import { BlockPropsFields } from './builder-block-props-fields'
+import { ElementCmsFields } from './builder-element-cms-fields'
 
 type ElementPropsFieldsProps = {
   block: PageBlock
@@ -13,6 +14,7 @@ type ElementPropsFieldsProps = {
   store: StoreApi<BuilderStore>
   inputStyle: React.CSSProperties
   labelColor: string
+  onOpenCmsTab?: () => void
 }
 
 function renderFieldInput(
@@ -93,7 +95,14 @@ function renderFieldInput(
   )
 }
 
-export function ElementPropsFields({ block, elementId, store, inputStyle, labelColor }: ElementPropsFieldsProps) {
+export function ElementPropsFields({
+  block,
+  elementId,
+  store,
+  inputStyle,
+  labelColor,
+  onOpenCmsTab
+}: ElementPropsFieldsProps) {
   const element = block.elements?.find((item) => item.id === elementId)
   if (!element) {
     return (
@@ -127,6 +136,14 @@ export function ElementPropsFields({ block, elementId, store, inputStyle, labelC
           </label>
         )
       })}
+      <ElementCmsFields
+        block={block}
+        elementId={elementId}
+        store={store}
+        inputStyle={inputStyle}
+        labelColor={labelColor}
+        onOpenCmsTab={onOpenCmsTab}
+      />
     </div>
   )
 }

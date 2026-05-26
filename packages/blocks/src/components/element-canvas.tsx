@@ -22,6 +22,8 @@ export type CanvasElementOptions = {
   forceVisual?: boolean
   /** Double-click inline edit: обновить props элемента */
   onPatchElementProps?: (elementId: string, props: Record<string, string>) => void
+  /** Resolved CMS values for live preview: elementId → propKey → value */
+  cmsPreviewValues?: Record<string, Record<string, string>>
 }
 
 type DragState = {
@@ -346,6 +348,7 @@ function ContextMenuPortal({
 
   React.useEffect(() => {
     const close = (e: PointerEvent) => {
+      if (e.button !== 0) return
       const target = e.target as HTMLElement
       if (!target.closest('[data-context-menu]')) onClose()
     }

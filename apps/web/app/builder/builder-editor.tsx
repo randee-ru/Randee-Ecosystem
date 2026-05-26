@@ -102,6 +102,8 @@ import {
 import { BuilderLeftPanel, type LeftTab, type SavedAssetComponent } from './builder-left-panel'
 import { BuilderAssetEditor } from './builder-asset-editor'
 import { isEditableAsset, type BuilderAssetTarget } from './builder-asset-types'
+import { openTemplateAssetInIde } from './builder-ide'
+import { useCmsPreviewData } from './use-cms-preview-data'
 import { BuilderComponentInspector } from './builder-component-inspector'
 import { BlockPropsFields } from './builder-block-props-fields'
 import { componentArtboardStyle, componentRootStyle } from './builder-component-canvas'
@@ -306,7 +308,9 @@ export default function BuilderEditor() {
   const panStart = React.useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 })
   const resizeStart = React.useRef({ x: 0, width: 0 })
   const autoSyncTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [autoSyncStatus, setAutoSyncStatus] = React.useState<'idle' | 'syncing' | 'ok' | 'error'>('idle')
+  const [autoSyncStatus, setAutoSyncStatus] = React.useState<'idle' | 'syncing' | 'ok' | 'error' | 'readonly'>(
+    'idle'
+  )
 
   const insertRef = React.useRef<HTMLDivElement>(null)
   const newRef = React.useRef<HTMLDivElement>(null)
@@ -452,6 +456,7 @@ export default function BuilderEditor() {
       if (savedLeftTab === 'insert' || savedLeftTab === 'assets') setLeftTab('assets')
       else if (savedLeftTab === 'layers' || savedLeftTab === 'blocks') setLeftTab('blocks')
       else if (savedLeftTab === 'pages') setLeftTab('pages')
+      else if (savedLeftTab === 'cms') setLeftTab('cms')
       else if (savedLeftTab === 'media') setLeftTab('media')
       if (typeof session.showRuler === 'boolean') setShowRuler(session.showRuler)
       if (typeof session.showGrid === 'boolean') setShowGrid(session.showGrid)
@@ -1629,7 +1634,12 @@ export default function BuilderEditor() {
             },
             onDropElement: (
               catalogElementId: string,
-              placement?: { parentId?: string | null; afterElementId?: string | null; beforeElementId?: string | null }
+              placement?: {
+                parentId?: string | null
+                afterElementId?: string | null
+                beforeElementId?: string | null
+                columnIndex?: number | null
+              }
             ) => {
               if (!block || block.type !== 'component') return
               const presetMatch = /^columns:(\d+)$/.exec(catalogElementId)
@@ -1666,49 +1676,28 @@ export default function BuilderEditor() {
     [block, componentEditMode, selectedElementId, store, elementVariantById, viewport]
   )
 
+  const cmsPreviewValues = useCmsPreviewData(
+    block?.type === 'component' ? block : undefined,
+    page.cmsConnection ?? cmsConnection
+  )
+
   // Опции для ВИЗУАЛЬНОГО превью в артборде:
   // forceVisual=true → BlockPreview показывает реальный компонент (не tree-view)
   // onDropElement → drag из левой панели + inline «+» кнопка работают
   const artboardElementOptions = React.useMemo(
     () =>
-      componentEditMode && block?.type === 'component'
+      elementPreviewOptions
         ? {
-            selectedElementId,
-            onSelectElement: (elementId: string) => {
-              store.getState().selectElement(elementId)
-              setComponentEditFocus('component')
-            },
-            onDropElement: (
-              catalogElementId: string,
-              placement?: { parentId?: string | null; afterElementId?: string | null; beforeElementId?: string | null }
-            ) => {
-              if (!block || block.type !== 'component') return
-              const presetMatch = /^columns:(\d+)$/.exec(catalogElementId)
-              if (presetMatch) {
-                const variant = getElementVariant('columns')
-                if (!variant) return
-                const nextCount = String(Math.max(1, Math.min(16, Number(presetMatch[1]) || 2)))
-                store.getState().insertElement(block.id, variant.id, { ...variant.defaultProps, columns: nextCount }, variant.name, placement)
-                return
-              }
-              const existingElement = (block.elements ?? []).find((item) => item.id === catalogElementId)
-              if (existingElement) {
-                store.getState().moveElementWithPlacement(block.id, existingElement.id, placement)
-                return
-              }
-              const variant = elementVariantById.get(catalogElementId) ?? getElementVariant(catalogElementId)
-              if (!variant) return
-              store.getState().insertElement(block.id, variant.id, variant.defaultProps, variant.name, placement)
-            },
+            ...elementPreviewOptions,
             onPatchElementProps: (elementId: string, props: Record<string, string>) => {
               if (!block || block.type !== 'component') return
               store.getState().updateElementProps(block.id, elementId, props)
             },
-            forceVisual: true as const,
-            viewport
+            cmsPreviewValues,
+            forceVisual: true as const
           }
         : undefined,
-    [block, componentEditMode, selectedElementId, store, elementVariantById, viewport]
+    [block, elementPreviewOptions, store, cmsPreviewValues]
   )
 
   const saveSelectedElementAsCustom = React.useCallback(async () => {
@@ -1789,6 +1778,46 @@ export default function BuilderEditor() {
     [block]
   )
 
+  const openInIdeFromInspector = React.useCallback(
+    (relativePath: string, ide: 'vscode' | 'cursor' = 'vscode') => {
+      if (!block || block.type !== 'component') return
+      void openTemplateAssetInIde(block.template, relativePath, { ide }).catch((error) => {
+        console.error(error)
+      })
+    },
+    [block]
+  )
+
+  // R4.3: poll file mtimes → hot reload preview when IDE saves files
+  React.useEffect(() => {
+    if (!componentEditMode || !block || block.type !== 'component') return
+    const templateId = block.template
+    let lastRevision = ''
+    let active = true
+
+    const tick = async () => {
+      try {
+        const response = await fetch(`/api/builder/components/${encodeURIComponent(templateId)}/file-revision`)
+        if (!response.ok || !active) return
+        const payload = (await response.json()) as { revision?: string }
+        const revision = payload.revision ?? ''
+        if (lastRevision && revision && revision !== lastRevision) {
+          bumpTemplateRevision(templateId)
+        }
+        lastRevision = revision
+      } catch {
+        // ignore polling errors
+      }
+    }
+
+    void tick()
+    const intervalId = window.setInterval(tick, 1500)
+    return () => {
+      active = false
+      window.clearInterval(intervalId)
+    }
+  }, [block?.template, componentEditMode, bumpTemplateRevision])
+
   const syncCodeLayoutFromInspector = React.useCallback(async () => {
     if (!block || block.type !== 'component') return
     const response = await fetch(`/api/builder/components/${encodeURIComponent(block.template)}/sync-layout`, {
@@ -1821,9 +1850,8 @@ export default function BuilderEditor() {
             body: JSON.stringify({ elements: block.elements ?? [] })
           }
         )
-        // 403 = встроенный шаблон, синк не поддерживается — молча игнорируем
         if (response.status === 403) {
-          setAutoSyncStatus('idle')
+          setAutoSyncStatus('readonly')
           return
         }
         if (!response.ok) throw new Error('sync failed')
@@ -1988,7 +2016,7 @@ export default function BuilderEditor() {
                 onMouseEnter={(e) => { e.currentTarget.style.background = t.hover }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                 onClick={toggleComponentEditMode}
-                title="Выйти из Редактор"
+                title="Выйти из редактирования компонента"
               >
                 <ChevronLeft className="h-3 w-3" />
                 Страница
@@ -2000,12 +2028,37 @@ export default function BuilderEditor() {
               {autoSyncStatus !== 'idle' ? (
                 <span
                   className="ml-1 rounded px-1 py-0.5 text-[10px] font-medium"
+                  title={
+                    autoSyncStatus === 'readonly'
+                      ? 'Встроенный шаблон: автосохранение в layout.generated.tsx недоступно. Сохраните компонент в Assets или правьте preview.tsx в IDE.'
+                      : undefined
+                  }
                   style={{
-                    color: autoSyncStatus === 'ok' ? '#22c55e' : autoSyncStatus === 'error' ? '#ef4444' : t.textMuted,
-                    background: autoSyncStatus === 'ok' ? 'rgba(34,197,94,.10)' : autoSyncStatus === 'error' ? 'rgba(239,68,68,.10)' : 'transparent'
+                    color:
+                      autoSyncStatus === 'ok'
+                        ? '#22c55e'
+                        : autoSyncStatus === 'error'
+                          ? '#ef4444'
+                          : autoSyncStatus === 'readonly'
+                            ? '#f59e0b'
+                            : t.textMuted,
+                    background:
+                      autoSyncStatus === 'ok'
+                        ? 'rgba(34,197,94,.10)'
+                        : autoSyncStatus === 'error'
+                          ? 'rgba(239,68,68,.10)'
+                          : autoSyncStatus === 'readonly'
+                            ? 'rgba(245,158,11,.12)'
+                            : 'transparent'
                   }}
                 >
-                  {autoSyncStatus === 'syncing' ? '⟳' : autoSyncStatus === 'ok' ? '✓' : '✗'}
+                  {autoSyncStatus === 'syncing'
+                    ? '⟳'
+                    : autoSyncStatus === 'ok'
+                      ? '✓'
+                      : autoSyncStatus === 'readonly'
+                        ? 'только IDE'
+                        : '✗'}
                 </span>
               ) : null}
             </>
@@ -2178,7 +2231,7 @@ export default function BuilderEditor() {
                   }}
                 >
                   <Pencil className="h-3.5 w-3.5 shrink-0" style={{ color: t.textMuted }} />
-                  Редактор
+                  Редактировать компонент
                 </button>
 
                 {/* CMS */}
@@ -2543,6 +2596,28 @@ export default function BuilderEditor() {
               onDuplicatePage={duplicatePageFromSidebar}
               onRenamePage={renamePageFromSidebar}
               onDeletePage={deletePageFromSidebar}
+              cmsConnection={cmsConnection}
+              onOpenCmsSettings={() => {
+                setGuideOpen(false)
+                setCmsOpen(true)
+              }}
+              onEditComponent={toggleComponentEditMode}
+              onNewComponent={() => setNewOpen(true)}
+              onExitComponentEdit={() => setComponentEditMode(false)}
+              onOpenComponentCode={(componentBlock) => {
+                const assets = getBlockLayerAssets(componentBlock.template)
+                const preview = assets?.preview
+                if (!preview || !isEditableAsset(preview)) return
+                setOpenAsset({
+                  templateId: componentBlock.template,
+                  blockId: componentBlock.id,
+                  blockName: componentBlock.name,
+                  path: preview.path,
+                  label: preview.label,
+                  kind: preview.kind,
+                  url: preview.url
+                })
+              }}
             />
           </div>
         </aside>
@@ -2627,7 +2702,7 @@ export default function BuilderEditor() {
                 <span className="truncate text-[11px] font-semibold" style={{ color: t.text }}>
                   {(block?.props as Record<string, string> | undefined)?.name ?? block?.id ?? 'Компонент'}
                 </span>
-                <span className="text-[10px]" style={{ color: t.textMuted }}>· Редактор</span>
+                <span className="text-[10px]" style={{ color: t.textMuted }}>· редактирование</span>
               </div>
             ) : (
               <span className="shrink-0 text-[11px] font-medium" style={{ color: t.textSecondary }}>
@@ -2745,7 +2820,7 @@ export default function BuilderEditor() {
                     onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(168,85,247,0.12)' }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
                     onClick={toggleComponentEditMode}
-                    title="Выйти из Редактор"
+                    title="Выйти из редактирования компонента"
                   >
                     <ChevronLeft className="h-3 w-3" />
                     Выйти
@@ -3174,10 +3249,15 @@ export default function BuilderEditor() {
                         </div>
                       </div>
                       {/* Artboard bottom hint */}
-                      <div className="mt-2 flex items-center gap-1">
-                        <span className="text-[10px]" style={{ color: t.textMuted }}>
-                          Наведи на элемент — подсветка · клик — выделение + Inspector
-                        </span>
+                      <div className="mt-3 rounded-lg px-3 py-2 text-center" style={{ background: t.inputBg, border: `1px dashed ${t.divider}` }}>
+                        <p className="text-[10px] leading-relaxed" style={{ color: t.textMuted }}>
+                          <strong style={{ color: t.textSecondary }}>Клик</strong> — выбрать элемент → справа вкладка «Текст»
+                          <br />
+                          <strong style={{ color: t.textSecondary }}>Двойной клик</strong> — быстро изменить надпись
+                          <br />
+                          <strong style={{ color: t.textSecondary }}>Перетащить</strong> — поменять порядок ·{' '}
+                          <strong style={{ color: t.textSecondary }}>+</strong> на hover — добавить
+                        </p>
                       </div>
                     </div>
                     ) : (
@@ -3501,7 +3581,12 @@ export default function BuilderEditor() {
                 }}
                 onClose={() => setRightOpen(false)}
                 onOpenCodeAsset={openCodeAssetFromInspector}
+                onOpenInIde={openInIdeFromInspector}
                 onSyncCodeLayout={syncCodeLayoutFromInspector}
+                onOpenCmsTab={() => {
+                  setLeftOpen(true)
+                  setLeftTab('cms')
+                }}
               />
             ) : (
               /* ── Sprint E: Page Inspector with tabs ─────────────────── */
@@ -3562,6 +3647,34 @@ export default function BuilderEditor() {
                   {/* ── Блок ── */}
                   {pageInspectorTab === 'block' ? (
                     <div className="p-3">
+                      {block?.type === 'component' ? (
+                        <div
+                          className="mb-3 rounded-lg p-3"
+                          style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.35)' }}
+                        >
+                          <p className="text-[11px] font-semibold" style={{ color: t.text }}>
+                            Это компонент
+                          </p>
+                          <p className="mt-1 text-[10px] leading-snug" style={{ color: t.textMuted }}>
+                            Здесь только общие props. Чтобы менять кнопки, тексты и структуру внутри — откройте режим
+                            редактирования.
+                          </p>
+                          <button
+                            type="button"
+                            className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[11px] font-semibold text-white"
+                            style={{ background: '#A855F7', border: 'none', cursor: 'pointer' }}
+                            onClick={() => {
+                              if (block) store.getState().selectBlock(block.id)
+                              toggleComponentEditMode()
+                              setLeftOpen(true)
+                              setLeftTab('assets')
+                            }}
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                            Редактировать содержимое
+                          </button>
+                        </div>
+                      ) : null}
                       {/* Viewport switcher */}
                       <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.06em]" style={{ color: t.textMuted }}>
                         Брейкпоинт

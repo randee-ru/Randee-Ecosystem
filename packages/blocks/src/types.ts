@@ -48,6 +48,8 @@ export type BlockTemplatePreviewProps = {
   ) => void
     onPatchElementProps?: (elementId: string, props: Record<string, string>) => void
     viewport?: 'desktop' | 'macbook' | 'tablet' | 'mobile'
+    cmsPreviewValues?: Record<string, Record<string, string>>
+    forceVisual?: boolean
   }
 }
 

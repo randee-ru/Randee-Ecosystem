@@ -22,7 +22,7 @@ export function buildBitrixComponentFiles(descriptor: BitrixComponentDescriptor)
   const params = descriptor.params ?? {}
   const templateData = descriptor.templateData ?? {}
 
-  const componentPhp = `<?php
+  const componentPhp = descriptor.componentPhp ?? `<?php
 if (!defined('B_PROLOG_INCLUDED') || B_PROLOG_INCLUDED !== true) die();
 
 $arResult = array();

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolveTemplateFolder } from './template-path'
@@ -39,6 +39,34 @@ export function writeTemplateAssetText(templateId: string, relativePath: string,
   mkdirSync(dirPath, { recursive: true })
   writeFileSync(filePath, content, 'utf8')
   return true
+}
+
+export function getTemplateAssetAbsolutePath(templateId: string, relativePath: string): string | null {
+  return resolveTemplateAssetPath(templateId, relativePath)
+}
+
+const WATCHED_TEMPLATE_ASSETS = [
+  'preview.tsx',
+  'layout.generated.tsx',
+  'style.css',
+  'script.js',
+  'init.ts',
+  'elements.snapshot.json'
+] as const
+
+export function getTemplateAssetsRevision(templateId: string): { revision: string; files: Record<string, number> } {
+  const files: Record<string, number> = {}
+  for (const relativePath of WATCHED_TEMPLATE_ASSETS) {
+    const filePath = resolveTemplateAssetPath(templateId, relativePath)
+    if (filePath && existsSync(filePath)) {
+      files[relativePath] = statSync(filePath).mtimeMs
+    }
+  }
+  const revision = Object.entries(files)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([path, mtime]) => `${path}:${mtime}`)
+    .join('|')
+  return { revision, files }
 }
 
 export function getTemplateAssetMime(relativePath: string): string {

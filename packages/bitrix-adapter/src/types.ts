@@ -16,6 +16,8 @@ export interface BitrixComponentDescriptor {
   css?: string
   js?: string
   templatePhp?: string
+  /** Override default component.php (e.g. CIBlockElement::GetList bootstrap) */
+  componentPhp?: string
   staticAssets?: Array<{ path: string; content: string | Buffer }>
 }
 
