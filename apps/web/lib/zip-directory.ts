@@ -1,9 +1,9 @@
-import archiver from 'archiver'
+import type { Archiver } from 'archiver'
 import { createReadStream, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { PassThrough } from 'node:stream'
 
-function appendDirectory(archive: archiver.Archiver, directory: string, archivePath: string) {
+function appendDirectory(archive: Archiver, directory: string, archivePath: string) {
   for (const entry of readdirSync(directory)) {
     const fullPath = join(directory, entry)
     const targetPath = archivePath ? `${archivePath}/${entry}` : entry
@@ -17,8 +17,14 @@ function appendDirectory(archive: archiver.Archiver, directory: string, archiveP
 }
 
 export async function zipDirectoryToBuffer(directory: string): Promise<Buffer> {
+  const archiverModule = await import('archiver')
+  const ZipArchiveCtor = (archiverModule as unknown as { ZipArchive?: new (options?: unknown) => Archiver }).ZipArchive
+  if (!ZipArchiveCtor) {
+    throw new Error('archiver ZipArchive constructor is not available')
+  }
+
   return new Promise((resolve, reject) => {
-    const archive = archiver('zip', { zlib: { level: 9 } })
+    const archive = new ZipArchiveCtor({ zlib: { level: 9 } })
     const stream = new PassThrough()
     const chunks: Buffer[] = []
 

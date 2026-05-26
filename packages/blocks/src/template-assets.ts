@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resolveTemplateFolder } from './template-path'
@@ -35,6 +35,8 @@ export function readTemplateAssetText(templateId: string, relativePath: string):
 export function writeTemplateAssetText(templateId: string, relativePath: string, content: string): boolean {
   const filePath = resolveTemplateAssetPath(templateId, relativePath)
   if (!filePath) return false
+  const dirPath = dirname(filePath)
+  mkdirSync(dirPath, { recursive: true })
   writeFileSync(filePath, content, 'utf8')
   return true
 }

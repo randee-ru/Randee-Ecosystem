@@ -68,6 +68,36 @@ function assetMatchesSearch(asset: BlockLayerAssetFile, query: string): boolean 
   return [asset.label, asset.path, asset.kind].join(' ').toLowerCase().includes(query)
 }
 
+type CmsBlockStatus = 'active' | 'partial' | 'none'
+
+function getCmsBlockStatus(block: PageBlock): CmsBlockStatus {
+  // CMS Slider (component-03): check cmsIblockId
+  if (block.template === 'component-03') {
+    return (block.props?.cmsIblockId ?? '').trim() ? 'active' : 'none'
+  }
+  // Generic blocks: check cmsBindings
+  const bindings = block.cmsBindings?.props
+  if (!bindings) return 'none'
+  const entries = Object.values(bindings)
+  if (entries.length === 0) return 'none'
+  const active = entries.filter((b) => b?.mode === 'binding' && (b.binding?.field.code ?? '').trim())
+  if (active.length === 0) return 'none'
+  if (active.length === entries.length) return 'active'
+  return 'partial'
+}
+
+const CMS_STATUS_COLOR: Record<CmsBlockStatus, string | null> = {
+  active: '#22c55e',
+  partial: '#f59e0b',
+  none: null,
+}
+
+const CMS_STATUS_TITLE: Record<CmsBlockStatus, string> = {
+  active: 'CMS: все поля привязаны',
+  partial: 'CMS: частично настроено',
+  none: '',
+}
+
 function blockMatchesSearch(block: PageBlock, assets: BlockLayerAssets | null, query: string): boolean {
   if (!query) return true
   const haystack = [block.type, block.template, block.id, block.name ?? '', assets?.name ?? '']
@@ -328,6 +358,16 @@ function LayerBlockRowInner({
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onContextMenu={(event) => onBlockContextMenu(event, item.id)}
+        onMouseDown={(event) => {
+          if (event.button !== 2) return
+          event.preventDefault()
+          onOpenContextMenu(item.id, event.clientX, event.clientY)
+        }}
+        onAuxClick={(event) => {
+          if (event.button !== 2) return
+          event.preventDefault()
+          onOpenContextMenu(item.id, event.clientX, event.clientY)
+        }}
         onTouchStart={(event) => {
           if (isRenaming || event.touches.length !== 1) return
           const touch = event.touches[0]
@@ -379,6 +419,24 @@ function LayerBlockRowInner({
           }}
         >
           <Component className="h-3.5 w-3.5 shrink-0" style={{ color: isActive ? t.accent : '#7c3aed' }} />
+          {(() => {
+            const cmsStatus = getCmsBlockStatus(item)
+            const color = CMS_STATUS_COLOR[cmsStatus]
+            return color ? (
+              <span
+                title={CMS_STATUS_TITLE[cmsStatus]}
+                style={{
+                  display: 'inline-block',
+                  width: 6,
+                  height: 6,
+                  borderRadius: '50%',
+                  background: color,
+                  flexShrink: 0,
+                  boxShadow: `0 0 4px ${color}80`,
+                }}
+              />
+            ) : null
+          })()}
           {isRenaming ? (
             <input
               ref={renameInputRef}
@@ -428,7 +486,7 @@ function LayerBlockRowInner({
                 style={{ paddingLeft: 28 + 12, paddingRight: 12, color: t.textMuted }}
               >
                 <ImageIcon className="h-3.5 w-3.5 shrink-0" />
-                <span className="text-[10px] font-medium uppercase tracking-wide">Images</span>
+                <span className="text-[10px] font-medium uppercase tracking-wide">Изображения</span>
               </div>
               {visibleAssets.images.map((image) => (
                 <React.Fragment key={image.id}>{renderAsset(image, 3)}</React.Fragment>
@@ -604,7 +662,7 @@ export function BuilderLayerTree({
       })}
       {filteredBlocks.length === 0 ? (
         <p className="px-3 py-4 text-xs" style={{ color: t.textMuted }}>
-          {blocks.length === 0 ? 'No blocks yet. Add components from Assets.' : 'No blocks found.'}
+          {blocks.length === 0 ? 'Нет блоков. Добавьте компоненты из Assets.' : 'Блоки не найдены.'}
         </p>
       ) : null}
     </div>
@@ -676,7 +734,7 @@ export function BuilderLayerTree({
             ...(canDuplicateComponent
               ? [
                   {
-                    label: 'Duplicate component',
+                    label: 'Дублировать компонент',
                     onSelect: () => {
                       onDuplicateComponent(contextBlock.template)
                     }
@@ -686,13 +744,24 @@ export function BuilderLayerTree({
             ...(typeof onExportBlock === 'function'
               ? [
                   {
-                    label: 'Export block',
+                    label: 'Экспортировать блок',
                     onSelect: () => {
                       onExportBlock(contextMenu.blockId)
                     }
                   }
                 ]
               : []),
+            {
+              label: 'Убрать со страницы',
+              disabled: layerIndex < 0 || blocks.length <= 1,
+              onSelect: () => {
+                if (layerIndex < 0 || blocks.length <= 1) return
+                const name = contextBlock?.name ?? getBlockDisplayName(contextBlock)
+                const ok = window.confirm(`Удалить компонент «${name ?? 'component'}»?`)
+                if (!ok) return
+                store.getState().removeBlock(contextMenu.blockId)
+              }
+            },
             {
               label: 'Выше',
               disabled: layerIndex <= 0,

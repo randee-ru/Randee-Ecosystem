@@ -1,7 +1,7 @@
 import type { BlockType, PageBlock } from '@randee/builder'
 import type { ComponentType } from 'react'
 
-export type BlockPropFieldType = 'text' | 'number' | 'boolean' | 'select'
+export type BlockPropFieldType = 'text' | 'number' | 'boolean' | 'select' | 'color' | 'image'
 
 export type BlockPropField = {
   name: string
@@ -33,6 +33,22 @@ export type BlockTemplateAssets = {
 
 export type BlockTemplatePreviewProps = {
   block: PageBlock
+  elementOptions?: {
+    selectedElementId?: string | null
+    onSelectElement?: (elementId: string) => void
+    onDeleteElement?: (elementId: string) => void
+  onDropElement?: (
+    catalogElementId: string,
+    placement?: {
+      parentId?: string | null
+      afterElementId?: string | null
+      beforeElementId?: string | null
+      columnIndex?: number | null
+    }
+  ) => void
+    onPatchElementProps?: (elementId: string, props: Record<string, string>) => void
+    viewport?: 'desktop' | 'macbook' | 'tablet' | 'mobile'
+  }
 }
 
 export type BlockTemplateDefinition = {

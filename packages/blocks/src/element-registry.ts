@@ -8,6 +8,8 @@ export const UI_READY_ELEMENT_IDS = new Set([
   'badge',
   'breadcrumbs',
   'button',
+  'columns',
+  'container',
   'card',
   'drawer',
   'dropdown',
@@ -85,7 +87,7 @@ const ELEMENT_CATALOG: Record<string, string[]> = {
     'ColorSwatch',
     'ColorSwatchPicker'
   ],
-  Layout: ['Separator', 'Surface', 'ScrollShadow', 'Slider']
+  Layout: ['Container', 'Columns', 'Separator', 'Surface', 'ScrollShadow', 'Slider']
 }
 
 function toElementId(name: string): string {
@@ -128,6 +130,12 @@ function defaultPropsFor(name: string): Record<string, string> {
   }
   if (id === 'table') {
     return { caption: 'Table' }
+  }
+  if (id === 'container') {
+    return {}
+  }
+  if (id === 'columns') {
+    return { columns: '2', gap: '16', title: 'Columns' }
   }
   if (id === 'tabs') {
     return { tab1: 'Tab 1', tab2: 'Tab 2' }
@@ -178,9 +186,20 @@ const ELEMENT_VARIANTS: ElementVariant[] = Object.entries(ELEMENT_CATALOG).flatM
 )
 
 const variantById = new Map(ELEMENT_VARIANTS.map((item) => [item.id, item]))
+let customVariants: ElementVariant[] = []
+
+export function setCustomElementVariants(variants: ElementVariant[]): void {
+  customVariants = variants
+  for (const [id] of variantById) {
+    if (id.startsWith('custom:')) variantById.delete(id)
+  }
+  for (const item of variants) {
+    variantById.set(item.id, item)
+  }
+}
 
 export function listElementVariants(): ElementVariant[] {
-  return ELEMENT_VARIANTS
+  return [...ELEMENT_VARIANTS, ...customVariants]
 }
 
 export function listElementGroups(): string[] {
@@ -194,6 +213,15 @@ export function getElementVariant(elementId: string): ElementVariant | undefined
 export function getElementPropFields(elementId: string): BlockPropField[] {
   const variant = getElementVariant(elementId)
   if (!variant) return []
+  if (variant.id.startsWith('custom:')) {
+    return Object.keys(variant.defaultProps)
+      .filter((name) => name !== '__baseElementId')
+      .map((name) => ({
+        name,
+        label: name.charAt(0).toUpperCase() + name.slice(1),
+        type: 'text' as const
+      }))
+  }
   return propsSchemaFor(variant.name)
 }
 

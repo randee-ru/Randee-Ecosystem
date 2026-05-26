@@ -77,8 +77,15 @@ const registry: Record<BlockType, BlockDefinition> = {
 
 let blockIdCounter = 1
 
+function uniqueSuffix(): string {
+  const timestamp = Date.now().toString(36)
+  const random = Math.random().toString(36).slice(2, 8)
+  return `${timestamp}${random}`
+}
+
 export function createBlockId(type: BlockType): string {
-  const id = `${type.replace('.', '_')}_${String(blockIdCounter).padStart(4, '0')}`
+  const base = type.replace('.', '_')
+  const id = `${base}_${String(blockIdCounter).padStart(4, '0')}_${uniqueSuffix()}`
   blockIdCounter += 1
   return id
 }

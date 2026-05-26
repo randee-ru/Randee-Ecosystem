@@ -10,6 +10,7 @@
 4. [04. Core и обновления](./04-core-и-обновления.md)
 5. [05. SEO и Dynamic CMS](./05-seo-и-dynamic-cms.md)
 6. [06. Roadmap блоков Builder](./06-блоки-roadmap.md)
+7. Dev roadmap (итерации): [docs/builder/dev-roadmap-ru.md](../docs/builder/dev-roadmap-ru.md)
 
 ## Практические примеры
 

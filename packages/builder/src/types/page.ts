@@ -1,5 +1,6 @@
 import type { ComponentDesignSettings } from './component-design'
 import type { ComponentElement } from './component-element'
+import type { BuilderCmsConnection, CmsBlockBindings } from './cms-binding'
 
 export type BlockType =
   | 'hero'
@@ -28,6 +29,8 @@ export interface PageBlock {
   name?: string
   props: Record<string, string>
   bindings?: BlockBindings
+  /** Structured CMS bindings used by Inspector (Static vs Data binding). */
+  cmsBindings?: CmsBlockBindings
   /** Visual layout/style settings for component edit mode */
   design?: ComponentDesignSettings
   /** UI primitives inserted in Edit Component mode */
@@ -47,6 +50,7 @@ export interface BuilderPage {
   slug: string
   seo: SeoMetadata
   blocks: PageBlock[]
+  cmsConnection?: BuilderCmsConnection
   /** Manually enabled external libraries (GSAP, Swiper, etc.) */
   vendors?: string[]
 }

@@ -49,11 +49,12 @@ function useInspectorTheme() {
   return theme
 }
 
+/** Framer-style: solid bg, no border, 4 px radius */
 function fieldStyle(theme: InspectorTheme): React.CSSProperties {
   return {
-    border: `1px solid ${theme.divider}`,
     background: theme.inputBg,
-    color: theme.text
+    color: theme.text,
+    border: 'none',
   }
 }
 
@@ -71,10 +72,14 @@ export function InspectorSection({
   const theme = useInspectorTheme()
 
   return (
-    <section style={{ borderBottom: `1px solid ${theme.divider}` }} className="py-3">
+    <section style={{ borderBottom: `1px solid ${theme.divider}` }} className="py-2.5">
       <div className="mb-2 flex items-center justify-between px-3">
         <div className="flex items-center gap-1">
-          <span className="text-[11px] font-semibold" style={{ color: theme.text }}>
+          {/* Framer-style: 10 px uppercase muted label */}
+          <span
+            className="text-[10px] font-semibold uppercase tracking-[0.06em]"
+            style={{ color: theme.textMuted }}
+          >
             {title}
           </span>
           {info ? <Info className="h-3 w-3" style={{ color: theme.textMuted }} /> : null}
@@ -105,7 +110,7 @@ export function InspectorSection({
 export function InspectorLabel({ children }: { children: React.ReactNode }) {
   const theme = useInspectorTheme()
   return (
-    <span className="text-[10px]" style={{ color: theme.textMuted }}>
+    <span className="text-[10px] tracking-[0.03em]" style={{ color: theme.textMuted }}>
       {children}
     </span>
   )
@@ -131,7 +136,7 @@ export function InspectorNumberField({
   return (
     <label className="grid gap-1">
       <InspectorLabel>{label}</InspectorLabel>
-      <div className="flex h-7 items-center overflow-hidden rounded-md" style={fieldStyle(theme)}>
+      <div className="flex h-6 items-center overflow-hidden rounded" style={fieldStyle(theme)}>
         <input
           type="number"
           className="min-w-0 flex-1 bg-transparent px-2 text-[11px] outline-none"
@@ -171,7 +176,7 @@ export function InspectorSelectField({
     <label className="grid gap-1">
       <InspectorLabel>{label}</InspectorLabel>
       <select
-        className="h-7 rounded-md px-2 text-[11px] outline-none"
+        className="h-6 rounded px-2 text-[11px] outline-none"
         style={fieldStyle(theme)}
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -223,6 +228,63 @@ export function InspectorSegmented({
   )
 }
 
+export function InspectorTabs({
+  value,
+  tabs,
+  onChange,
+  compact = false
+}: {
+  value: string
+  tabs: Array<{
+    value: string
+    label: string
+    icon: React.ComponentType<{ className?: string }>
+  }>
+  onChange: (value: string) => void
+  compact?: boolean
+}) {
+  const theme = useInspectorTheme()
+
+  return (
+    <div
+      className="flex"
+      role="tablist"
+      style={{ borderBottom: `1px solid ${theme.divider}` }}
+    >
+      {tabs.map(({ value: tabValue, label, icon: Icon }) => {
+        const active = tabValue === value
+        return (
+          <button
+            key={tabValue}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            className="relative flex h-8 flex-1 items-center justify-center gap-1.5 text-[11px] font-medium"
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: active ? theme.text : theme.textMuted,
+              /* underline indicator */
+              borderBottom: active ? `2px solid ${theme.accent}` : '2px solid transparent',
+              marginBottom: -1,
+            }}
+            onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = theme.textSecondary }}
+            onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = theme.textMuted }}
+            onClick={() => onChange(tabValue)}
+          >
+            <Icon className="h-3.5 w-3.5 shrink-0" />
+            {compact
+              ? <span className="sr-only">{label}</span>
+              : <span>{label}</span>
+            }
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export function InspectorIconToggle({
   active,
   onClick,
@@ -241,7 +303,7 @@ export function InspectorIconToggle({
       type="button"
       aria-label={label}
       aria-pressed={active}
-      className="flex h-7 w-7 items-center justify-center rounded-md border transition"
+      className="flex h-6 w-6 items-center justify-center rounded border transition"
       style={{
         borderColor: active ? theme.accent : theme.divider,
         background: active ? `${theme.accent}14` : theme.inputBg,
@@ -255,39 +317,160 @@ export function InspectorIconToggle({
   )
 }
 
-export function InspectorAlignToolbar() {
+export function InspectorAlignToolbar({
+  align,
+  distribute,
+  onAlign,
+  onDistribute
+}: {
+  align?: string
+  distribute?: string
+  onAlign?: (value: string) => void
+  onDistribute?: (value: string) => void
+}) {
   const theme = useInspectorTheme()
-  const items = [
-    { label: 'Align left', icon: AlignStartVertical },
-    { label: 'Align center horizontal', icon: AlignCenterVertical },
-    { label: 'Align right', icon: AlignEndVertical },
-    { label: 'Align top', icon: AlignStartHorizontal },
-    { label: 'Align center vertical', icon: AlignCenterHorizontal },
-    { label: 'Align bottom', icon: AlignEndHorizontal }
+
+  const alignItems = [
+    { value: 'start', label: 'Align left', icon: AlignStartVertical },
+    { value: 'center', label: 'Align center horizontal', icon: AlignCenterVertical },
+    { value: 'end', label: 'Align right', icon: AlignEndVertical }
   ]
+  const distributeItems = [
+    { value: 'start', label: 'Align top', icon: AlignStartHorizontal },
+    { value: 'center', label: 'Align center vertical', icon: AlignCenterHorizontal },
+    { value: 'end', label: 'Align bottom', icon: AlignEndHorizontal }
+  ]
+
+  const btn = (active: boolean, label: string, Icon: React.ElementType, onClick?: () => void) => (
+    <button
+      key={label}
+      type="button"
+      aria-label={label}
+      aria-pressed={active}
+      className="flex h-6 w-6 items-center justify-center rounded transition"
+      style={{
+        color: active ? theme.accent : theme.textMuted,
+        background: active ? `${theme.accent}18` : 'transparent',
+        border: `1px solid ${active ? `${theme.accent}55` : 'transparent'}`,
+        cursor: onClick ? 'pointer' : 'default'
+      }}
+      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = theme.hover }}
+      onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent' }}
+      onClick={onClick}
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </button>
+  )
 
   return (
     <div
-      className="flex items-center gap-0.5 px-2 py-2"
+      className="flex items-center justify-between px-2 py-1.5"
       style={{ borderBottom: `1px solid ${theme.divider}` }}
     >
-      {items.map(({ label, icon: Icon }) => (
+      <div className="flex items-center gap-0.5">
+        {alignItems.map(({ value, label, icon: Icon }) =>
+          btn(align === value, label, Icon, onAlign ? () => onAlign(value) : undefined)
+        )}
+      </div>
+      <div className="mx-1 h-4 w-px" style={{ background: theme.divider }} />
+      <div className="flex items-center gap-0.5">
+        {distributeItems.map(({ value, label, icon: Icon }) =>
+          btn(distribute === value, label, Icon, onDistribute ? () => onDistribute(value) : undefined)
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function InspectorSpacingBox({
+  paddingIndividual,
+  paddingTop,
+  paddingRight,
+  paddingBottom,
+  paddingLeft,
+  padding,
+  onPaddingChange,
+  onPaddingIndividualChange
+}: {
+  paddingIndividual: boolean
+  paddingTop: number
+  paddingRight: number
+  paddingBottom: number
+  paddingLeft: number
+  padding: number
+  onPaddingChange: (side: 'top' | 'right' | 'bottom' | 'left' | 'all', value: number) => void
+  onPaddingIndividualChange: (individual: boolean) => void
+}) {
+  const theme = useInspectorTheme()
+
+  const miniInput = (value: number, side: 'top' | 'right' | 'bottom' | 'left' | 'all') => (
+    <input
+      type="number"
+      min={0}
+      value={value}
+      onChange={(e) => {
+        const n = Math.max(0, Number(e.target.value) || 0)
+        onPaddingChange(side, n)
+      }}
+      className="w-full bg-transparent text-center text-[11px] outline-none"
+      style={{ color: theme.text }}
+    />
+  )
+
+  const edgeBox = (value: number, side: 'top' | 'right' | 'bottom' | 'left') => (
+    <div
+      className="flex h-6 w-10 items-center justify-center rounded"
+      style={{ background: theme.inputBg, border: `1px solid ${theme.divider}` }}
+    >
+      {miniInput(value, side)}
+    </div>
+  )
+
+  return (
+    <div className="grid gap-1">
+      <div className="flex items-center justify-between">
+        <InspectorLabel>Padding</InspectorLabel>
         <button
-          key={label}
           type="button"
-          aria-label={label}
-          className="flex h-7 w-7 items-center justify-center rounded-md"
-          style={{ color: theme.textMuted, background: 'transparent', border: 'none', cursor: 'pointer' }}
-          onMouseEnter={(event) => {
-            event.currentTarget.style.background = theme.hover
+          className="flex h-5 w-5 items-center justify-center rounded"
+          style={{
+            color: paddingIndividual ? theme.accent : theme.textMuted,
+            background: paddingIndividual ? `${theme.accent}18` : 'transparent',
+            border: `1px solid ${paddingIndividual ? `${theme.accent}55` : theme.divider}`,
+            cursor: 'pointer'
           }}
-          onMouseLeave={(event) => {
-            event.currentTarget.style.background = 'transparent'
-          }}
+          title={paddingIndividual ? 'Use uniform padding' : 'Use individual padding'}
+          onClick={() => onPaddingIndividualChange(!paddingIndividual)}
         >
-          <Icon className="h-3.5 w-3.5" />
+          <Link2 className="h-3 w-3" />
         </button>
-      ))}
+      </div>
+
+      {paddingIndividual ? (
+        <div
+          className="relative mx-auto w-full select-none rounded-md py-2"
+          style={{ border: `1px dashed ${theme.divider}` }}
+        >
+          {/* Top */}
+          <div className="flex justify-center pb-1">{edgeBox(paddingTop, 'top')}</div>
+          {/* Middle row */}
+          <div className="flex items-center justify-between px-2">
+            {edgeBox(paddingLeft, 'left')}
+            <div
+              className="mx-2 flex-1 rounded"
+              style={{ height: 32, background: theme.hover, border: `1px dashed ${theme.divider}`, opacity: 0.5 }}
+            />
+            {edgeBox(paddingRight, 'right')}
+          </div>
+          {/* Bottom */}
+          <div className="flex justify-center pt-1">{edgeBox(paddingBottom, 'bottom')}</div>
+        </div>
+      ) : (
+        <div className="flex h-6 items-center overflow-hidden rounded" style={fieldStyle(theme)}>
+          {miniInput(padding, 'all')}
+          <span className="pr-2 text-[10px]" style={{ color: theme.textMuted }}>px</span>
+        </div>
+      )}
     </div>
   )
 }
@@ -314,7 +497,7 @@ export function InspectorGapField({
           className="min-w-0 flex-1"
           style={{ accentColor: theme.accent }}
         />
-        <div className="flex h-7 w-14 items-center overflow-hidden rounded-md" style={fieldStyle(theme)}>
+        <div className="flex h-6 w-14 items-center overflow-hidden rounded" style={fieldStyle(theme)}>
           <input
             type="number"
             min={0}
@@ -350,7 +533,7 @@ export function InspectorStepper({
   return (
     <label className="grid gap-1">
       <InspectorLabel>{label}</InspectorLabel>
-      <div className="flex h-7 items-center overflow-hidden rounded-md" style={fieldStyle(theme)}>
+      <div className="flex h-6 items-center overflow-hidden rounded" style={fieldStyle(theme)}>
         <button
           type="button"
           className="flex h-full w-7 items-center justify-center"
@@ -461,7 +644,7 @@ export function InspectorSizeRow({
             />
           </div>
           <select
-            className="h-7 rounded-md px-1 text-[10px] outline-none"
+            className="h-6 rounded px-1 text-[10px] outline-none"
             style={fieldStyle(theme)}
             value={widthMode}
             onChange={(event) => onWidthModeChange(event.target.value)}
@@ -479,7 +662,7 @@ export function InspectorSizeRow({
         type="button"
         aria-label={lockAspect ? 'Unlock aspect ratio' : 'Lock aspect ratio'}
         aria-pressed={lockAspect}
-        className="mb-0.5 flex h-7 w-7 items-center justify-center rounded-md border transition"
+        className="mb-0.5 flex h-6 w-6 items-center justify-center rounded border transition"
         style={{
           borderColor: lockAspect ? theme.accent : theme.divider,
           color: lockAspect ? theme.accent : theme.textMuted,
@@ -505,7 +688,7 @@ export function InspectorSizeRow({
             />
           </div>
           <select
-            className="h-7 rounded-md px-1 text-[10px] outline-none"
+            className="h-6 rounded px-1 text-[10px] outline-none"
             style={fieldStyle(theme)}
             value={heightMode}
             onChange={(event) => onHeightModeChange(event.target.value)}

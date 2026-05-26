@@ -3,19 +3,21 @@
 import * as React from 'react'
 import {
   Component,
+  FileText,
   Home,
-  Package,
-  PanelLeftClose,
-  Plus,
-  Search
+  Image,
+  Layers,
+  Search,
 } from 'lucide-react'
-import type { BlockType, ElementVariant, PageBlock } from '@randee/builder'
+import type { ElementVariant, PageBlock } from '@randee/builder'
 import type { BuilderStore } from '@randee/builder'
+import type { LibraryVariant } from '@randee/blocks'
 import type { StoreApi } from 'zustand'
 import { BuilderLayerTree } from './builder-layer-tree'
 import { BuilderAssetsComponentTree } from './builder-assets-component-tree'
-import { BuilderElementPicker } from './builder-element-picker'
 import type { BuilderAssetTarget } from './builder-asset-types'
+import { BuilderInsertPanel } from './builder-insert-panel'
+import { ComponentEditorLeftPanel } from './builder-component-editor-left'
 
 export type SavedAssetComponent = {
   templateId: string
@@ -23,16 +25,7 @@ export type SavedAssetComponent = {
   description: string
 }
 
-type LeftTab = 'pages' | 'blocks' | 'assets'
-type AssetSection = 'libraries' | 'components' | 'styles' | 'vectors' | 'code'
-
-type LibraryVariant = {
-  type: BlockType
-  group: string
-  name: string
-  template: string
-  description: string
-}
+type LeftTab = 'pages' | 'blocks' | 'assets' | 'media'
 
 type VendorLibrary = {
   id: string
@@ -56,18 +49,12 @@ type PanelTheme = {
   segmentShadow: string
 }
 
-const LEFT_TABS: Array<{ id: LeftTab; label: string }> = [
-  { id: 'pages', label: 'Pages' },
-  { id: 'blocks', label: 'Blocks' },
-  { id: 'assets', label: 'Assets' }
-]
-
-const ASSET_SECTIONS: Array<{ id: AssetSection; label: string }> = [
-  { id: 'libraries', label: 'Libraries' },
-  { id: 'components', label: 'Components' },
-  { id: 'styles', label: 'Styles' },
-  { id: 'vectors', label: 'Vectors' },
-  { id: 'code', label: 'Code' }
+// ── Icon nav items ────────────────────────────────────────────────────────────
+const NAV_TABS: Array<{ id: LeftTab; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; label: string }> = [
+  { id: 'pages',  icon: FileText,  label: 'Страницы'    },
+  { id: 'blocks', icon: Layers,    label: 'Слои'        },
+  { id: 'assets', icon: Component, label: 'Компоненты'  },
+  { id: 'media',  icon: Image,     label: 'Медиа'       },
 ]
 
 export type { LeftTab }
@@ -100,12 +87,123 @@ type BuilderLeftPanelProps = {
   onExportBlock?: (blockId: string) => void
   componentEditMode?: boolean
   onAddElement?: (variant: ElementVariant) => void
+  elementVariants?: ElementVariant[]
+  onSaveSelectedElementAsCustom?: () => void
+  canSaveSelectedElementAsCustom?: boolean
+  selectedElementId?: string | null
+  onSelectElement?: (id: string | null) => void
+  onCreatePage?: () => void
+  onRefreshPages?: () => void
+  pagesList?: Array<{ slug: string; page: string }>
+  onOpenPage?: (slug: string) => void
+  onDuplicatePage?: (slug: string) => void
+  onRenamePage?: (slug: string) => void
+  onDeletePage?: (slug: string) => void
+}
+
+/** Отдельный компонент кнопки nav — локальный useState для tooltip */
+function NavButton({
+  id, active, label, Icon, t, onClick
+}: {
+  id: string
+  active: boolean
+  label: string
+  Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+  t: PanelTheme
+  onClick: () => void
+}) {
+  const [showTooltip, setShowTooltip] = React.useState(false)
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={active}
+      className="flex h-7 w-7 items-center justify-center rounded-md"
+      style={{
+        background: active ? t.active : 'transparent',
+        border: 'none',
+        cursor: 'pointer',
+        color: active ? t.accent : t.textMuted,
+        position: 'relative',
+        transition: 'background 120ms, color 120ms',
+      }}
+      onMouseEnter={(e) => {
+        if (!active) e.currentTarget.style.background = t.hover
+        setShowTooltip(true)
+      }}
+      onMouseLeave={(e) => {
+        if (!active) e.currentTarget.style.background = 'transparent'
+        setShowTooltip(false)
+      }}
+      onClick={onClick}
+    >
+      {/* Active indicator — left accent bar */}
+      {active ? (
+        <span
+          style={{
+            position: 'absolute',
+            left: -1,
+            top: '20%',
+            bottom: '20%',
+            width: 2,
+            borderRadius: 2,
+            background: t.accent,
+          }}
+        />
+      ) : null}
+      <Icon className="h-3.5 w-3.5" />
+      {showTooltip ? <NavTooltip label={label} panelBg={t.panel} /> : null}
+    </button>
+  )
+}
+
+/** Tooltip-чип, появляющийся справа от иконки nav */
+function NavTooltip({ label, panelBg }: { label: string; panelBg: string }) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: 38,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        background: '#111111',
+        border: '1px solid #2C2C2C',
+        borderRadius: 6,
+        padding: '3px 9px',
+        fontSize: 11,
+        fontWeight: 500,
+        color: '#E8E8E8',
+        whiteSpace: 'nowrap',
+        pointerEvents: 'none',
+        zIndex: 60,
+        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+        letterSpacing: '-0.01em',
+      }}
+    >
+      {/* Arrow */}
+      <span
+        style={{
+          position: 'absolute',
+          left: -4,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          width: 0,
+          height: 0,
+          borderTop: '4px solid transparent',
+          borderBottom: '4px solid transparent',
+          borderRight: '4px solid #2C2C2C',
+        }}
+      />
+      {label}
+    </div>
+  )
 }
 
 function searchPlaceholder(tab: LeftTab) {
-  if (tab === 'pages') return 'Search pages...'
-  if (tab === 'blocks') return 'Search blocks...'
-  return 'Search...'
+  if (tab === 'pages')  return 'Поиск страниц…'
+  if (tab === 'blocks') return 'Поиск слоёв…'
+  if (tab === 'assets') return 'Поиск компонентов…'
+  return 'Поиск…'
 }
 
 export function BuilderLeftPanel({
@@ -135,22 +233,27 @@ export function BuilderLeftPanel({
   onDuplicateComponent,
   onExportBlock,
   componentEditMode,
-  onAddElement
+  onAddElement,
+  elementVariants,
+  onSaveSelectedElementAsCustom,
+  canSaveSelectedElementAsCustom = false,
+  selectedElementId,
+  onSelectElement,
+  onCreatePage,
+  onRefreshPages,
+  pagesList = [],
+  onOpenPage,
+  onDuplicatePage,
+  onRenamePage,
+  onDeletePage
 }: BuilderLeftPanelProps) {
-  const [expandedSections, setExpandedSections] = React.useState<Record<AssetSection, boolean>>({
-    libraries: true,
-    components: false,
-    styles: false,
-    vectors: false,
-    code: false
-  })
-
   const searchQuery = librarySearch.trim().toLowerCase()
 
   const filteredPages = React.useMemo(() => {
-    if (!searchQuery) return true
-    return [page.page, page.slug].join(' ').toLowerCase().includes(searchQuery)
-  }, [page.page, page.slug, searchQuery])
+    const source = pagesList.length > 0 ? pagesList : [{ page: page.page, slug: page.slug }]
+    if (!searchQuery) return source
+    return source.filter((item) => [item.page, item.slug].join(' ').toLowerCase().includes(searchQuery))
+  }, [page.page, page.slug, pagesList, searchQuery])
 
   const filteredVendors = React.useMemo(() => {
     if (!searchQuery) return vendorLibraries
@@ -159,304 +262,297 @@ export function BuilderLeftPanel({
     )
   }, [vendorLibraries, searchQuery])
 
-  const toggleSection = (id: AssetSection) => {
-    setExpandedSections((prev) => ({ ...prev, [id]: !prev[id] }))
-  }
-
-  const builtInVariants = React.useMemo(
-    () => filteredVariants.filter((item) => item.group !== 'Custom'),
-    [filteredVariants]
-  )
-
   const groupedBuiltInVariants = React.useMemo(() => {
-    return builtInVariants.reduce<Record<string, LibraryVariant[]>>((acc, item) => {
+    const unique = new Map<string, LibraryVariant>()
+    for (const item of filteredVariants) {
+      if (!unique.has(item.template)) unique.set(item.template, item)
+    }
+    const builtIn = Array.from(unique.values())
+
+    const grouped = builtIn.reduce<Record<string, LibraryVariant[]>>((acc, item) => {
       acc[item.group] = [...(acc[item.group] ?? []), item]
       return acc
     }, {})
-  }, [builtInVariants])
 
-  const isSectionOpen = (id: AssetSection) => {
-    if (id === 'components' && searchQuery && (builtInVariants.length > 0 || savedAssetComponents.length > 0)) {
-      return true
-    }
-    if (id === 'libraries' && searchQuery && filteredVendors.length > 0) return true
-    return expandedSections[id]
-  }
+    const entries = Object.entries(grouped).map(([group, items]) => [
+      group,
+      [...items].sort((a, b) => a.name.localeCompare(b.name, 'ru'))
+    ] as const)
+
+    entries.sort((a, b) => {
+      const ORDER = ['Hero', 'Features', 'FAQ', 'CTA', 'Catalog', 'News', 'Custom']
+      const ai = ORDER.indexOf(a[0])
+      const bi = ORDER.indexOf(b[0])
+      const av = ai === -1 ? Number.MAX_SAFE_INTEGER : ai
+      const bv = bi === -1 ? Number.MAX_SAFE_INTEGER : bi
+      if (av !== bv) return av - bv
+      return a[0].localeCompare(b[0], 'ru')
+    })
+
+    return Object.fromEntries(entries)
+  }, [filteredVariants])
+
+  const showSearch = leftTab !== 'media'
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex items-center gap-2 px-2 py-2" style={{ borderBottom: `1px solid ${t.divider}` }}>
-        <div
-          className="flex min-w-0 flex-1 rounded-lg p-0.5"
-          style={{ background: t.segmentTrack }}
-          role="tablist"
-          aria-label="Sidebar tabs"
-        >
-          {LEFT_TABS.map(({ id, label }) => (
-            <button
+    <div className="flex min-h-0 flex-1">
+
+      {/* ── Icon nav strip ──────────────────────────────────────────── */}
+      <nav
+        className="flex shrink-0 flex-col items-center gap-0.5 py-2"
+        style={{
+          width: 36,
+          borderRight: `1px solid ${t.divider}`,
+        }}
+        aria-label="Panel navigation"
+      >
+        {NAV_TABS.map(({ id, icon: Icon, label }) => {
+          const active = leftTab === id
+          return (
+            <NavButton
               key={id}
-              type="button"
-              role="tab"
-              aria-selected={leftTab === id}
-              className="h-7 min-w-0 flex-1 truncate rounded-md px-1 text-xs font-medium"
-              style={{
-                background: leftTab === id ? t.segmentActive : 'transparent',
-                boxShadow: leftTab === id ? t.segmentShadow : 'none',
-                color: leftTab === id ? t.text : t.textMuted,
-                border: 'none',
-                cursor: 'pointer'
-              }}
+              id={id}
+              active={active}
+              label={label}
+              Icon={Icon}
+              t={t}
               onClick={() => onLeftTabChange(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          data-testid="hide-blocks-panel"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
-          style={{ color: t.textMuted, background: 'transparent', border: 'none', cursor: 'pointer' }}
-          onClick={onClose}
-        >
-          <PanelLeftClose className="h-3.5 w-3.5" />
-          <span className="sr-only">Hide panel</span>
-        </button>
-      </div>
-
-      <div className="px-2 py-2" style={{ borderBottom: `1px solid ${t.divider}` }}>
-        <div
-          className="flex items-center gap-2 rounded-full px-3"
-          style={{ background: t.inputBg }}
-        >
-          <Search className="h-3.5 w-3.5 shrink-0" style={{ color: t.textMuted }} />
-          <input
-            className="h-8 min-w-0 flex-1 bg-transparent text-xs outline-none"
-            style={{ color: t.text, border: 'none' }}
-            value={librarySearch}
-            onChange={(event) => onLibrarySearchChange(event.target.value)}
-            placeholder={searchPlaceholder(leftTab)}
-            aria-label="Search sidebar"
-          />
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {leftTab === 'pages' ? (
-          filteredPages ? (
-            <div className="py-1">
-              <button
-                type="button"
-                className="flex w-full items-center gap-2 px-3 py-2 text-left"
-                style={{ background: t.active, border: 'none', cursor: 'pointer' }}
-              >
-                <Home className="h-3.5 w-3.5 shrink-0" style={{ color: t.accent }} />
-                <span className="min-w-0 flex-1 truncate text-xs font-medium" style={{ color: t.text }}>
-                  {page.page}
-                </span>
-              </button>
-              <p className="px-3 pb-2 text-[11px]" style={{ color: t.textMuted }}>
-                {page.slug}
-              </p>
-            </div>
-          ) : (
-            <p className="px-3 py-4 text-xs" style={{ color: t.textMuted }}>
-              No pages found.
-            </p>
+            />
           )
-        ) : null}
+        })}
+      </nav>
 
-        {leftTab === 'blocks' ? (
-          <BuilderLayerTree
-            t={t}
-            pageName={page.page}
-            blocks={page.blocks}
-            activeId={activeId}
-            store={store}
-            searchQuery={searchQuery}
-            onOpenAsset={onOpenAsset}
-            activeAssetPath={activeAssetPath}
-            onDuplicateComponent={onDuplicateComponent}
-            onExportBlock={onExportBlock}
-          />
-        ) : null}
+      {/* ── Content area ────────────────────────────────────────────── */}
+      <div className="flex min-h-0 flex-1 flex-col">
 
-        {leftTab === 'assets' ? (
-          <div className="py-0">
-            {componentEditMode && typeof onAddElement === 'function' ? (
-              <section className="pb-2">
-                <div className="px-3 py-2">
-                  <p className="text-xs font-semibold" style={{ color: t.text }}>
-                    UI Elements
-                  </p>
-                  <p className="mt-0.5 text-[10px]" style={{ color: t.textMuted }}>
-                    Button, Modal, Form, Accordion… — для сборки component
-                  </p>
-                </div>
-                <BuilderElementPicker
-                  searchQuery={searchQuery}
-                  t={t}
-                  onSelect={onAddElement}
-                  maxHeightClassName="max-h-[420px]"
-                />
-                <div className="mx-3 my-2 h-px" style={{ background: t.divider }} />
-              </section>
-            ) : null}
-            {ASSET_SECTIONS.map(({ id, label }, index) => {
-              const open = isSectionOpen(id)
-              const hasDivider = index > 0
+        {/* Tab header */}
+        <div
+          className="flex items-center px-3 py-2"
+          style={{ borderBottom: `1px solid ${t.divider}` }}
+        >
+          <span className="flex-1 text-[11px] font-semibold" style={{ color: t.text }}>
+            {NAV_TABS.find((tab) => tab.id === leftTab)?.label ?? ''}
+          </span>
+        </div>
 
-              return (
-                <section key={id}>
-                  {hasDivider ? <div className="h-px" style={{ background: t.divider }} /> : null}
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between px-3 py-2.5 text-left"
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-                    onClick={() => toggleSection(id)}
-                    aria-expanded={open}
-                  >
-                    <span className="text-xs font-semibold" style={{ color: t.text }}>
-                      {label}
-                    </span>
-                    <Plus
-                      className="h-3.5 w-3.5 shrink-0 transition-transform"
-                      style={{
-                        color: t.textMuted,
-                        transform: open ? 'rotate(45deg)' : 'none'
-                      }}
-                    />
-                  </button>
-
-                  {open ? (
-                    <div className="pb-2">
-                      {id === 'libraries' ? (
-                        <>
-                          {filteredVendors.map((vendor) => {
-                            const required = requiredVendors.includes(vendor.id)
-                            const enabled = required || pageVendors.includes(vendor.id)
-
-                            return (
-                              <button
-                                key={vendor.id}
-                                type="button"
-                                className="flex w-full items-start gap-2 px-3 py-1.5 text-left"
-                                style={{
-                                  background: enabled ? `${t.accent}12` : 'transparent',
-                                  border: 'none',
-                                  cursor: required ? 'default' : 'pointer',
-                                  opacity: required ? 0.85 : 1
-                                }}
-                                disabled={required}
-                                onClick={() => onToggleVendor(vendor.id)}
-                                onMouseEnter={(event) => {
-                                  if (!required && !enabled) event.currentTarget.style.background = t.hover
-                                }}
-                                onMouseLeave={(event) => {
-                                  if (!required && !enabled) event.currentTarget.style.background = 'transparent'
-                                }}
-                              >
-                                <Package
-                                  className="mt-0.5 h-3.5 w-3.5 shrink-0"
-                                  style={{ color: enabled ? t.accent : t.textMuted }}
-                                />
-                                <span className="min-w-0 flex-1">
-                                  <span className="flex items-center gap-1.5 text-xs" style={{ color: t.textSecondary }}>
-                                    {vendor.label}
-                                    {required ? (
-                                      <span className="text-[9px] font-medium uppercase" style={{ color: t.accent }}>
-                                        auto
-                                      </span>
-                                    ) : null}
-                                  </span>
-                                  <span className="mt-0.5 block text-[10px] leading-snug" style={{ color: t.textMuted }}>
-                                    {vendor.description}
-                                  </span>
-                                </span>
-                              </button>
-                            )
-                          })}
-                          {filteredVendors.length === 0 ? (
-                            <p className="px-3 py-1 text-xs" style={{ color: t.textMuted }}>
-                              No libraries found.
-                            </p>
-                          ) : null}
-                        </>
-                      ) : null}
-
-                      {id === 'components' ? (
-                        <>
-                          {Object.entries(groupedBuiltInVariants).map(([group, items]) => (
-                            <div key={group}>
-                              {Object.keys(groupedBuiltInVariants).length > 0 ? (
-                                <p
-                                  className="px-3 pb-0.5 pt-1 text-[10px] font-medium uppercase tracking-wide"
-                                  style={{ color: t.textMuted }}
-                                >
-                                  {group}
-                                </p>
-                              ) : null}
-                              {items.map((item) => (
-                                <button
-                                  key={`${item.group}-${item.template}`}
-                                  type="button"
-                                  className="flex w-full items-center gap-2 px-3 py-1.5 text-left"
-                                  style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-                                  onMouseEnter={(event) => {
-                                    event.currentTarget.style.background = t.hover
-                                  }}
-                                  onMouseLeave={(event) => {
-                                    event.currentTarget.style.background = 'transparent'
-                                  }}
-                                  onClick={() => onAddVariant(item)}
-                                >
-                                  <Component className="h-3.5 w-3.5 shrink-0" style={{ color: t.accent }} />
-                                  <span className="min-w-0 flex-1 truncate text-xs" style={{ color: t.textSecondary }}>
-                                    {item.name}
-                                  </span>
-                                </button>
-                              ))}
-                            </div>
-                          ))}
-
-                          <p
-                            className="px-3 pb-0.5 pt-2 text-[10px] font-medium uppercase tracking-wide"
-                            style={{ color: t.textMuted }}
-                          >
-                            Saved
-                          </p>
-                          <BuilderAssetsComponentTree
-                            components={savedAssetComponents}
-                            t={t}
-                            searchQuery={searchQuery}
-                            activeAssetPath={activeAssetPath}
-                            canvasTemplateIds={canvasTemplateIds}
-                            onOpenAsset={onOpenAsset}
-                            onAddComponent={onAddSavedComponent}
-                            onRenameComponent={onRenameSavedComponent}
-                            onDeleteComponent={onDeleteSavedComponent}
-                          />
-
-                          {builtInVariants.length === 0 && savedAssetComponents.length === 0 ? (
-                            <p className="px-3 py-1 text-xs" style={{ color: t.textMuted }}>
-                              No components found.
-                            </p>
-                          ) : null}
-                        </>
-                      ) : null}
-
-                      {id !== 'libraries' && id !== 'components' ? (
-                        <p className="px-3 py-1 text-xs" style={{ color: t.textMuted }}>
-                          No {label.toLowerCase()} yet.
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </section>
-              )
-            })}
+        {/* Search (all tabs except media) */}
+        {showSearch ? (
+          <div
+            className="flex items-center gap-2 px-2 py-1.5"
+            style={{ borderBottom: `1px solid ${t.divider}` }}
+          >
+            <div
+              className="flex min-w-0 flex-1 items-center gap-2 rounded-md px-2"
+              style={{ background: t.inputBg }}
+            >
+              <Search className="h-3 w-3 shrink-0" style={{ color: t.textMuted }} />
+              <input
+                className="h-7 min-w-0 flex-1 bg-transparent text-[11px] outline-none"
+                style={{ color: t.text, border: 'none' }}
+                value={librarySearch}
+                onChange={(event) => onLibrarySearchChange(event.target.value)}
+                placeholder={searchPlaceholder(leftTab)}
+                aria-label="Search sidebar"
+              />
+            </div>
           </div>
         ) : null}
+
+        {/* Tab content */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+
+          {/* ── Pages ──────────────────────────────────────────── */}
+          {leftTab === 'pages' ? (
+            filteredPages.length > 0 ? (
+              <div className="py-1">
+                <div className="px-2 pb-2 pt-1">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      className="rounded-md px-2 py-1.5 text-left text-[11px] font-medium"
+                      style={{
+                        background: `${t.accent}22`,
+                        color: t.accent,
+                        border: `1px solid ${t.accent}44`,
+                        cursor: onCreatePage ? 'pointer' : 'not-allowed',
+                        opacity: onCreatePage ? 1 : 0.6,
+                      }}
+                      disabled={!onCreatePage}
+                      onClick={onCreatePage}
+                    >
+                      + Новая
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-md px-2 py-1.5 text-left text-[11px] font-medium"
+                      style={{
+                        background: t.inputBg,
+                        color: t.textSecondary,
+                        border: `1px solid ${t.divider}`,
+                        cursor: onRefreshPages ? 'pointer' : 'not-allowed',
+                        opacity: onRefreshPages ? 1 : 0.6,
+                      }}
+                      disabled={!onRefreshPages}
+                      onClick={onRefreshPages}
+                    >
+                      Обновить
+                    </button>
+                  </div>
+                </div>
+                {filteredPages.map((item) => {
+                  const active = item.slug === page.slug
+                  return (
+                    <div key={item.slug} className="px-1">
+                      <div
+                        className="flex items-center gap-1 rounded-md"
+                        style={{ background: active ? t.active : 'transparent' }}
+                      >
+                        <button
+                          type="button"
+                          className="flex min-w-0 flex-1 items-center gap-2 px-2 py-2 text-left"
+                          style={{ background: 'transparent', border: 'none', cursor: onOpenPage ? 'pointer' : 'default' }}
+                          onClick={() => onOpenPage?.(item.slug)}
+                        >
+                          <Home className="h-3.5 w-3.5 shrink-0" style={{ color: active ? t.accent : t.textMuted }} />
+                          <span className="min-w-0 flex-1 truncate text-[11px] font-medium" style={{ color: t.text }}>
+                            {item.page}
+                          </span>
+                        </button>
+                        {onDuplicatePage ? (
+                          <button
+                            type="button"
+                            className="mr-1 rounded px-1.5 py-0.5 text-[10px]"
+                            style={{ background: t.inputBg, color: t.textMuted, border: 'none', cursor: 'pointer' }}
+                            onClick={() => onDuplicatePage(item.slug)}
+                          >
+                            Копия
+                          </button>
+                        ) : null}
+                        {onRenamePage ? (
+                          <button
+                            type="button"
+                            className="mr-1 rounded px-1.5 py-0.5 text-[10px]"
+                            style={{ background: t.inputBg, color: t.textMuted, border: 'none', cursor: 'pointer' }}
+                            onClick={() => onRenamePage(item.slug)}
+                          >
+                            Ren
+                          </button>
+                        ) : null}
+                        {onDeletePage ? (
+                          <button
+                            type="button"
+                            className="mr-1 rounded px-1.5 py-0.5 text-[10px]"
+                            style={{ background: '#2a1010', color: '#ef4444', border: 'none', cursor: 'pointer' }}
+                            onClick={() => onDeletePage(item.slug)}
+                          >
+                            ×
+                          </button>
+                        ) : null}
+                      </div>
+                      <p className="px-2 pb-1 text-[10px]" style={{ color: t.textMuted }}>
+                        {item.slug}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="px-3 py-4">
+                <p className="mb-3 text-[11px]" style={{ color: t.textMuted }}>
+                  Страниц не найдено.
+                </p>
+                {onCreatePage ? (
+                  <button
+                    type="button"
+                    className="w-full rounded-md px-3 py-2 text-left text-[11px] font-medium"
+                    style={{ background: `${t.accent}22`, color: t.accent, border: `1px solid ${t.accent}44`, cursor: 'pointer' }}
+                    onClick={onCreatePage}
+                  >
+                    + Создать первую страницу
+                  </button>
+                ) : null}
+              </div>
+            )
+          ) : null}
+
+          {/* ── Layers (blocks) ────────────────────────────────── */}
+          {leftTab === 'blocks' ? (
+            <BuilderLayerTree
+              t={t}
+              pageName={page.page}
+              blocks={page.blocks}
+              activeId={activeId}
+              store={store}
+              searchQuery={searchQuery}
+              onOpenAsset={onOpenAsset}
+              activeAssetPath={activeAssetPath}
+              onDuplicateComponent={onDuplicateComponent}
+              onExportBlock={onExportBlock}
+            />
+          ) : null}
+
+          {/* ── Components (assets) ────────────────────────────── */}
+          {leftTab === 'assets' ? (
+            componentEditMode ? (
+              <ComponentEditorLeftPanel
+                t={{
+                  text: t.text,
+                  textMuted: t.textMuted,
+                  textSecondary: t.textSecondary,
+                  hover: t.hover,
+                  active: t.active,
+                  accent: t.accent,
+                  divider: t.divider,
+                  inputBg: t.inputBg,
+                  panel: t.panel,
+                  menu: t.panel,
+                  menuBorder: t.divider,
+                }}
+                block={page.blocks.find((b) => b.id === activeId)}
+                store={store}
+                selectedElementId={selectedElementId}
+                onSelectElement={onSelectElement}
+                onAddElement={onAddElement}
+                elementVariants={elementVariants}
+              />
+            ) : (
+              <BuilderInsertPanel
+                t={t}
+                groupedVariants={groupedBuiltInVariants}
+                vendorLibraries={filteredVendors}
+                pageVendors={pageVendors}
+                requiredVendors={requiredVendors}
+                onToggleVendor={onToggleVendor}
+                onAddVariant={onAddVariant}
+                savedComponents={savedAssetComponents}
+                canvasTemplateIds={canvasTemplateIds}
+                onAddSavedComponent={onAddSavedComponent}
+                onDeleteSavedComponent={onDeleteSavedComponent}
+                onDuplicateComponent={onDuplicateComponent}
+                searchQuery={searchQuery}
+              />
+            )
+          ) : null}
+
+          {/* ── Media (placeholder) ────────────────────────────── */}
+          {leftTab === 'media' ? (
+            <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
+              <div
+                className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl"
+                style={{ background: t.inputBg }}
+              >
+                <Image className="h-6 w-6" style={{ color: t.textMuted }} />
+              </div>
+              <p className="text-[11px] font-medium" style={{ color: t.textSecondary }}>
+                Медиа-библиотека
+              </p>
+              <p className="mt-1 text-[10px]" style={{ color: t.textMuted }}>
+                Скоро появится
+              </p>
+            </div>
+          ) : null}
+
+        </div>
       </div>
     </div>
   )

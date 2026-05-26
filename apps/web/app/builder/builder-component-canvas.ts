@@ -13,5 +13,9 @@ export function componentArtboardStyle(design: ComponentDesignSettings): CSSProp
 
 /** Styles applied to the component root (preview content), exported to HTML/Bitrix. */
 export function componentRootStyle(design: ComponentDesignSettings): CSSProperties {
-  return componentRootCssProperties(design) as CSSProperties
+  return {
+    ...(componentRootCssProperties(design) as CSSProperties),
+    minHeight: '100%',
+    height: '100%'
+  }
 }

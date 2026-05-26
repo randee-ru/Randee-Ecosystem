@@ -1,5 +1,5 @@
 export type BuilderCanvasTool = 'select' | 'pan'
-export type BuilderLeftTab = 'pages' | 'blocks' | 'assets'
+export type BuilderLeftTab = 'pages' | 'blocks' | 'assets' | 'media'
 export type BuilderViewportOrientation = 'portrait' | 'landscape'
 
 export type BuilderSessionState = {

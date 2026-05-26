@@ -1,0 +1,18 @@
+{
+  "id": "component-04",
+  "type": "component",
+  "group": "Custom",
+  "name": "Component 04",
+  "description": "Empty component",
+  "savedToAssets": true,
+  "defaultProps": {
+    "title": "Component 04"
+  },
+  "propsSchema": [
+    {
+      "name": "title",
+      "label": "Title",
+      "type": "text"
+    }
+  ]
+}

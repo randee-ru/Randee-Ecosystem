@@ -34,6 +34,11 @@ export type GenericComponentPreviewProps = BlockTemplatePreviewProps & {
   elementOptions?: {
     selectedElementId?: string | null
     onSelectElement?: (elementId: string) => void
+    onDropElement?: (
+      catalogElementId: string,
+      placement?: { parentId?: string | null; afterElementId?: string | null; beforeElementId?: string | null }
+    ) => void
+    onPatchElementProps?: (elementId: string, props: Record<string, string>) => void
   }
 }
 
@@ -41,15 +46,13 @@ export function GenericComponentPreview({ block, elementOptions }: GenericCompon
   const cls = `randee-${block.template.replace(/\./g, '-')}`
   const title = block.props.title ?? block.name ?? 'Component'
   const revision = useTemplateRevision(block.template)
-  const hasElements = (block.elements?.length ?? 0) > 0
 
   useTemplateStylesheet(block.template, revision)
 
   return (
     <TemplateFrame block={block} className={cls} initScript={genericInit}>
-      {hasElements ? (
-        <ElementTreePreview elements={block.elements ?? []} options={elementOptions} />
-      ) : (
+      <ElementTreePreview elements={block.elements ?? []} options={elementOptions} />
+      {(block.elements?.length ?? 0) === 0 ? (
         <>
           <img
             src={getTemplateAssetUrl(block.template, 'images/thumb.svg')}
@@ -61,7 +64,7 @@ export function GenericComponentPreview({ block, elementOptions }: GenericCompon
           <h2 className={`${cls}__title`}>{title}</h2>
           <p className={`${cls}__hint`}>Insert UI elements via Insert, or edit preview.tsx in Blocks</p>
         </>
-      )}
+      ) : null}
     </TemplateFrame>
   )
 }

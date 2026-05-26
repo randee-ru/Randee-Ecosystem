@@ -29,6 +29,24 @@ export function componentRootCssProperties(design?: ComponentDesignSettings): Cs
     end: 'flex-end'
   } as const
 
+  const extra: CssProperties = {}
+
+  if (design?.opacity !== undefined && design.opacity !== 100) {
+    extra.opacity = design.opacity / 100
+  }
+  if (design?.borderRadius) {
+    extra.borderRadius = `${design.borderRadius}px`
+  }
+  if (design?.border && design.border.style !== 'none' && design.border.width > 0) {
+    const bc = design.border.color.startsWith('#') ? design.border.color : `#${design.border.color}`
+    extra.border = `${design.border.width}px ${design.border.style} ${bc}`
+  }
+  if (design?.shadow) {
+    const s = design.shadow
+    const sc = s.color.startsWith('#') ? s.color : `#${s.color}`
+    extra.boxShadow = `${s.inset ? 'inset ' : ''}${s.x}px ${s.y}px ${s.blur}px ${s.spread}px ${sc}`
+  }
+
   return {
     width: '100%',
     minHeight: 'min-content',
@@ -41,7 +59,8 @@ export function componentRootCssProperties(design?: ComponentDesignSettings): Cs
     alignItems: alignMap[layout.align],
     gap: `${layout.gap}px`,
     padding,
-    boxSizing: 'border-box'
+    boxSizing: 'border-box',
+    ...extra
   }
 }
 
@@ -62,10 +81,14 @@ export function componentRootInlineStyle(design?: ComponentDesignSettings): stri
 /** Artboard frame styles — builder canvas only, not included in export. */
 export function componentArtboardCssProperties(design?: ComponentDesignSettings): CssProperties {
   const { position, size } = resolveComponentDesign(design)
+  const safeHeight = Math.max(0, Number(size.height) || 0)
+  const fixedHeight = `${safeHeight}px`
+  const windowHeight = `${Math.max(1, Math.min(100, safeHeight || 100))}vh`
   return {
     position: 'relative',
     width: size.widthMode === 'fixed' ? `${size.width}px` : '100%',
-    minHeight: size.heightMode === 'fixed' ? `${size.height}px` : `${size.height}px`,
+    height: size.heightMode === 'fixed' ? fixedHeight : size.heightMode === 'fill' ? windowHeight : 'auto',
+    minHeight: size.heightMode === 'hug' ? 'min-content' : fixedHeight,
     maxWidth: '100%',
     marginLeft: `${position.x}px`,
     marginTop: `${position.y}px`,

@@ -28,8 +28,8 @@ function renderFieldInput(
         value={value === 'true' ? 'true' : 'false'}
         onChange={(event) => onChange(event.target.value)}
       >
-        <option value="true">Yes</option>
-        <option value="false">No</option>
+        <option value="true">Да</option>
+        <option value="false">Нет</option>
       </select>
     )
   }
@@ -43,6 +43,43 @@ function renderFieldInput(
           </option>
         ))}
       </select>
+    )
+  }
+
+  if (field.type === 'color') {
+    const hex = value ? `#${value.replace('#', '')}` : '#ffffff'
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <label style={{ position: 'relative', width: 28, height: 28, borderRadius: 6, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)', flexShrink: 0, cursor: 'pointer' }}>
+          <span style={{ display: 'block', width: '100%', height: '100%', background: hex }} />
+          <input
+            type="color"
+            style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+            value={hex}
+            onChange={(e) => onChange(e.target.value)}
+          />
+        </label>
+        <input
+          style={{ ...inputStyle, flex: 1 }}
+          type="text"
+          maxLength={7}
+          value={value}
+          placeholder="#ffffff"
+          onChange={(event) => onChange(event.target.value)}
+        />
+      </div>
+    )
+  }
+
+  if (field.type === 'image') {
+    return (
+      <input
+        style={inputStyle}
+        type="url"
+        value={value}
+        placeholder="https://…"
+        onChange={(event) => onChange(event.target.value)}
+      />
     )
   }
 

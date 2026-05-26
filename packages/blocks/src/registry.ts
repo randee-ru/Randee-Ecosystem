@@ -22,6 +22,10 @@ import { manifest as catalog01Manifest, assets as catalog01Assets } from './temp
 import { Catalog01Preview } from './templates/catalog.section/catalog-01/preview'
 import { manifest as news01Manifest, assets as news01Assets } from './templates/news.list/news-01/manifest'
 import { News01Preview } from './templates/news.list/news-01/preview'
+import { manifest as component03Manifest, assets as component03Assets } from './templates/component/component-03/manifest'
+import { Component03Preview } from './templates/component/component-03/preview'
+import { manifest as component04Manifest, assets as component04Assets } from './templates/component/component-04/manifest'
+import { Component04Preview } from './templates/component/component-04/preview'
 
 const templateRegistry: Record<string, BlockTemplateDefinition> = {
   'hero-01': { manifest: hero01Manifest, assets: hero01Assets, Preview: Hero01Preview },
@@ -32,12 +36,16 @@ const templateRegistry: Record<string, BlockTemplateDefinition> = {
   'faq-01': { manifest: faq01Manifest, assets: faq01Assets, Preview: Faq01Preview },
   'cta-01': { manifest: cta01Manifest, assets: cta01Assets, Preview: Cta01Preview },
   'catalog-01': { manifest: catalog01Manifest, assets: catalog01Assets, Preview: Catalog01Preview },
-  'news-01': { manifest: news01Manifest, assets: news01Assets, Preview: News01Preview }
+  'news-01': { manifest: news01Manifest, assets: news01Assets, Preview: News01Preview },
+  'component-03': { manifest: component03Manifest, assets: component03Assets, Preview: Component03Preview },
+  'component-04': { manifest: component04Manifest, assets: component04Assets, Preview: Component04Preview }
 }
 
 const userTemplateRegistry: Record<string, BlockTemplateDefinition> = {}
 
 export function registerUserTemplate(manifest: BlockTemplateManifest, assets: BlockTemplateAssets): void {
+  // не перезаписываем встроенные шаблоны (component-03, component-04, ...)
+  if (templateRegistry[manifest.id]) return
   userTemplateRegistry[manifest.id] = {
     manifest,
     assets,
@@ -54,6 +62,7 @@ export function listBlockTemplates(): BlockTemplateDefinition[] {
 }
 
 export function listLibraryVariants(): LibraryVariant[] {
+  const seen = new Set<string>()
   return listBlockTemplates()
     .map(({ manifest }) => ({
       type: manifest.type,
@@ -63,7 +72,13 @@ export function listLibraryVariants(): LibraryVariant[] {
       description: manifest.description
     }))
     .filter((item) => {
-      if (!isUserComponentTemplateId(item.template)) return true
+      if (!isUserComponentTemplateId(item.template)) {
+        if (seen.has(item.template)) return false
+        seen.add(item.template)
+        return true
+      }
+      if (seen.has(item.template)) return false
+      seen.add(item.template)
       const entry = getBlockTemplate(item.template)
       return entry?.manifest.savedToAssets === true
     })

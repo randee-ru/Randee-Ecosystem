@@ -32,7 +32,7 @@ export function TemplateFrame({ block, className, initScript, children }: Templa
   }, [block.id, block.template, initScript, dependencyKey, waitForVendors])
 
   return (
-    <div ref={rootRef} className={className} data-randee-template={block.template} data-randee-type={block.type}>
+    <div ref={rootRef} className={className} data-randee-template={block.template} data-randee-type={block.type} style={{ width: '100%', alignSelf: 'stretch' }}>
       {children}
     </div>
   )

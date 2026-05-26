@@ -13,7 +13,6 @@ async function loadGsap(): Promise<void> {
 }
 
 async function loadSwiper(): Promise<void> {
-  await import('swiper/css/bundle')
   const swiperModule = await import('swiper')
   window.Swiper = swiperModule.Swiper
 }

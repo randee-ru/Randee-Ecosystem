@@ -1,6 +1,16 @@
 import type { ComponentDesignSettings } from '../types/component-design'
 import { DEFAULT_COMPONENT_DESIGN } from '../types/component-design'
 
+export type ComponentDesignPatch = Omit<
+  Partial<ComponentDesignSettings>,
+  'position' | 'size' | 'layout' | 'typography'
+> & {
+  position?: Partial<ComponentDesignSettings['position']>
+  size?: Partial<ComponentDesignSettings['size']>
+  layout?: Partial<ComponentDesignSettings['layout']>
+  typography?: Partial<ComponentDesignSettings['typography']>
+}
+
 export function resolveComponentDesign(design?: ComponentDesignSettings): ComponentDesignSettings {
   if (!design) return { ...DEFAULT_COMPONENT_DESIGN }
 
@@ -15,12 +25,7 @@ export function resolveComponentDesign(design?: ComponentDesignSettings): Compon
 
 export function mergeComponentDesign(
   current: ComponentDesignSettings | undefined,
-  patch: Partial<ComponentDesignSettings> & {
-    position?: Partial<ComponentDesignSettings['position']>
-    size?: Partial<ComponentDesignSettings['size']>
-    layout?: Partial<ComponentDesignSettings['layout']>
-    typography?: Partial<ComponentDesignSettings['typography']>
-  }
+  patch: ComponentDesignPatch
 ): ComponentDesignSettings {
   const base = resolveComponentDesign(current)
   return {

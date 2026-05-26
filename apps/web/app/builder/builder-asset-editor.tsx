@@ -87,7 +87,7 @@ function isEditorFindKey(event: KeyboardEvent) {
 function emmetSyntaxForAsset(asset: BuilderAssetTarget): EmmetKnownSyntax | null {
   const path = asset.path.toLowerCase()
   if (asset.kind === 'style') return EmmetKnownSyntax.css
-  if (asset.kind === 'preview' || path.endsWith('.tsx')) return EmmetKnownSyntax.jsx
+  if (path.endsWith('.tsx') || path.endsWith('.jsx')) return EmmetKnownSyntax.jsx
   if (path.endsWith('.svg')) return EmmetKnownSyntax.html
   return null
 }
@@ -107,7 +107,7 @@ function emmetExtensions(asset: BuilderAssetTarget) {
     keymap.of([
       {
         key: 'Tab',
-        run: (view) => expandAbbreviation(view) || indentWithTab(view)
+        run: (view) => expandAbbreviation(view) || (indentWithTab.run?.(view) ?? false)
       },
       { key: 'Mod-e', run: expandAbbreviation },
       { key: 'Mod-Shift-a', run: enterAbbreviationMode },
@@ -155,7 +155,7 @@ export function BuilderAssetEditor({
 
     fetch(asset.url, { signal: controller.signal })
       .then((response) => {
-        if (!response.ok) throw new Error('Failed to load file')
+        if (!response.ok) throw new Error('Не удалось загрузить файл')
         return response.text()
       })
       .then((text) => {
@@ -166,10 +166,10 @@ export function BuilderAssetEditor({
       .catch((loadError) => {
         if (cancelled) return
         if (loadError instanceof Error && loadError.name === 'AbortError') {
-          setError('File load timed out. Restart dev server and try again.')
+          setError('Таймаут загрузки. Перезапустите dev-сервер и попробуйте снова.')
           return
         }
-        setError(loadError instanceof Error ? loadError.message : 'Failed to load file')
+        setError(loadError instanceof Error ? loadError.message : 'Не удалось загрузить файл')
       })
       .finally(() => {
         window.clearTimeout(loadTimeout)
@@ -192,11 +192,11 @@ export function BuilderAssetEditor({
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
         body: content
       })
-      if (!response.ok) throw new Error('Failed to save file')
+      if (!response.ok) throw new Error('Не удалось сохранить файл')
       setSavedContent(content)
       onAssetSaved?.(asset)
     } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Failed to save file')
+      setError(saveError instanceof Error ? saveError.message : 'Не удалось сохранить файл')
     } finally {
       setSaving(false)
     }
@@ -410,8 +410,8 @@ export function BuilderAssetEditor({
           className="flex h-7 w-7 items-center justify-center rounded-md"
           style={{ background: t.inputBg, border: 'none', cursor: 'pointer', color: t.textMuted }}
           onClick={onClose}
-          aria-label="Close editor"
-          title="Close (Esc)"
+          aria-label="Закрыть редактор"
+          title="Закрыть (Esc)"
         >
           <X className="h-3.5 w-3.5" />
         </button>
@@ -448,10 +448,10 @@ export function BuilderAssetEditor({
           }}
           disabled={!isDirty || saving}
           onClick={() => void save()}
-          title="Save (⌘S)"
+          title="Сохранить (⌘S)"
         >
           {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-          Save
+          Сохранить
         </button>
 
         {canSaveToAssets && !savedToAssets ? (
@@ -467,14 +467,14 @@ export function BuilderAssetEditor({
             }}
             disabled={savingToAssets}
             onClick={() => onSaveToAssets?.()}
-            title="Save component to Assets library"
+            title="Сохранить компонент в Assets"
           >
             {savingToAssets ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <FolderPlus className="h-3.5 w-3.5" />
             )}
-            Save to Assets
+            В Assets
           </button>
         ) : null}
       </div>
@@ -489,7 +489,7 @@ export function BuilderAssetEditor({
         {loading ? (
           <div className="flex h-full items-center justify-center gap-2 text-sm" style={{ color: t.textMuted }}>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Loading…
+            Загрузка…
           </div>
         ) : (
           <CodeMirror

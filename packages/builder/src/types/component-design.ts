@@ -3,6 +3,22 @@ export type LayoutType = 'stack' | 'grid'
 export type LayoutDirection = 'horizontal' | 'vertical'
 export type LayoutDistribute = 'start' | 'center' | 'end' | 'space-between'
 export type LayoutAlign = 'start' | 'center' | 'end'
+export type BorderStyle = 'solid' | 'dashed' | 'dotted' | 'none'
+
+export interface ComponentBorder {
+  width: number
+  style: BorderStyle
+  color: string
+}
+
+export interface ComponentShadow {
+  x: number
+  y: number
+  blur: number
+  spread: number
+  color: string
+  inset: boolean
+}
 
 export interface ComponentDesignSettings {
   position: { x: number; y: number }
@@ -29,6 +45,10 @@ export interface ComponentDesignSettings {
   }
   typography: { baseSize: number }
   fill: string
+  opacity?: number
+  borderRadius?: number
+  border?: ComponentBorder | null
+  shadow?: ComponentShadow | null
 }
 
 export const DEFAULT_COMPONENT_DESIGN: ComponentDesignSettings = {

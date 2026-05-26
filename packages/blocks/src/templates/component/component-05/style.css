@@ -1,0 +1,25 @@
+.randee-component-05 {
+  padding: 2.5rem;
+  color: #171717;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.randee-component-05__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.randee-component-05__hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #737373;
+}
+
+/* code-sync generated styles */
+.code-sync-container { display: flex; flex-direction: column; gap: 12px; padding: 8px; border: 1px dashed rgba(148,163,184,.5); border-radius: 10px; }
+.code-sync-columns { width: 100%; }
+.code-sync-button { min-height: 40px; min-width: 120px; border-radius: 10px; border: 1px solid #2563eb; background: #2563eb; color: #fff; font-weight: 600; padding: 8px 14px; }
+.code-sync-empty { font-size: 12px; color: #64748b; }
+.code-sync-node { padding: 6px 8px; border: 1px solid rgba(148,163,184,.4); border-radius: 8px; }

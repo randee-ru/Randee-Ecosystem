@@ -35,7 +35,10 @@ type BuilderViewportToolbarProps = {
   onViewportChange: (mode: ViewportMode) => void
   onRotate: (mode: 'tablet' | 'mobile') => void
   t: ToolbarTheme
-  variant?: 'canvas' | 'inspector'
+  variant?: 'canvas' | 'inspector' | 'topbar'
+  // Topbar multi-select: какие viewport-ы сейчас показаны
+  shownViewports?: ViewportMode[]
+  onToggleViewport?: (mode: ViewportMode) => void
 }
 
 export function BuilderViewportToolbar({
@@ -45,8 +48,61 @@ export function BuilderViewportToolbar({
   onViewportChange,
   onRotate,
   t,
-  variant = 'canvas'
+  variant = 'canvas',
+  shownViewports,
+  onToggleViewport,
 }: BuilderViewportToolbarProps) {
+  // topbar variant: icon-only, поддерживает multi-select через shownViewports
+  if (variant === 'topbar') {
+    return (
+      <div className="flex items-center gap-0.5">
+        {VIEWPORT_ITEMS.map(({ id: mode, label }) => {
+          const Icon = viewportIcon[mode]
+          const canRotate = mode === 'tablet' || mode === 'mobile'
+          const orientation = getOrientationForViewport(mode, tabletOrientation, mobileOrientation)
+          const isLandscape = canRotate && orientation === 'landscape'
+
+          // Активен, если: либо это primary viewport (без multi-select) либо входит в shownViewports
+          const isShown = shownViewports ? shownViewports.includes(mode) : viewport === mode
+          const isPrimary = viewport === mode
+
+          return (
+            <button
+              key={mode}
+              type="button"
+              className="flex h-7 w-7 items-center justify-center rounded"
+              style={{
+                background: isPrimary ? t.active : isShown ? `${t.active}99` : 'transparent',
+                border: isShown && !isPrimary ? `1px solid ${t.active}` : '1px solid transparent',
+                cursor: 'pointer',
+                color: isPrimary ? t.text : isShown ? t.text : t.textMuted,
+                transition: 'background 120ms, color 120ms',
+              }}
+              title={isShown ? `Скрыть ${label}` : `Показать ${label}`}
+              aria-label={label}
+              aria-pressed={isShown}
+              onClick={() => {
+                if (onToggleViewport) {
+                  // Multi-select режим: тоггл
+                  onToggleViewport(mode)
+                } else {
+                  // Одиночный режим (старое поведение)
+                  if (isPrimary && canRotate) onRotate(mode)
+                  else onViewportChange(mode)
+                }
+              }}
+            >
+              <Icon
+                className="h-3.5 w-3.5 transition-transform duration-200"
+                style={{ transform: isLandscape ? 'rotate(90deg)' : undefined }}
+              />
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+
   return (
     <div
       className={variant === 'inspector' ? 'flex w-full gap-1 rounded-md p-0.5' : 'flex items-center gap-1 rounded-md p-0.5'}
