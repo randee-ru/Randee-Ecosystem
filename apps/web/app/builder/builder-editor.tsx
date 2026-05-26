@@ -282,6 +282,8 @@ export default function BuilderEditor() {
   const [gridMajorStep, setGridMajorStep] = React.useState(5)
   const [gridSettingsOpen, setGridSettingsOpen] = React.useState(false)
   const [overflowMenuOpen, setOverflowMenuOpen] = React.useState(false)
+  const [exportMenuOpen, setExportMenuOpen] = React.useState(false)
+  const exportMenuRef = React.useRef<HTMLDivElement>(null)
   const [previewMode, setPreviewMode] = React.useState(false)
   // Какие viewport-ы показаны на canvas (мультиселект)
   // Инициализируется как ['desktop'], но синхронизируется с реальным viewport при загрузке сессии
@@ -515,7 +517,7 @@ export default function BuilderEditor() {
   ])
 
   React.useEffect(() => {
-    if (!insertOpen && !newOpen && !zoomOpen && !gridSettingsOpen && !overflowMenuOpen) return
+    if (!insertOpen && !newOpen && !zoomOpen && !gridSettingsOpen && !overflowMenuOpen && !exportMenuOpen) return
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as Node
       if (insertOpen && insertRef.current && !insertRef.current.contains(target)) setInsertOpen(false)
@@ -527,10 +529,13 @@ export default function BuilderEditor() {
       if (overflowMenuOpen && overflowMenuRef.current && !overflowMenuRef.current.contains(target)) {
         setOverflowMenuOpen(false)
       }
+      if (exportMenuOpen && exportMenuRef.current && !exportMenuRef.current.contains(target)) {
+        setExportMenuOpen(false)
+      }
     }
     document.addEventListener('pointerdown', onPointerDown)
     return () => document.removeEventListener('pointerdown', onPointerDown)
-  }, [insertOpen, newOpen, zoomOpen, gridSettingsOpen, overflowMenuOpen])
+  }, [insertOpen, newOpen, zoomOpen, gridSettingsOpen, overflowMenuOpen, exportMenuOpen])
 
   const page = useStore(store, (state) => state.page)
   const activeId = useStore(store, (state) => state.selectedBlockId)
@@ -804,6 +809,24 @@ export default function BuilderEditor() {
     const contentDisposition = response.headers.get('Content-Disposition')
     const filename =
       contentDisposition?.match(/filename="([^"]+)"/)?.[1] ?? 'randee-bitrix-export.zip'
+    downloadBlob(filename, blob)
+  }
+
+  const exportFull = async () => {
+    const response = await fetch('/api/builder/export-full', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(page)
+    })
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => null)) as { error?: string } | null
+      window.alert(payload?.error ?? 'Full export failed')
+      return
+    }
+    const blob = await response.blob()
+    const contentDisposition = response.headers.get('Content-Disposition')
+    const filename =
+      contentDisposition?.match(/filename="([^"]+)"/)?.[1] ?? 'randee-full-export.zip'
     downloadBlob(filename, blob)
   }
 
@@ -2339,16 +2362,86 @@ export default function BuilderEditor() {
             <Play className="h-3.5 w-3.5" style={{ marginLeft: 1 }} />
           </button>
 
-          {/* Accent Bitrix Export */}
-          <button
-            type="button"
-            className="flex h-7 items-center gap-1.5 rounded-md px-3 text-[11px] font-semibold text-white"
-            style={{ background: t.accent, border: 'none', cursor: 'pointer' }}
-            onClick={exportBitrix}
-          >
-            <Boxes className="h-3.5 w-3.5" />
-            Экспорт
-          </button>
+          {/* Export split-button: основная кнопка = Bitrix, стрелка = dropdown */}
+          <div ref={exportMenuRef} className="relative flex">
+            <button
+              type="button"
+              className="flex h-7 items-center gap-1.5 rounded-l-md px-3 text-[11px] font-semibold text-white"
+              style={{ background: t.accent, border: 'none', borderRight: '1px solid rgba(255,255,255,0.25)', cursor: 'pointer' }}
+              onClick={exportBitrix}
+              title="Экспорт Bitrix ZIP"
+            >
+              <Boxes className="h-3.5 w-3.5" />
+              Экспорт
+            </button>
+            <button
+              type="button"
+              className="flex h-7 w-6 items-center justify-center rounded-r-md text-white"
+              style={{ background: t.accent, border: 'none', cursor: 'pointer' }}
+              onClick={() => setExportMenuOpen((v) => !v)}
+              title="Варианты экспорта"
+            >
+              <ChevronDown className="h-3 w-3" />
+            </button>
+
+            {exportMenuOpen ? (
+              <div
+                className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-xl shadow-2xl"
+                style={{ background: t.menu, border: `1px solid ${t.menuBorder}` }}
+              >
+                <p className="px-3 pt-2.5 text-[10px] font-semibold uppercase tracking-wider" style={{ color: t.textMuted }}>
+                  Экспорт
+                </p>
+
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-[12px]"
+                  style={{ background: 'transparent', color: t.textSecondary, border: 'none', cursor: 'pointer' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = t.hover }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                  onClick={() => { void exportBitrix(); setExportMenuOpen(false) }}
+                >
+                  <Boxes className="h-3.5 w-3.5 shrink-0" style={{ color: t.accent }} />
+                  <div className="text-left">
+                    <span className="block font-medium">Bitrix компоненты</span>
+                    <span className="block text-[10px]" style={{ color: t.textMuted }}>local/components/randee/…</span>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-[12px]"
+                  style={{ background: 'transparent', color: t.textSecondary, border: 'none', cursor: 'pointer' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = t.hover }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                  onClick={() => { void exportFull(); setExportMenuOpen(false) }}
+                >
+                  <Download className="h-3.5 w-3.5 shrink-0" style={{ color: '#10b981' }} />
+                  <div className="text-left">
+                    <span className="block font-medium" style={{ color: '#10b981' }}>HTML + Bitrix (всё)</span>
+                    <span className="block text-[10px]" style={{ color: t.textMuted }}>page.html + bitrix/ в одном ZIP</span>
+                  </div>
+                </button>
+
+                <div style={{ height: 1, background: t.menuBorder, margin: '4px 0' }} />
+
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-[12px]"
+                  style={{ background: 'transparent', color: t.textSecondary, border: 'none', cursor: 'pointer' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = t.hover }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+                  onClick={() => { void exportHtml(); setExportMenuOpen(false) }}
+                >
+                  <Download className="h-3.5 w-3.5 shrink-0" style={{ color: t.textMuted }} />
+                  <div className="text-left">
+                    <span className="block">Только HTML</span>
+                    <span className="block text-[10px]" style={{ color: t.textMuted }}>page.html без Bitrix</span>
+                  </div>
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
 
         {/* Insert panel dropdown (opens below topbar, anchored left) */}

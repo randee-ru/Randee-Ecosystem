@@ -13,6 +13,7 @@ import {
   type VendorFileRef,
   type VendorId
 } from './vendors/registry'
+import { mapPageBlockToBitrix } from './bitrix-export'
 
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -88,16 +89,48 @@ function vendorTags(vendorIds: VendorId[]): { head: string; body: string } {
   return { head: head.join('\n  '), body: body.join('\n') }
 }
 
-function blockToHtml(block: BuilderPage['blocks'][number]): string {
-  const assets = resolveTemplateAssets(block.template)
-  const attrs = Object.entries(block.props)
-    .map(([key, value]) => `data-${key}="${escapeHtml(value)}"`)
-    .join(' ')
+/**
+ * Конвертирует PHP-шаблон Bitrix в статичный HTML:
+ * убирает <?php … ?> заголовок, заменяет <?= $VAR ?> на реальные значения.
+ */
+function phpTemplateToStaticHtml(
+  templatePhp: string,
+  templateData: Record<string, string>
+): string {
+  // Убираем блок PHP-заголовка: <?php ... ?>
+  let html = templatePhp.replace(/^<\?php[\s\S]*?\?>\s*\n?/, '')
 
+  // Заменяем <?= $VARNAME ?> → HTML-escaped значение из templateData
+  for (const [key, value] of Object.entries(templateData)) {
+    html = html.replace(new RegExp(`<\\?=\\s*\\$${key}\\s*\\?>`, 'g'), escapeHtml(value))
+  }
+
+  // Убираем оставшиеся PHP-теги (на всякий случай)
+  html = html.replace(/<\?(?:php|=)[^?]*\?>/g, '')
+
+  return html.trim()
+}
+
+function blockToHtml(block: BuilderPage['blocks'][number]): string {
+  // Используем Bitrix pipeline — он уже умеет JSX → real HTML
+  const descriptor = mapPageBlockToBitrix(block)
+  if (descriptor?.templatePhp) {
+    const styleTag = descriptor.css
+      ? `<style data-randee-template="${block.template}">\n${descriptor.css}\n</style>`
+      : ''
+    const html = phpTemplateToStaticHtml(descriptor.templatePhp, descriptor.templateData ?? {})
+    return `${styleTag}\n${html}`
+  }
+
+  // Fallback для блоков без дескриптора (unsaved components и т.п.)
+  const assets = resolveTemplateAssets(block.template)
   const style = assets ? readTemplateAssetText(block.template, assets.stylePath) : null
   const styleTag = style ? `<style data-randee-template="${block.template}">\n${style}\n</style>` : ''
   const rootClass = assets ? `randee-${block.template.replace(/\./g, '-')}` : 'randee-block-root'
   const designStyle = inlineStyleHtmlAttribute(block.design)
+  const attrs = Object.entries(block.props)
+    .map(([key, value]) => `data-${key}="${escapeHtml(value)}"`)
+    .join(' ')
 
   return `${styleTag}
 <section class="randee-block randee-${block.type.replace('.', '-')}" data-randee-block="${block.template}">
