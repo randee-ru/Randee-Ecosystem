@@ -4,11 +4,16 @@ import * as React from 'react'
 import {
   Bookmark,
   ChevronRight,
+  ClipboardList,
   HelpCircle,
   LayoutGrid,
+  MessageSquare,
   MousePointerClick,
+  Navigation,
   Newspaper,
   Package,
+  PanelBottom,
+  PanelTop,
   Plus,
   Puzzle,
   ShoppingBag,
@@ -63,16 +68,21 @@ type BuilderInsertPanelProps = {
 
 // ─── Static data ─────────────────────────────────────────────────────────────
 
-type GroupMeta = { labelRu: string; icon: React.ElementType; color: string; wf: 'hero' | 'features' | 'faq' | 'cta' | 'catalog' | 'news' | 'component' }
+type GroupMeta = { labelRu: string; icon: React.ElementType; color: string; wf: string }
 
 const GROUP_META: Record<string, GroupMeta> = {
-  Hero:     { labelRu: 'Герой',        icon: Sparkles,          color: '#6366f1', wf: 'hero' },
-  Features: { labelRu: 'Возможности',  icon: LayoutGrid,        color: '#0ea5e9', wf: 'features' },
-  FAQ:      { labelRu: 'FAQ',          icon: HelpCircle,        color: '#f59e0b', wf: 'faq' },
-  CTA:      { labelRu: 'Призыв',       icon: MousePointerClick, color: '#10b981', wf: 'cta' },
-  Catalog:  { labelRu: 'Каталог',      icon: ShoppingBag,       color: '#ef4444', wf: 'catalog' },
-  News:     { labelRu: 'Новости',      icon: Newspaper,         color: '#8b5cf6', wf: 'news' },
-  Custom:   { labelRu: 'Кастомные',    icon: Puzzle,            color: '#64748b', wf: 'component' }
+  Header:     { labelRu: 'Шапка',        icon: PanelTop,          color: '#6366f1', wf: 'nav' },
+  Hero:       { labelRu: 'Герой',        icon: Sparkles,          color: '#8b5cf6', wf: 'hero' },
+  Features:   { labelRu: 'Возможности',  icon: LayoutGrid,        color: '#0ea5e9', wf: 'features' },
+  FAQ:        { labelRu: 'FAQ',          icon: HelpCircle,        color: '#f59e0b', wf: 'faq' },
+  CTA:        { labelRu: 'Призыв',       icon: MousePointerClick, color: '#10b981', wf: 'cta' },
+  Forms:      { labelRu: 'Формы',        icon: ClipboardList,     color: '#06b6d4', wf: 'form' },
+  Popups:     { labelRu: 'Попапы',       icon: MessageSquare,     color: '#ec4899', wf: 'popup' },
+  Catalog:    { labelRu: 'Каталог',      icon: ShoppingBag,       color: '#ef4444', wf: 'catalog' },
+  News:       { labelRu: 'Новости',      icon: Newspaper,         color: '#f97316', wf: 'news' },
+  Navigation: { labelRu: 'Навигация',    icon: Navigation,        color: '#64748b', wf: 'nav' },
+  Footer:     { labelRu: 'Подвал',       icon: PanelBottom,       color: '#475569', wf: 'footer' },
+  Custom:     { labelRu: 'Кастомные',    icon: Puzzle,            color: '#94a3b8', wf: 'component' },
 }
 
 const BLOCK_NAME_RU: Record<string, string> = {
@@ -305,7 +315,7 @@ export function BuilderInsertPanel({
 }: BuilderInsertPanelProps) {
   const allGroups = Object.keys(groupedVariants).filter((g) => variant !== 'sections' || g !== 'Custom')
   const sortedGroups = allGroups.sort((a, b) => {
-    const ORDER = ['Hero', 'Features', 'FAQ', 'CTA', 'Catalog', 'News', 'Custom']
+    const ORDER = ['Header', 'Hero', 'Features', 'CTA', 'FAQ', 'Forms', 'Popups', 'Catalog', 'News', 'Navigation', 'Footer', 'Custom']
     return (ORDER.indexOf(a) ?? 99) - (ORDER.indexOf(b) ?? 99)
   })
 
@@ -347,10 +357,10 @@ export function BuilderInsertPanel({
           Готовые секции целиком: герой, FAQ, каталог. Для кнопок и карточек своей вёрстки переключитесь на вкладку «Компоненты».
         </p>
       ) : null}
-      {/* Category tabs — horizontal scroll */}
+      {/* Category tabs — wrapping grid */}
       <div
-        className="flex gap-1 overflow-x-auto px-2 py-2"
-        style={{ borderBottom: `1px solid ${t.divider}`, scrollbarWidth: 'none' }}
+        className="flex flex-wrap gap-1 px-2 py-2"
+        style={{ borderBottom: `1px solid ${t.divider}` }}
       >
         {sortedGroups.map((group) => {
           const gm = GROUP_META[group]
@@ -442,7 +452,7 @@ export function BuilderInsertPanel({
                 Ничего не найдено
               </p>
             ) : (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2">
                 {searchResults.map((item) => (
                   <BlockCard
                     key={item.template}
@@ -486,7 +496,7 @@ export function BuilderInsertPanel({
                     Нет блоков в этой категории
                   </p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2">
                     {currentItems.map((item) => (
                       <BlockCard
                         key={item.template}
