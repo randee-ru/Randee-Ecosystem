@@ -8,8 +8,8 @@ export async function POST(request: Request, { params }: RouteParams) {
   const { template } = await params
 
   try {
-    const body = (await request.json().catch(() => ({}))) as { name?: string }
-    const saved = saveComponentToAssets(template, { name: body.name })
+    const body = (await request.json().catch(() => ({}))) as { name?: string; group?: string }
+    const saved = saveComponentToAssets(template, { name: body.name, group: body.group })
     if (!saved) {
       return Response.json({ error: 'Component not found' }, { status: 404 })
     }

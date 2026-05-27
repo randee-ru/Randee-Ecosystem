@@ -55,7 +55,7 @@ function syncManifestTs(templateId: string, manifest: BlockTemplateManifest): vo
 export const manifest: BlockTemplateManifest = {
   id: '${templateId}',
   type: 'component',
-  group: 'Custom',
+  group: '${(manifest.group ?? 'Custom').replace(/'/g, "\\'")}',
   name: '${safeName}',
   description: '${manifest.description.replace(/'/g, "\\'")}',
   savedToAssets: ${manifest.savedToAssets ? 'true' : 'false'},
@@ -73,14 +73,19 @@ export const assets = {
   )
 }
 
-export function saveComponentToAssets(templateId: string, options?: { name?: string }): CreatedComponentTemplate | null {
+export function saveComponentToAssets(
+  templateId: string,
+  options?: { name?: string; group?: string },
+): CreatedComponentTemplate | null {
   const meta = readComponentMeta(templateId)
   if (!meta) return null
 
   const name = options?.name?.trim() || meta.name
+  const group = options?.group?.trim() || meta.group || 'Custom'
   const updated: BlockTemplateManifest = {
     ...meta,
     name,
+    group,
     savedToAssets: true,
     defaultProps: {
       ...meta.defaultProps,
@@ -174,6 +179,19 @@ export function duplicateComponentTemplate(
   writeComponentMeta(templateId, updated)
   syncManifestTs(templateId, updated)
 
+  return { templateId, manifest: updated, assets: USER_COMPONENT_ASSETS }
+}
+
+/** Меняет секцию (group) компонента в библиотеке */
+export function moveComponentToSection(
+  templateId: string,
+  section: string,
+): CreatedComponentTemplate | null {
+  const meta = readComponentMeta(templateId)
+  if (!meta) return null
+  const updated: BlockTemplateManifest = { ...meta, group: section }
+  writeComponentMeta(templateId, updated)
+  syncManifestTs(templateId, updated)
   return { templateId, manifest: updated, assets: USER_COMPONENT_ASSETS }
 }
 

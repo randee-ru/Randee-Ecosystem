@@ -177,6 +177,7 @@ export {
   listComponentTemplatesFromDisk,
   listSavedComponentsFromDisk,
   saveComponentToAssets,
+  moveComponentToSection,
   duplicateComponentTemplate,
   renameComponentTemplate,
   deleteComponentTemplate

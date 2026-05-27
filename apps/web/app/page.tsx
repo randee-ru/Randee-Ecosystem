@@ -1,3 +1,14 @@
+import { redirect } from 'next/navigation'
+
+export default function RootPage() {
+  redirect('/workspace')
+}
+
+// ── Старая маркетинговая страница сохранена ниже ─────────────────────────────
+// Раскомментируйте экспорт и удалите redirect выше, если захотите вернуть лендинг.
+
+/*
+
 'use client'
 
 import Link from 'next/link'
@@ -164,3 +175,5 @@ export default function HomePage() {
     </main>
   )
 }
+
+*/

@@ -45,12 +45,17 @@ type Props = {
   canvasTemplateIds: string[]
   onAddSavedComponent: (templateId: string, name: string) => void
   onDeleteSavedComponent?: (templateId: string) => void
+  onRenameSavedComponent?: (templateId: string) => void
   onDuplicateComponent?: (templateId: string) => void
+  onMoveToSection?: (templateId: string, section: string) => void
   searchQuery: string
   onSelectBlock: (blockId: string) => void
   onEditComponent: () => void
   onNewComponent: () => void
   onOpenComponentCode?: (block: PageBlock) => void
+  onDeleteBlock?: (blockId: string) => void
+  onRenameBlock?: (blockId: string) => void
+  onDuplicateBlock?: (blockId: string) => void
 }
 
 export function BuilderAssetsPanel(props: Props) {
@@ -101,6 +106,13 @@ export function BuilderAssetsPanel(props: Props) {
           onAddSavedComponent={props.onAddSavedComponent}
           onNewComponent={props.onNewComponent}
           onOpenCode={props.onOpenComponentCode}
+          onDeleteBlock={props.onDeleteBlock}
+          onRenameBlock={props.onRenameBlock}
+          onDuplicateBlock={props.onDuplicateBlock}
+          onDeleteSavedComponent={props.onDeleteSavedComponent}
+          onRenameSavedComponent={props.onRenameSavedComponent}
+          onDuplicateSavedComponent={props.onDuplicateComponent}
+          onMoveToSection={props.onMoveToSection}
         />
       ) : (
         <BuilderInsertPanel

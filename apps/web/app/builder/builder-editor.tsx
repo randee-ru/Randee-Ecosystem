@@ -15,7 +15,7 @@ import {
 } from '@randee/builder'
 import { BlockPreview, BlockVendorProvider, collectTemplateVendors, createBlockFromTemplate, getBlockLayerAssets, getElementVariant, invalidateTemplateStyles, isUserComponentTemplateId, listElementVariants, listLibraryVariants, listVendors, registerUserTemplate, setCustomElementVariants, TemplateRevisionProvider, type LibraryVariant } from '@randee/blocks'
 import { BuilderElementPicker } from './builder-element-picker'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { useStore } from 'zustand'
 import {
   ArrowUpRight,
@@ -48,6 +48,7 @@ import {
   Save,
   Search,
   SlidersHorizontal,
+  Share2,
   SquarePlus,
   Type,
   Trash2,
@@ -95,6 +96,7 @@ import {
 import {
   isCanvasTool,
   isViewportOrientation,
+  isValidShownViewports,
   loadBuilderSession,
   saveBuilderSession,
   type BuilderCanvasTool
@@ -240,6 +242,7 @@ function downloadBlob(filename: string, blob: Blob) {
 
 export default function BuilderEditor() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const initialSlug = searchParams.get('slug')
   const [store] = React.useState(() => createBuilderStore())
   const [leftOpen, setLeftOpen] = React.useState(true)
@@ -261,8 +264,14 @@ export default function BuilderEditor() {
   const [pagesList, setPagesList] = React.useState<Array<{ slug: string; page: string }>>([])
   const [savingToAssets, setSavingToAssets] = React.useState(false)
   const [pendingSaveTemplateId, setPendingSaveTemplateId] = React.useState<string | null>(null)
+  const [pendingSaveGroup, setPendingSaveGroup] = React.useState<string>('Custom')
+  const [pendingSaveGroupOpen, setPendingSaveGroupOpen] = React.useState(false)
   const [customElementVariants, setCustomElementVariantsState] = React.useState<ElementVariant[]>([])
   const [componentEditMode, setComponentEditMode] = React.useState(false)
+  // Ref для авто-синка — чтобы componentEditMode не был в deps (иначе открытие редактора
+  // вызывает синк и перезаписывает изменения сделанные в IDE)
+  const componentEditModeRef = React.useRef(false)
+  componentEditModeRef.current = componentEditMode
   const [componentEditFocus, setComponentEditFocus] = React.useState<'artboard' | 'component'>('component')
   const [zoomOpen, setZoomOpen] = React.useState(false)
   const [librarySearch, setLibrarySearch] = React.useState('')
@@ -285,6 +294,10 @@ export default function BuilderEditor() {
   const [exportMenuOpen, setExportMenuOpen] = React.useState(false)
   const exportMenuRef = React.useRef<HTMLDivElement>(null)
   const [previewMode, setPreviewMode] = React.useState(false)
+  // iframe heights for secondary viewports (updated via iframe onLoad)
+  const [vpIframeHeights, setVpIframeHeights] = React.useState<Record<string, number>>({})
+  // increments when page is saved → forces secondary iframes to reload with latest data
+  const [iframeSaveKey, setIframeSaveKey] = React.useState(0)
   // Какие viewport-ы показаны на canvas (мультиселект)
   // Инициализируется как ['desktop'], но синхронизируется с реальным viewport при загрузке сессии
   const [shownViewports, setShownViewports] = React.useState<ViewportMode[]>(['desktop'])
@@ -471,9 +484,18 @@ export default function BuilderEditor() {
       if (isViewportOrientation(session.tabletOrientation)) setTabletOrientation(session.tabletOrientation)
       if (isViewportOrientation(session.mobileOrientation)) setMobileOrientation(session.mobileOrientation)
 
-      // Синхронизируем shownViewports с реальным viewport из сессии
-      const sessionViewport = store.getState().viewport
-      setShownViewports([sessionViewport])
+      // Восстанавливаем shownViewports из сессии (мульти-вьюпорт)
+      if (isValidShownViewports(session.shownViewports)) {
+        setShownViewports(session.shownViewports)
+        // Устанавливаем активный viewport на первый из списка
+        const activeVp = session.shownViewports[0]
+        if (activeVp && activeVp !== store.getState().viewport) {
+          store.getState().setViewport(activeVp)
+        }
+      } else {
+        const sessionViewport = store.getState().viewport
+        setShownViewports([sessionViewport])
+      }
 
       setIsReady(true)
     })
@@ -498,7 +520,8 @@ export default function BuilderEditor() {
       leftOpen,
       rightOpen,
       tabletOrientation,
-      mobileOrientation
+      mobileOrientation,
+      shownViewports
     })
   }, [
     isReady,
@@ -513,7 +536,8 @@ export default function BuilderEditor() {
     leftOpen,
     rightOpen,
     tabletOrientation,
-    mobileOrientation
+    mobileOrientation,
+    shownViewports
   ])
 
   React.useEffect(() => {
@@ -561,6 +585,18 @@ export default function BuilderEditor() {
       cancelled = true
     }
   }, [initialSlug, store])
+
+  // Sync page slug to URL so the current page can be bookmarked / shared
+  const currentSlugKey = (page.slug.trim().replace(/^\//, '') || 'home')
+  React.useEffect(() => {
+    if (!pageHydrated) return
+    const urlSlug = searchParams.get('slug') ?? 'home'
+    if (currentSlugKey !== urlSlug) {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set('slug', currentSlugKey)
+      router.replace(`/builder?${params.toString()}`, { scroll: false })
+    }
+  }, [currentSlugKey, pageHydrated, router, searchParams])
 
   const pageJson = exportPageToJson(page)
   React.useEffect(() => {
@@ -614,6 +650,11 @@ export default function BuilderEditor() {
     return () => window.clearTimeout(timer)
   }, [pageHydrated, pageJson, page.slug])
 
+  // When page is saved to disk, bump key so secondary iframes reload with fresh data
+  React.useEffect(() => {
+    if (pageSaveStatus === 'saved') setIframeSaveKey((k) => k + 1)
+  }, [pageSaveStatus])
+
   const viewport = useStore(store, (state) => state.viewport)
   const block = useStore(store, selectedBlock)
   const componentDesign = React.useMemo(() => (block ? resolveComponentDesign(block.design) : null), [block])
@@ -624,6 +665,26 @@ export default function BuilderEditor() {
   }, [componentEditMode, block, page.blocks])
   const seoJsonLd = buildBuilderWebPageJsonLd(page.seo)
   const firstBlockId = page.blocks[0]?.id ?? null
+
+  // Listen for height messages from secondary viewport iframes (postMessage from /preview pages)
+  React.useEffect(() => {
+    if (shownViewports.length <= 1) return
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return
+      const data = event.data as { type?: string; height?: number }
+      if (data?.type !== 'randee-frame-height' || !data.height) return
+      const iframes = document.querySelectorAll<HTMLIFrameElement>('iframe[data-vp]')
+      for (const iframe of iframes) {
+        if (iframe.contentWindow === event.source) {
+          const vp = iframe.dataset.vp
+          if (vp) setVpIframeHeights((prev) => ({ ...prev, [vp]: data.height! }))
+          break
+        }
+      }
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [shownViewports.length])
 
   const updateRulerOrigin = React.useCallback(() => {
     const scrollEl = canvasScrollRef.current
@@ -966,13 +1027,13 @@ export default function BuilderEditor() {
   )
 
   const saveComponentToAssets = React.useCallback(
-    async (templateId: string, name?: string) => {
+    async (templateId: string, name?: string, group?: string) => {
       setSavingToAssets(true)
       try {
         const response = await fetch(`/api/builder/components/${templateId}/save-to-assets`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name })
+          body: JSON.stringify({ name, group })
         })
         if (!response.ok) return
 
@@ -1775,7 +1836,14 @@ export default function BuilderEditor() {
       if (!block) return
       const assets = getBlockLayerAssets(block.template)
       if (!assets) return
-      const candidates = [assets.preview, assets.style, assets.script, assets.init, ...assets.images]
+      const candidates = [
+        assets.preview,
+        ...(assets.generatedLayout ? [assets.generatedLayout] : []),
+        assets.style,
+        assets.script,
+        assets.init,
+        ...assets.images
+      ]
       const asset =
         candidates.find((item) => item.path === path || item.label === label) ??
         candidates.find((item) => item.path.endsWith(`/${path}`))
@@ -1811,7 +1879,7 @@ export default function BuilderEditor() {
     [block]
   )
 
-  // R4.3: poll file mtimes → hot reload preview when IDE saves files
+  // R4.3: poll file mtimes → hot reload preview when IDE saves files (active edit-mode component, fast 1.2s)
   React.useEffect(() => {
     if (!componentEditMode || !block || block.type !== 'component') return
     const templateId = block.template
@@ -1834,12 +1902,63 @@ export default function BuilderEditor() {
     }
 
     void tick()
-    const intervalId = window.setInterval(tick, 1500)
+    const intervalId = window.setInterval(tick, 1200)
     return () => {
       active = false
       window.clearInterval(intervalId)
     }
   }, [block?.template, componentEditMode, bumpTemplateRevision])
+
+  // R4.4: watch ALL user-component templates on the canvas — hot reload even without entering edit mode
+  // Stable key: sorted comma-joined template IDs, restarts only when canvas composition changes
+  const _allCanvasUserTemplateKey = React.useMemo(
+    () =>
+      [
+        ...new Set(
+          page.blocks
+            .filter((b) => b.type === 'component' && isUserComponentTemplateId(b.template))
+            .map((b) => b.template)
+        )
+      ]
+        .sort()
+        .join(','),
+    [page.blocks]
+  )
+
+  React.useEffect(() => {
+    if (!_allCanvasUserTemplateKey) return
+    const templateIds = _allCanvasUserTemplateKey.split(',')
+    let active = true
+    const lastRevisions: Record<string, string> = {}
+
+    const tick = async () => {
+      if (!active) return
+      await Promise.all(
+        templateIds.map(async (templateId) => {
+          try {
+            const res = await fetch(`/api/builder/components/${encodeURIComponent(templateId)}/file-revision`)
+            if (!res.ok || !active) return
+            const payload = (await res.json()) as { revision?: string }
+            const revision = payload.revision ?? ''
+            const last = lastRevisions[templateId]
+            if (last !== undefined && revision && revision !== last) {
+              bumpTemplateRevision(templateId)
+            }
+            lastRevisions[templateId] = revision
+          } catch {
+            // ignore polling errors
+          }
+        })
+      )
+    }
+
+    void tick()
+    const id = window.setInterval(tick, 2000)
+    return () => {
+      active = false
+      window.clearInterval(id)
+    }
+  }, [_allCanvasUserTemplateKey, bumpTemplateRevision])
 
   const syncCodeLayoutFromInspector = React.useCallback(async () => {
     if (!block || block.type !== 'component') return
@@ -1857,9 +1976,11 @@ export default function BuilderEditor() {
     bumpTemplateRevision(block.template)
   }, [block, bumpTemplateRevision])
 
-  // Автосинк: при изменении элементов компонента → обновляем layout.generated.tsx через 600мс
+  // Автосинк: при изменении элементов компонента → обновляем layout.generated.tsx через 600мс.
+  // ВАЖНО: componentEditMode намеренно НЕ в deps — иначе открытие редактора вызывало бы синк
+  // и перезаписывало изменения сделанные вручную в IDE. Используем ref для актуального значения.
   React.useEffect(() => {
-    if (!componentEditMode || !block || block.type !== 'component') return
+    if (!componentEditModeRef.current || !block || block.type !== 'component') return
     if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current)
 
     autoSyncTimerRef.current = setTimeout(async () => {
@@ -1881,6 +2002,22 @@ export default function BuilderEditor() {
         bumpTemplateRevision(block.template)
         setAutoSyncStatus('ok')
         setTimeout(() => setAutoSyncStatus('idle'), 2000)
+        // Авто-открываем layout.generated.tsx в редакторе кода после синка.
+        // Если редактор пустой или уже показывает этот же компонент — переключаем на generated layout.
+        setOpenAsset((prev) => {
+          if (prev && prev.templateId !== block.template) return prev // другой компонент открыт — не трогаем
+          const assetUrl = `/api/block-assets/${encodeURIComponent(block.template)}/layout.generated.tsx`
+          if (prev?.path === 'layout.generated.tsx') return prev // уже открыт
+          return {
+            templateId: block.template,
+            blockId: block.id,
+            blockName: block.name ?? block.template,
+            path: 'layout.generated.tsx',
+            label: 'layout.generated.tsx',
+            kind: 'component' as const,
+            url: assetUrl
+          }
+        })
       } catch {
         setAutoSyncStatus('error')
         setTimeout(() => setAutoSyncStatus('idle'), 3000)
@@ -1891,7 +2028,7 @@ export default function BuilderEditor() {
       if (autoSyncTimerRef.current) clearTimeout(autoSyncTimerRef.current)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [block?.elements, componentEditMode])
+  }, [block?.elements])
 
   function componentArtboardOutline(): React.CSSProperties | undefined {
     if (!componentEditMode || componentEditFocus !== 'artboard' || !componentDesign) return undefined
@@ -2004,7 +2141,7 @@ export default function BuilderEditor() {
       className="randee-builder-editor flex h-screen w-screen flex-col overflow-hidden"
       data-randee-page="builder"
       data-builder-ready={isReady ? 'true' : 'false'}
-      style={{ background: t.bg, color: t.text }}
+      style={{ background: t.bg, color: t.text, touchAction: 'pan-x pan-y' }}
     >
       {/* ── Sprint B: Framer-style topbar ───────────────────────────────── */}
       <header
@@ -2022,12 +2159,17 @@ export default function BuilderEditor() {
             <PanelLeftOpen className="h-4 w-4" />
           </button>
 
-          <span
+          <button
+            type="button"
             className="select-none px-1 text-[12px] font-semibold tracking-tight"
-            style={{ color: t.text, letterSpacing: '-0.02em' }}
+            style={{ color: t.text, letterSpacing: '-0.02em', background: 'transparent', border: 'none', cursor: 'pointer', borderRadius: 5 }}
+            title="Рабочее пространство"
+            onMouseEnter={(e) => { e.currentTarget.style.background = t.hover }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}
+            onClick={() => router.push('/workspace')}
           >
             Randee
-          </span>
+          </button>
 
           {componentEditMode && block ? (
             <>
@@ -2336,6 +2478,40 @@ export default function BuilderEditor() {
             ) : null}
           </div>
 
+          {/* Share public preview link */}
+          <button
+            type="button"
+            className="flex h-7 w-7 items-center justify-center rounded-md"
+            style={{
+              background: 'transparent',
+              border: `1px solid ${t.chromeBorder}`,
+              color: t.textSecondary,
+              cursor: 'pointer',
+            }}
+            title="Скопировать публичную ссылку для просмотра"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = '#6366F122'
+              e.currentTarget.style.color = '#6366F1'
+              e.currentTarget.style.borderColor = '#6366F144'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.color = t.textSecondary
+              e.currentTarget.style.borderColor = t.chromeBorder
+            }}
+            onClick={() => {
+              const slugKey = page.slug.trim().replace(/^\//, '') || 'home'
+              const previewUrl = `${window.location.origin}/preview/${encodeURIComponent(slugKey)}`
+              void navigator.clipboard.writeText(previewUrl).then(() => {
+                // brief visual feedback: change title
+                const btn = document.activeElement as HTMLButtonElement | null
+                if (btn) { const orig = btn.title; btn.title = '✓ Ссылка скопирована!'; setTimeout(() => { btn.title = orig }, 2000) }
+              })
+            }}
+          >
+            <Share2 className="h-3.5 w-3.5" />
+          </button>
+
           {/* Preview ▶ */}
           <button
             type="button"
@@ -2346,7 +2522,7 @@ export default function BuilderEditor() {
               color: t.textSecondary,
               cursor: 'pointer',
             }}
-            title="Предпросмотр (▶)"
+            title="Открыть предпросмотр в новой вкладке"
             onMouseEnter={(e) => {
               e.currentTarget.style.background = '#22C55E22'
               e.currentTarget.style.color = '#22C55E'
@@ -2357,7 +2533,13 @@ export default function BuilderEditor() {
               e.currentTarget.style.color = t.textSecondary
               e.currentTarget.style.borderColor = t.chromeBorder
             }}
-            onClick={() => setPreviewMode(true)}
+            onClick={() => {
+              window.open(
+                `/preview/${encodeURIComponent(currentSlugKey)}`,
+                '_blank',
+                'noopener,noreferrer'
+              )
+            }}
           >
             <Play className="h-3.5 w-3.5" style={{ marginLeft: 1 }} />
           </button>
@@ -2671,6 +2853,15 @@ export default function BuilderEditor() {
               onRenameSavedComponent={renameSavedComponent}
               onDeleteSavedComponent={deleteSavedComponent}
               onDuplicateComponent={duplicateComponent}
+              onMoveToSection={async (templateId, section) => {
+                await fetch(`/api/builder/components/${encodeURIComponent(templateId)}/move-to-section`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ section }),
+                })
+                setVariantTick((v) => v + 1)
+                await refreshSavedAssetComponents()
+              }}
               onExportBlock={exportBlock}
               componentEditMode={componentEditMode}
               onAddElement={addElement}
@@ -2695,7 +2886,7 @@ export default function BuilderEditor() {
                 setCmsOpen(true)
               }}
               onEditComponent={toggleComponentEditMode}
-              onNewComponent={() => setNewOpen(true)}
+              onNewComponent={() => void createNewComponent()}
               onExitComponentEdit={() => setComponentEditMode(false)}
               onOpenComponentCode={(componentBlock) => {
                 const assets = getBlockLayerAssets(componentBlock.template)
@@ -2750,6 +2941,7 @@ export default function BuilderEditor() {
                 void saveComponentToAssets(openAsset.templateId, block?.name ?? openAsset.blockName)
               }}
               onAssetSaved={(asset) => bumpTemplateRevision(asset.templateId)}
+              refreshKey={templateRevisions[openAsset.templateId] ?? 0}
             />
           ) : (
             <>
@@ -2759,28 +2951,70 @@ export default function BuilderEditor() {
               className="flex shrink-0 items-center justify-between gap-3 px-3 py-2 text-xs"
               style={{ borderBottom: `1px solid ${t.divider}`, background: `${t.accent}14`, color: t.textSecondary }}
             >
-              <span>
-                Компонент <strong style={{ color: t.text }}>{pendingSaveTemplateId}</strong> добавлен на канвас.
-                Сохраните в Assets, чтобы переиспользовать и экспортировать в Bitrix.
+              <span style={{ minWidth: 0 }}>
+                Компонент <strong style={{ color: t.text }}>{pendingSaveTemplateId}</strong> — выберите секцию и сохраните в библиотеку.
               </span>
-              <button
-                type="button"
-                className="shrink-0 rounded-md px-2.5 py-1 text-[11px] font-medium"
-                style={{
-                  background: t.accent,
-                  color: '#fff',
-                  border: 'none',
-                  cursor: savingToAssets ? 'wait' : 'pointer',
-                  opacity: savingToAssets ? 0.75 : 1
-                }}
-                disabled={savingToAssets}
-                onClick={() => {
-                  const block = page.blocks.find((item) => item.template === pendingSaveTemplateId)
-                  void saveComponentToAssets(pendingSaveTemplateId, block?.name)
-                }}
-              >
-                Сохранить в Assets
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                {/* Выбор секции */}
+                <div style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium"
+                    style={{ background: t.panel, border: `1px solid ${t.divider}`, color: t.text, cursor: 'pointer' }}
+                    onClick={() => setPendingSaveGroupOpen(v => !v)}
+                  >
+                    {pendingSaveGroup}
+                    <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 2.5L4 5.5L7 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  </button>
+                  {pendingSaveGroupOpen && (
+                    <div
+                      style={{
+                        position: 'absolute', bottom: '100%', right: 0, marginBottom: 4,
+                        background: t.panel, border: `1px solid ${t.divider}`,
+                        borderRadius: 8, padding: 4, minWidth: 140,
+                        boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 100,
+                      }}
+                    >
+                      {['Header', 'Hero', 'Features', 'CTA', 'FAQ', 'Forms', 'Popups', 'Catalog', 'News', 'Footer', 'Custom'].map(g => (
+                        <button
+                          key={g}
+                          type="button"
+                          className="w-full rounded px-2.5 py-1.5 text-left text-[11px]"
+                          style={{
+                            background: pendingSaveGroup === g ? `${t.accent}22` : 'transparent',
+                            border: 'none', cursor: 'pointer',
+                            color: pendingSaveGroup === g ? t.accent : t.text,
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = `${t.accent}15` }}
+                          onMouseLeave={e => { e.currentTarget.style.background = pendingSaveGroup === g ? `${t.accent}22` : 'transparent' }}
+                          onClick={() => { setPendingSaveGroup(g); setPendingSaveGroupOpen(false) }}
+                        >
+                          {g}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Кнопка сохранения */}
+                <button
+                  type="button"
+                  className="shrink-0 rounded-md px-2.5 py-1 text-[11px] font-medium"
+                  style={{
+                    background: t.accent,
+                    color: '#fff',
+                    border: 'none',
+                    cursor: savingToAssets ? 'wait' : 'pointer',
+                    opacity: savingToAssets ? 0.75 : 1
+                  }}
+                  disabled={savingToAssets}
+                  onClick={() => {
+                    const block = page.blocks.find((item) => item.template === pendingSaveTemplateId)
+                    void saveComponentToAssets(pendingSaveTemplateId, block?.name, pendingSaveGroup)
+                  }}
+                >
+                  Сохранить в библиотеку
+                </button>
+              </div>
             </div>
           ) : null}
           {/* ── Canvas subheader ── */}
@@ -3033,7 +3267,7 @@ export default function BuilderEditor() {
                             </span>
                           )}
                         </div>
-                        {/* Frame wrapper */}
+                        {/* Frame wrapper — no explicit height; let chrome bar + content-clip determine it */}
                         <div
                           style={{
                             width: scaledVpWidth,
@@ -3055,7 +3289,15 @@ export default function BuilderEditor() {
                             <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full mr-1.5" style={{ background: color, opacity: 0.8 }} />
                             <span className="text-[10px]" style={{ color: t.textMuted }}>{label} · {vpNaturalWidth}px</span>
                           </div>
-                          {/* Scaled content */}
+                          {/* Scaled content — clip container prevents the CSS-transform layout gap:
+                              transform: scale() keeps layout box at natural size; this wrapper
+                              limits visible height to scaledFrameHeight (visual pixels). */}
+                          <div style={{
+                            height: isPrimary
+                              ? scaledFrameHeight
+                              : Math.max((vpIframeHeights[vp] ?? frameContentHeight) * frameScale, 200),
+                            overflow: 'hidden'
+                          }}>
                           {isPrimary ? (
                             /* Основной viewport: полноценный canvasFrameRef с оверлеями */
                             <div
@@ -3168,86 +3410,37 @@ export default function BuilderEditor() {
                               </div>
                             </div>
                           ) : (
-                            /* Дополнительный viewport: превью + синхронизация выделения */
-                            <div
+                            /* Secondary viewport: iframe → own window.innerWidth →
+                               CSS media queries and JS breakpoints work correctly */
+                            <iframe
+                              key={`${vp}-${iframeSaveKey}`}
+                              src={`/preview/${encodeURIComponent(currentSlugKey)}?vp=${vp}`}
+                              title={`${label} ${vpNaturalWidth}px`}
+                              data-vp={vp}
+                              scrolling="no"
                               style={{
+                                display: 'block',
+                                border: 'none',
+                                width: vpNaturalWidth,
+                                height: vpIframeHeights[vp] ?? Math.max(frameContentHeight, 800),
                                 transform: `scale(${frameScale})`,
                                 transformOrigin: 'top left',
-                                width: vpNaturalWidth,
+                                background: '#fff',
                               }}
-                            >
-                              {canvasBlocks.length > 0 ? (
-                                canvasBlocks.map((item) => {
-                                  const isSelected = activeId === item.id
-                                  const isHoveredHere = hoveredBlockId === item.id
-                                  return (
-                                    <div
-                                      key={`${item.id}-${vp}`}
-                                      style={{ position: 'relative' }}
-                                      onClick={(e) => {
-                                        if (canvasTool !== 'select') return
-                                        e.stopPropagation() // не переключаем viewport
-                                        store.getState().selectBlock(item.id)
-                                      }}
-                                      onMouseEnter={() => setHoveredBlockId(item.id)}
-                                      onMouseLeave={() => setHoveredBlockId(null)}
-                                    >
-                                      <BlockPreview
-                                        key={blockPreviewKey(item)}
-                                        block={item}
-                                        elementOptions={{ viewport: vp }}
-                                      />
-                                      {/* Overlay: hover / selection */}
-                                      {(isSelected || isHoveredHere) && canvasTool === 'select' ? (
-                                        <div
-                                          aria-hidden
-                                          style={{
-                                            position: 'absolute',
-                                            inset: 0,
-                                            pointerEvents: 'none',
-                                            outline: isSelected
-                                              ? `2px solid ${color}`
-                                              : `1px solid ${color}66`,
-                                            outlineOffset: isSelected ? -2 : -1,
-                                            borderRadius: 2,
-                                            background: isSelected
-                                              ? `${color}0A`
-                                              : 'transparent',
-                                          }}
-                                        />
-                                      ) : null}
-                                      {/* Selection label */}
-                                      {isSelected ? (
-                                        <div
-                                          aria-hidden
-                                          style={{
-                                            position: 'absolute',
-                                            top: 0,
-                                            left: 0,
-                                            zIndex: 10,
-                                            pointerEvents: 'none',
-                                            background: color,
-                                            color: '#fff',
-                                            fontSize: 9,
-                                            fontWeight: 700,
-                                            lineHeight: 1,
-                                            padding: '2px 5px',
-                                            borderRadius: '0 0 4px 0',
-                                          }}
-                                        >
-                                          {item.name ?? item.template}
-                                        </div>
-                                      ) : null}
-                                    </div>
-                                  )
-                                })
-                              ) : (
-                                <div className="flex items-center justify-center" style={{ height: 400, color: t.textMuted, fontSize: 12 }}>
-                                  Страница пустая
-                                </div>
-                              )}
-                            </div>
+                              onLoad={(e) => {
+                                try {
+                                  const doc = e.currentTarget.contentDocument
+                                  if (doc) {
+                                    const h = doc.documentElement.scrollHeight || doc.body?.scrollHeight || 0
+                                    if (h > 50) setVpIframeHeights((prev) => ({ ...prev, [vp]: h }))
+                                  }
+                                } catch {
+                                  // cross-origin guard (shouldn't happen, same origin)
+                                }
+                              }}
+                            />
                           )}
+                          </div>{/* /clip container */}
                         </div>
                       </div>
                     )
@@ -3396,6 +3589,7 @@ export default function BuilderEditor() {
                           key={item.id}
                           ref={(el) => { blockRefs.current[item.id] = el }}
                           className="relative"
+                          style={{ cursor: canvasTool === 'select' ? 'pointer' : 'default' }}
                           onClick={() => { if (canvasTool === 'select') store.getState().selectBlock(item.id) }}
                         >
                           {item.type === 'component' ? (
@@ -3459,9 +3653,9 @@ export default function BuilderEditor() {
           </div>
 
           {/* ── Sprint D: Framer-style bottom toolbar ──────────────────── */}
-          <footer className="pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
+          <footer className="absolute bottom-4 left-1/2 z-20 -translate-x-1/2">
             <div
-              className="pointer-events-auto flex items-center gap-0.5 rounded-xl px-1.5 py-1 shadow-xl"
+              className="flex items-center gap-0.5 rounded-xl px-1.5 py-1 shadow-xl"
               style={{
                 background: t.toolbar,
                 border: `1px solid ${t.toolbarBorder}`,
@@ -4012,6 +4206,18 @@ export default function BuilderEditor() {
               <span className="text-[10px]" style={{ color: '#555555' }}>
                 — {page.page}
               </span>
+              {/* Open public preview in new tab */}
+              <a
+                href={`/preview/${encodeURIComponent(page.slug.trim().replace(/^\//, '') || 'home')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-1 flex h-5 items-center gap-1 rounded px-1.5"
+                style={{ background: 'rgba(99,102,241,0.18)', border: 'none', color: '#818cf8', cursor: 'pointer', textDecoration: 'none', fontSize: 10, fontWeight: 600, fontFamily: 'inherit' }}
+                title="Открыть публичную ссылку (в новой вкладке)"
+              >
+                <Share2 className="h-2.5 w-2.5" />
+                Поделиться
+              </a>
               <button
                 type="button"
                 className="ml-1 flex h-5 w-5 items-center justify-center rounded"
@@ -4119,7 +4325,9 @@ const SortableCanvasBlock = React.memo(function SortableCanvasBlock({
         transform: CSS.Transform.toString(transform),
         transition: transition ?? undefined,
         opacity: isDragging ? 0.35 : 1,
-        zIndex: isDragging ? 999 : undefined
+        zIndex: isDragging ? 999 : undefined,
+        // iOS Safari: non-button elements need cursor:pointer to receive tap events
+        cursor: canvasTool === 'select' ? 'pointer' : 'default',
       }}
       onClick={() => { if (canvasTool === 'select') onSelect(item.id) }}
       onPointerEnter={() => onHover(item.id)}
@@ -4143,7 +4351,8 @@ const SortableCanvasBlock = React.memo(function SortableCanvasBlock({
         <div
           style={{
             ...componentRootStyle(resolveComponentDesign(item.design)),
-            cursor: 'default'
+            cursor: 'default',
+            minHeight: 80
           }}
         >
           <BlockPreview

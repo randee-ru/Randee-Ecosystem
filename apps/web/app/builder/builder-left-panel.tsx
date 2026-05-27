@@ -13,6 +13,7 @@ import {
 import type { BuilderCmsConnection } from '@randee/builder'
 import { BuilderCmsBrowser } from './builder-cms-browser'
 import { isCmsConnectionConfigured } from './builder-cms-utils'
+import { BuilderMediaPanel } from './builder-media-panel'
 import type { ElementVariant, PageBlock } from '@randee/builder'
 import type { BuilderStore } from '@randee/builder'
 import type { LibraryVariant } from '@randee/blocks'
@@ -89,6 +90,7 @@ type BuilderLeftPanelProps = {
   onRenameSavedComponent?: (templateId: string, name: string) => void
   onDeleteSavedComponent?: (templateId: string) => void
   onDuplicateComponent?: (templateId: string) => void
+  onMoveToSection?: (templateId: string, section: string) => void
   onExportBlock?: (blockId: string) => void
   componentEditMode?: boolean
   onAddElement?: (variant: ElementVariant) => void
@@ -244,6 +246,7 @@ export function BuilderLeftPanel({
   onRenameSavedComponent,
   onDeleteSavedComponent,
   onDuplicateComponent,
+  onMoveToSection,
   onExportBlock,
   componentEditMode,
   onAddElement,
@@ -267,6 +270,23 @@ export function BuilderLeftPanel({
   onExitComponentEdit
 }: BuilderLeftPanelProps) {
   const searchQuery = librarySearch.trim().toLowerCase()
+
+  const handleDeleteBlock = React.useCallback((blockId: string) => {
+    store.getState().removeBlock(blockId)
+  }, [store])
+
+  const handleRenameBlock = React.useCallback((blockId: string) => {
+    const block = page.blocks.find((b) => b.id === blockId)
+    if (!block) return
+    const cur = block.name ?? block.template
+    const newName = window.prompt('Новое название:', cur)
+    if (newName === null) return
+    store.getState().renameBlock(blockId, newName.trim())
+  }, [store, page.blocks])
+
+  const handleDuplicateBlock = React.useCallback((blockId: string) => {
+    store.getState().duplicateBlock(blockId)
+  }, [store])
 
   const filteredPages = React.useMemo(() => {
     const source = pagesList.length > 0 ? pagesList : [{ page: page.page, slug: page.slug }]
@@ -550,12 +570,22 @@ export function BuilderLeftPanel({
                 canvasTemplateIds={canvasTemplateIds}
                 onAddSavedComponent={onAddSavedComponent}
                 onDeleteSavedComponent={onDeleteSavedComponent}
+                onRenameSavedComponent={onRenameSavedComponent ? (id) => {
+                  const comp = savedAssetComponents.find((c) => c.templateId === id)
+                  if (!comp) return
+                  const newName = window.prompt('Новое название:', comp.name)
+                  if (newName !== null && newName.trim()) onRenameSavedComponent(id, newName.trim())
+                } : undefined}
                 onDuplicateComponent={onDuplicateComponent}
                 searchQuery={searchQuery}
                 onSelectBlock={(id) => store.getState().selectBlock(id)}
                 onEditComponent={() => onEditComponent?.()}
                 onNewComponent={() => onNewComponent?.()}
                 onOpenComponentCode={onOpenComponentCode}
+                onDeleteBlock={handleDeleteBlock}
+                onRenameBlock={handleRenameBlock}
+                onDuplicateBlock={handleDuplicateBlock}
+                onMoveToSection={onMoveToSection}
               />
             )
           ) : null}
@@ -597,22 +627,9 @@ export function BuilderLeftPanel({
             </div>
           ) : null}
 
-          {/* ── Media (placeholder) ────────────────────────────── */}
+          {/* ── Media ──────────────────────────────────────────── */}
           {leftTab === 'media' ? (
-            <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
-              <div
-                className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl"
-                style={{ background: t.inputBg }}
-              >
-                <Image className="h-6 w-6" style={{ color: t.textMuted }} />
-              </div>
-              <p className="text-[11px] font-medium" style={{ color: t.textSecondary }}>
-                Медиа-библиотека
-              </p>
-              <p className="mt-1 text-[10px]" style={{ color: t.textMuted }}>
-                Скоро появится
-              </p>
-            </div>
+            <BuilderMediaPanel t={t} />
           ) : null}
 
         </div>

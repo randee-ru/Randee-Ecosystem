@@ -5,7 +5,7 @@ import { isUserComponentTemplateId, USER_COMPONENT_ASSETS } from './component-te
 import { componentsRoot, getUserComponentDirectory, type CreatedComponentTemplate } from './component-io'
 
 export type { CreatedComponentTemplate } from './component-io'
-export { saveComponentToAssets, listComponentTemplatesFromDisk, listSavedComponentsFromDisk, duplicateComponentTemplate, renameComponentTemplate, deleteComponentTemplate } from './component-io'
+export { saveComponentToAssets, moveComponentToSection, listComponentTemplatesFromDisk, listSavedComponentsFromDisk, duplicateComponentTemplate, renameComponentTemplate, deleteComponentTemplate } from './component-io'
 
 function nextComponentId(): string {
   const root = componentsRoot()
@@ -129,29 +129,38 @@ export function init(root) {
   )
 
   writeFileSync(
+    join(root, 'layout.generated.tsx'),
+    `'use client'
+
+export function GeneratedLayout() {
+  return (
+    <>
+      <div className="code-sync-empty">No elements yet</div>
+    </>
+  )
+}
+`
+  )
+
+  writeFileSync(
+    join(root, 'elements.snapshot.json'),
+    `${JSON.stringify({ version: 1, syncedAt: new Date().toISOString(), elements: [] }, null, 2)}\n`
+  )
+
+  writeFileSync(
     join(root, 'preview.tsx'),
     `'use client'
 
 import type { BlockTemplatePreviewProps } from '../../../types'
 import { TemplateFrame } from '../../../components/template-frame'
 import { init } from './init'
-import { getTemplateAssetUrl } from '../../../utils/asset-url'
+import { GeneratedLayout } from './layout.generated'
 import './style.css'
 
 export function ${componentName}({ block }: BlockTemplatePreviewProps) {
-  const title = block.props.title ?? '${displayName.replace(/'/g, "\\'")}'
-
   return (
     <TemplateFrame block={block} className="randee-${cls}" initScript={init}>
-      <img
-        src={getTemplateAssetUrl(block.template, 'images/thumb.svg')}
-        alt=""
-        aria-hidden="true"
-        width={80}
-        height={80}
-      />
-      <h2 className="randee-${cls}__title">{title}</h2>
-      <p className="randee-${cls}__hint">Edit preview.tsx, style.css and script.js in Blocks</p>
+      <GeneratedLayout />
     </TemplateFrame>
   )
 }

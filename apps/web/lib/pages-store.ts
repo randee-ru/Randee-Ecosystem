@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile, readdir, unlink } from 'node:fs/promises'
 import { join } from 'node:path'
 import { randeeDataRoot } from './monorepo-root'
+import { readPageProjectMap } from './projects-store'
 
 function normalizeSlug(slug: string): string {
   const trimmed = slug.trim().replace(/^\//, '')
@@ -26,21 +27,30 @@ export async function writeStoredPage(slug: string, page: unknown): Promise<void
   await writeFile(pageFilePath(slug), `${JSON.stringify(page, null, 2)}\n`, 'utf8')
 }
 
-export async function listStoredPages(): Promise<Array<{ slug: string; page: string }>> {
+export async function listStoredPages(): Promise<Array<{ slug: string; page: string; pageKey: string; projectId?: string }>> {
   const pagesDir = join(randeeDataRoot(), 'pages')
   await mkdir(pagesDir, { recursive: true })
-  const files = await readdir(pagesDir)
-  const result: Array<{ slug: string; page: string }> = []
+  const [files, projectMap] = await Promise.all([
+    readdir(pagesDir),
+    readPageProjectMap(),
+  ])
+  const result: Array<{ slug: string; page: string; pageKey: string; projectId?: string }> = []
 
   for (const file of files) {
     if (!file.endsWith('.json')) continue
-    const slug = file.replace(/\.json$/, '')
+    const pageKey = file.replace(/\.json$/, '')
+    const slug = `/${pageKey === 'home' ? '' : pageKey}`.replace(/\/$/, '') || '/'
     try {
       const raw = await readFile(join(pagesDir, file), 'utf8')
       const payload = JSON.parse(raw) as { page?: string }
-      result.push({ slug: `/${slug === 'home' ? '' : slug}`.replace(/\/$/, '') || '/', page: payload.page ?? slug })
+      result.push({
+        slug,
+        page: payload.page ?? pageKey,
+        pageKey,
+        projectId: projectMap[pageKey],
+      })
     } catch {
-      result.push({ slug: `/${slug === 'home' ? '' : slug}`.replace(/\/$/, '') || '/', page: slug })
+      result.push({ slug, page: pageKey, pageKey, projectId: projectMap[pageKey] })
     }
   }
 

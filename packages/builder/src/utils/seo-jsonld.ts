@@ -6,13 +6,14 @@ export interface BuilderSeoMeta {
   ogImage?: string
 }
 
-export function buildBuilderWebPageJsonLd(seo: BuilderSeoMeta, url?: string): Record<string, unknown> {
+export function buildBuilderWebPageJsonLd(seo: BuilderSeoMeta | undefined | null, url?: string): Record<string, unknown> {
+  const s = seo ?? { title: '', description: '' }
   return {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: seo.title,
-    description: seo.description,
-    url: seo.canonicalUrl ?? url,
-    ...(seo.ogImage ? { primaryImageOfPage: seo.ogImage } : {})
+    name: s.title,
+    description: s.description,
+    url: s.canonicalUrl ?? url,
+    ...(s.ogImage ? { primaryImageOfPage: s.ogImage } : {})
   }
 }

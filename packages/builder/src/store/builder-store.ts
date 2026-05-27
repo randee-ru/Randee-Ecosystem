@@ -732,7 +732,13 @@ export function createBuilderStore(initialPage: BuilderPage = DEFAULT_PAGE) {
     },
 
     loadPage: (nextPage) => {
-      const normalizedPage = ensureUniqueBlocks(nextPage)
+      // Гарантируем наличие seo — у старых / созданных вручную страниц его может не быть
+      const pageWithDefaults: BuilderPage = {
+        ...DEFAULT_PAGE,
+        ...nextPage,
+        seo: nextPage.seo ?? { ...DEFAULT_PAGE.seo },
+      }
+      const normalizedPage = ensureUniqueBlocks(pageWithDefaults)
       // Reset undo/redo history for the new page
       hist.length = 0
       hist.push(JSON.parse(JSON.stringify(normalizedPage)) as BuilderPage)
