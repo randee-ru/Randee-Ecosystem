@@ -1,0 +1,123 @@
+/* ── footer-01 — Подвал страницы ────────────────────────────────────────── */
+
+.randee-footer-01 {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 64px 24px 32px;
+  font-family: inherit;
+}
+
+/* Вариант A — тёмный */
+.randee-footer-01[data-variant="A"] {
+  background: #0f172a;
+  color: #94a3b8;
+}
+
+/* Вариант B — светлый */
+.randee-footer-01[data-variant="B"] {
+  background: #f8fafc;
+  color: #64748b;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* ── Верхняя часть: лого + колонки ── */
+.randee-footer-01__top {
+  display: grid;
+  grid-template-columns: 1.5fr repeat(3, 1fr);
+  gap: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 48px;
+}
+
+/* ── Логотип / описание ── */
+.randee-footer-01__brand-logo {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 0 0 10px;
+  text-decoration: none;
+  display: block;
+}
+
+.randee-footer-01[data-variant="A"] .randee-footer-01__brand-logo {
+  color: #f8fafc;
+}
+
+.randee-footer-01[data-variant="B"] .randee-footer-01__brand-logo {
+  color: #0f172a;
+}
+
+/* ── Колонки ── */
+.randee-footer-01__col-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 14px;
+}
+
+.randee-footer-01[data-variant="A"] .randee-footer-01__col-title {
+  color: #f1f5f9;
+}
+
+.randee-footer-01[data-variant="B"] .randee-footer-01__col-title {
+  color: #1e293b;
+}
+
+.randee-footer-01__col-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.randee-footer-01__col-link {
+  font-size: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: color 150ms;
+}
+
+.randee-footer-01[data-variant="A"] .randee-footer-01__col-link:hover {
+  color: #f1f5f9;
+}
+
+.randee-footer-01[data-variant="B"] .randee-footer-01__col-link:hover {
+  color: #0f172a;
+}
+
+/* ── Нижняя полоса копирайта ── */
+.randee-footer-01__bottom {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.randee-footer-01[data-variant="A"] .randee-footer-01__bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.randee-footer-01[data-variant="B"] .randee-footer-01__bottom {
+  border-top: 1px solid #e2e8f0;
+}
+
+@media (max-width: 768px) {
+  .randee-footer-01__top {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .randee-footer-01__top {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+}

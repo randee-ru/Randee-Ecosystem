@@ -248,12 +248,12 @@ export function BuilderCmsBrowser({ connection, t, compact, onSelectField }: Bui
             {schemaMessage}
           </p>
           {schemaFields.length > 0 ? (
-            <div className="mt-1 max-h-36 overflow-y-auto rounded-md" style={{ border: `1px solid ${t.divider}` }}>
+            <div className="mt-1 max-h-48 overflow-y-auto rounded-md" style={{ border: `1px solid ${t.divider}` }}>
               {schemaFields.map((field) => (
                 <button
                   key={`${field.kind}-${field.code}`}
                   type="button"
-                  className="grid w-full grid-cols-[56px_1fr] gap-1 px-2 py-1 text-left text-[10px]"
+                  className="flex w-full flex-col px-2 py-1.5 text-left"
                   style={{
                     color: t.text,
                     background: 'transparent',
@@ -270,8 +270,12 @@ export function BuilderCmsBrowser({ connection, t, compact, onSelectField }: Bui
                   }}
                   onClick={() => onSelectField?.(field)}
                 >
-                  <span style={{ color: t.textMuted }}>{field.kind}</span>
-                  <span className="truncate">{field.code}</span>
+                  <span className="truncate text-[10px] font-medium" style={{ color: t.text }}>
+                    {field.label || field.code}
+                  </span>
+                  <span className="truncate text-[9px]" style={{ color: t.textMuted }}>
+                    {field.kind} · {field.code}
+                  </span>
                 </button>
               ))}
             </div>

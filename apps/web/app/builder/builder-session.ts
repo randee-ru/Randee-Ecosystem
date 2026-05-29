@@ -1,6 +1,7 @@
 export type BuilderCanvasTool = 'select' | 'pan'
 export type BuilderLeftTab = 'pages' | 'blocks' | 'assets' | 'cms' | 'media'
 export type BuilderViewportOrientation = 'portrait' | 'landscape'
+export type BuilderViewportMode = 'desktop' | 'macbook' | 'tablet' | 'mobile'
 
 export type BuilderSessionState = {
   canvasTool: BuilderCanvasTool
@@ -15,6 +16,7 @@ export type BuilderSessionState = {
   rightPanelWidth: number
   leftOpen: boolean
   rightOpen: boolean
+  shownViewports: BuilderViewportMode[]
 }
 
 const SESSION_KEY = 'randee-builder-session'
@@ -42,4 +44,14 @@ export function isCanvasTool(value: unknown): value is BuilderCanvasTool {
 
 export function isViewportOrientation(value: unknown): value is BuilderViewportOrientation {
   return value === 'portrait' || value === 'landscape'
+}
+
+const VALID_VIEWPORT_MODES: BuilderViewportMode[] = ['desktop', 'macbook', 'tablet', 'mobile']
+
+export function isValidShownViewports(value: unknown): value is BuilderViewportMode[] {
+  return (
+    Array.isArray(value) &&
+    value.length >= 1 &&
+    value.every((v) => VALID_VIEWPORT_MODES.includes(v as BuilderViewportMode))
+  )
 }

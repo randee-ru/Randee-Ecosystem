@@ -72,6 +72,49 @@ const registry: Record<BlockType, BlockDefinition> = {
     defaultProps: {
       title: 'New Component'
     }
+  },
+  nav: {
+    type: 'nav',
+    label: 'Navigation',
+    defaultTemplate: 'nav-01',
+    defaultProps: {
+      logo: 'Логотип',
+      buttonText: 'Начать'
+    }
+  },
+  footer: {
+    type: 'footer',
+    label: 'Footer',
+    defaultTemplate: 'footer-01',
+    defaultProps: {
+      logo: 'Компания',
+      copyright: `© ${new Date().getFullYear()} Компания`
+    }
+  },
+  pricing: {
+    type: 'pricing',
+    label: 'Pricing',
+    defaultTemplate: 'pricing-01',
+    defaultProps: {
+      title: 'Тарифные планы'
+    }
+  },
+  logos: {
+    type: 'logos',
+    label: 'Logos',
+    defaultTemplate: 'logos-01',
+    defaultProps: {
+      title: 'Нам доверяют'
+    }
+  },
+  testimonial: {
+    type: 'testimonial',
+    label: 'Testimonial',
+    defaultTemplate: 'testimonial-01',
+    defaultProps: {
+      quote: 'Отличный продукт!',
+      authorName: 'Иван Иванов'
+    }
   }
 }
 

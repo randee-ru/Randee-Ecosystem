@@ -1,0 +1,49 @@
+{
+  "id": "component-08",
+  "type": "component",
+  "group": "Custom",
+  "name": "Hero Items",
+  "description": "Слайдер кейсов и релизов с видео и фото карточками",
+  "savedToAssets": true,
+  "defaultProps": {
+    "title": "Hero Items",
+    "iblockId": "",
+    "videoField": "",
+    "imageField": "",
+    "sizeField": "SIZE",
+    "containerWidth": "1296"
+  },
+  "propsSchema": [
+    {
+      "name": "title",
+      "label": "Заголовок",
+      "type": "text"
+    },
+    {
+      "name": "containerWidth",
+      "label": "Ширина контейнера",
+      "type": "select",
+      "options": ["1296", "1464", "1696", "full"]
+    },
+    {
+      "name": "iblockId",
+      "label": "ID инфоблока (Bitrix)",
+      "type": "text"
+    },
+    {
+      "name": "videoField",
+      "label": "Код свойства видео (необязательно)",
+      "type": "text"
+    },
+    {
+      "name": "imageField",
+      "label": "Код свойства картинки (необязательно)",
+      "type": "text"
+    },
+    {
+      "name": "sizeField",
+      "label": "Код свойства размера слайда (1–4)",
+      "type": "text"
+    }
+  ]
+}

@@ -1,0 +1,521 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   nav-01 · Header Classic  —  все стили самодостаточны (нет зависимости
+   от глобального CSS сайта). Скопированы с c0l.ru и перенесены под
+   .randee-nav-01 чтобы компонент работал изолированно в builder и на сайте.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Враппер ──────────────────────────────────────────────────────────────── */
+.randee-nav-01 {
+  width: 100%;
+}
+
+/* ── Base: .btn ───────────────────────────────────────────────────────────── */
+.randee-nav-01 .btn {
+  display: inline-flex;
+  padding: 7px 20px;
+  border-radius: 40px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 28px;
+  color: white;
+  background-color: #6653B7;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+  text-decoration: none;
+}
+
+.randee-nav-01 .btn:disabled { opacity: 0.5; pointer-events: none; }
+
+@media (hover: hover) {
+  .randee-nav-01 .btn:hover { opacity: 0.8; }
+}
+
+/* ── .btn-blick — блик-анимация ───────────────────────────────────────────── */
+.randee-nav-01 .btn.btn-blick {
+  position: relative;
+  overflow: hidden;
+}
+
+.randee-nav-01 .btn.btn-blick::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 45%;
+  background: linear-gradient(100deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.45) 50%,
+    rgba(255,255,255,0) 100%);
+  transform: skewX(-18deg) translate3d(-180%, 0, 0);
+  animation: nav01-blick-sweep 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .randee-nav-01 .btn.btn-blick::after { animation: none; opacity: 0; }
+}
+
+@keyframes nav01-blick-sweep {
+  0%   { transform: skewX(-18deg) translate3d(-180%, 0, 0); }
+  100% { transform: skewX(-18deg) translate3d(320%,  0, 0); }
+}
+
+/* ── Utility: flex helpers (только внутри компонента) ─────────────────────── */
+.randee-nav-01 .flex          { display: flex; }
+.randee-nav-01 .items-center  { align-items: center; }
+.randee-nav-01 .justify-end   { justify-content: flex-end; }
+.randee-nav-01 .gap-4         { gap: 16px; }
+
+/* ── u-hide-sm ────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .randee-nav-01 .u-hide-sm { display: none !important; }
+}
+
+/* ── Container ────────────────────────────────────────────────────────────── */
+.randee-nav-01 .container {
+  width: 100%;
+  max-width: var(--nav01-container-max, 1596px);
+  margin-inline: auto;
+  padding: 0 24px;
+  box-sizing: border-box;
+}
+
+@media (min-width: 1566px) {
+  .randee-nav-01 .container { padding: 0; }
+}
+
+/* ── 12-col grid  ─────────────────────────────────────────────────────────── */
+.randee-nav-01 .row {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 24px;
+}
+
+.randee-nav-01 .row > [class^="col-"],
+.randee-nav-01 .row > [class*=" col-"] {
+  min-width: 0;
+}
+
+.randee-nav-01 .col-1  { grid-column-end: span 1;  }
+.randee-nav-01 .col-2  { grid-column-end: span 2;  }
+.randee-nav-01 .col-3  { grid-column-end: span 3;  }
+.randee-nav-01 .col-4  { grid-column-end: span 4;  }
+.randee-nav-01 .col-5  { grid-column-end: span 5;  }
+.randee-nav-01 .col-6  { grid-column-end: span 6;  }
+.randee-nav-01 .col-7  { grid-column-end: span 7;  }
+.randee-nav-01 .col-8  { grid-column-end: span 8;  }
+.randee-nav-01 .col-9  { grid-column-end: span 9;  }
+.randee-nav-01 .col-10 { grid-column-end: span 10; }
+.randee-nav-01 .col-11 { grid-column-end: span 11; }
+.randee-nav-01 .col-12 { grid-column-end: span 12; }
+
+@media (min-width: 768px) {
+  .randee-nav-01 .col-md-1  { grid-column-end: span 1;  }
+  .randee-nav-01 .col-md-2  { grid-column-end: span 2;  }
+  .randee-nav-01 .col-md-3  { grid-column-end: span 3;  }
+  .randee-nav-01 .col-md-4  { grid-column-end: span 4;  }
+  .randee-nav-01 .col-md-5  { grid-column-end: span 5;  }
+  .randee-nav-01 .col-md-6  { grid-column-end: span 6;  }
+  .randee-nav-01 .col-md-7  { grid-column-end: span 7;  }
+  .randee-nav-01 .col-md-8  { grid-column-end: span 8;  }
+  .randee-nav-01 .col-md-9  { grid-column-end: span 9;  }
+  .randee-nav-01 .col-md-10 { grid-column-end: span 10; }
+  .randee-nav-01 .col-md-11 { grid-column-end: span 11; }
+  .randee-nav-01 .col-md-12 { grid-column-end: span 12; }
+}
+
+/* ── Header ───────────────────────────────────────────────────────────────── */
+.randee-nav-01 .header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 100px;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition:
+    background 0.3s ease,
+    backdrop-filter 0.3s ease,
+    -webkit-backdrop-filter 0.3s ease;
+}
+
+.randee-nav-01 .header.is-scrolled {
+  background: rgba(13, 16, 16, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Контейнер внутри шапки — flex, высота 100% */
+.randee-nav-01 .header .container {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  column-gap: 24px;
+  height: 100%;
+}
+
+/* Row занимает всё доступное место */
+.randee-nav-01 .header .container .row {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  align-self: center;
+}
+
+/* ── Логотип ──────────────────────────────────────────────────────────────── */
+.randee-nav-01 .header__logo {
+  max-width: 50px;
+  width: 100%;
+  height: auto;
+}
+
+.randee-nav-01 .header__logo a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.randee-nav-01 .header__logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.randee-nav-01 .header__logo-text {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .randee-nav-01 .header__logo { max-width: 40px; }
+}
+
+/* ── Описание ─────────────────────────────────────────────────────────────── */
+.randee-nav-01 .header__description {
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* ── Кнопка ───────────────────────────────────────────────────────────────── */
+.randee-nav-01 .header__btn {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+.randee-nav-01 .header__btn a {
+  box-sizing: border-box;
+  display: inline-flex;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 0 clamp(16px, 2vw, 28px);
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.2;
+  font-size: 13px;
+  font-weight: 600;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (min-width: 1100px) and (max-width: 1550px) {
+  .randee-nav-01 .header__btn a {
+    padding-inline: clamp(12px, 1.8vw, 22px);
+    font-size: clamp(12px, 1.05vw, 13px);
+  }
+}
+
+@media (min-width: 1100px) and (max-width: 1280px) {
+  .randee-nav-01 .header__btn a { padding-inline: 12px; }
+}
+
+/* ── Телефон ──────────────────────────────────────────────────────────────── */
+.randee-nav-01 .header_phone {
+  flex-shrink: 0;
+}
+
+.randee-nav-01 .header_phone a {
+  font-size: 1.375rem;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* ── Соцсети ──────────────────────────────────────────────────────────────── */
+.randee-nav-01 .header_social {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  min-width: fit-content;
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+
+.randee-nav-01 .header_social a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 6px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  max-width: 40px;
+  box-sizing: border-box;
+  transition: transform 0.3s ease;
+}
+
+.randee-nav-01 .header_social a:hover {
+  transform: scale(1.1);
+}
+
+.randee-nav-01 .header_social img {
+  display: block;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.randee-nav-01 .header_social .--whatsapp  { background: #25d366; }
+.randee-nav-01 .header_social .--telegram  { background: #29b6f6; }
+
+/* ── Contacts col ─────────────────────────────────────────────────────────── */
+.randee-nav-01 .header__contacts-col {
+  display: none;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: clamp(12px, 1.6vw, 20px);
+}
+
+@media (min-width: 768px) {
+  .randee-nav-01 .header__contacts-col { display: flex; }
+}
+
+/* ── Spacer ───────────────────────────────────────────────────────────────── */
+.randee-nav-01 .header__spacer { display: none !important; }
+
+@media (min-width: 1400px) {
+  .randee-nav-01 .header__spacer { display: block !important; }
+}
+
+/* ── header__hide-when-tight ──────────────────────────────────────────────── */
+@media (max-width: 1099px) {
+  .randee-nav-01 .header__hide-when-tight { display: none !important; }
+}
+
+/* ── Menu-col выравнивание ────────────────────────────────────────────────── */
+@media (min-width: 1100px) {
+  .randee-nav-01 .header__menu-col {
+    justify-self: end;
+    text-align: right;
+  }
+}
+
+@media (min-width: 768px) {
+  .randee-nav-01 .header .row > .header__menu-col {
+    grid-column: -2/-1;
+  }
+}
+
+/* ── Адаптив < 1100px: row → flex ────────────────────────────────────────── */
+@media (max-width: 1099px) {
+  .randee-nav-01 .header .row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    column-gap: 0;
+    gap: clamp(18px, 3vw, 28px);
+  }
+  .randee-nav-01 .header .header__contacts-col {
+    order: 2;
+    margin-inline-start: auto;
+    min-width: 0;
+  }
+  .randee-nav-01 .header .header__menu-col {
+    order: 1;
+    flex-shrink: 0;
+    justify-content: flex-start;
+    text-align: left;
+    justify-self: auto;
+  }
+  .randee-nav-01 .header .row > [class*="col-"] {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: none;
+  }
+}
+
+@media (min-width: 1100px) and (max-width: 1399px) {
+  .randee-nav-01 .header .row {
+    column-gap: clamp(24px, 3vw, 40px);
+  }
+}
+
+@media (min-width: 1100px) and (max-width: 1550px) {
+  .randee-nav-01 .header__contacts-col {
+    padding-inline-start: clamp(4px, 1vw, 16px);
+    min-width: 0;
+  }
+}
+
+@media (min-width: 1100px) {
+  .randee-nav-01 .header_phone {
+    margin-inline-end: clamp(6px, 1vw, 18px);
+  }
+  .randee-nav-01 .header__btn {
+    margin-inline-end: clamp(4px, 0.8vw, 14px);
+  }
+}
+
+/* ── Кнопка-меню МЕНЮ ─────────────────────────────────────────────────────── */
+.randee-nav-01 .header__menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  color: #ffffff;
+  cursor: pointer;
+  user-select: none;
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* Буквы М, Н, Ю */
+.randee-nav-01 .header__menu--m,
+.randee-nav-01 .header__menu--n,
+.randee-nav-01 .header__menu--j {
+  font-size: 26px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* Блок с тремя чёрточками — буква «Е» */
+.randee-nav-01 .header__menu--e {
+  position: relative;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  margin: 0 1px;
+  --bar-h: 3px;
+  --bar-gap: calc((100% - 3 * var(--bar-h)) / 4);
+}
+
+.randee-nav-01 .header__menu--e span {
+  position: absolute;
+  left: 50%;
+  width: 26px;
+  height: var(--bar-h);
+  margin-left: -13px;
+  border-radius: 2px;
+  background-color: #6653b7;
+  transition:
+    top 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    left 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    right 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    bottom 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    width 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    height 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    margin 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    border-radius 0.22s ease,
+    opacity 0.14s ease 0s;
+}
+
+.randee-nav-01 .header__menu--e span:nth-child(1) { top: var(--bar-gap); }
+.randee-nav-01 .header__menu--e span:nth-child(2) { top: calc(var(--bar-gap) * 2 + var(--bar-h)); }
+.randee-nav-01 .header__menu--e span:nth-child(3) { top: calc(var(--bar-gap) * 3 + 2 * var(--bar-h)); }
+
+/* Круг-обводка — появляется при hover */
+.randee-nav-01 .header__menu--e::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 50%; top: 50%;
+  box-sizing: border-box;
+  width: 34px; height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 2px solid #6653b7;
+  border-radius: 50%;
+  background-color: transparent;
+  opacity: 0;
+  transform: scale(0.25);
+  pointer-events: none;
+  transition:
+    opacity 0.22s cubic-bezier(0.33, 1, 0.68, 1),
+    transform 0.26s cubic-bezier(0.33, 1.12, 0.68, 1);
+}
+
+/* Буква «Е» — появляется после круга */
+.randee-nav-01 .header__menu--e::after {
+  content: "Е";
+  position: absolute;
+  z-index: 2;
+  left: 50%; top: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px; height: 34px;
+  margin: -17px 0 0 -17px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+  color: #ffffff;
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+  transition:
+    opacity 0.2s cubic-bezier(0.33, 1, 0.68, 1),
+    transform 0.24s cubic-bezier(0.33, 1.12, 0.68, 1);
+}
+
+/* Hover-анимация: чёрточки → точка → круг → «Е» */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .randee-nav-01 .header__menu:hover .header__menu--e span:nth-child(1),
+  .randee-nav-01 .header__menu:hover .header__menu--e span:nth-child(2),
+  .randee-nav-01 .header__menu:hover .header__menu--e span:nth-child(3) {
+    top: 50%; bottom: auto;
+    left: 50%; right: auto;
+    width: 3px; height: 3px;
+    margin: -1.5px 0 0 -1.5px;
+    border-radius: 50%;
+    opacity: 0;
+    transition:
+      top 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+      left 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+      width 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+      height 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+      margin 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+      border-radius 0.22s ease,
+      opacity 0.14s ease 0.22s;
+  }
+
+  .randee-nav-01 .header__menu:hover .header__menu--e::before {
+    opacity: 1;
+    transform: scale(1);
+    transition-delay: 0.28s, 0.28s;
+  }
+
+  .randee-nav-01 .header__menu:hover .header__menu--e::after {
+    opacity: 1;
+    transform: scale(1);
+    transition-delay: 0.5s, 0.5s;
+  }
+}

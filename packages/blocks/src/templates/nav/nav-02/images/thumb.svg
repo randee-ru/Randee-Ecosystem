@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="160" viewBox="0 0 280 160" fill="none">
+  <rect width="280" height="160" fill="#0d1010"/>
+  <!-- Backdrop blur -->
+  <rect width="280" height="160" fill="rgba(10,12,12,0.55)"/>
+  <!-- Close button -->
+  <rect x="240" y="14" width="26" height="26" rx="6" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+  <line x1="247" y1="21" x2="259" y2="33" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="259" y1="21" x2="247" y2="33" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Col 1: МЕ НЮ brand -->
+  <text x="20" y="58" font-family="sans-serif" font-size="28" font-weight="700" fill="white" letter-spacing="-0.5">МЕ</text>
+  <text x="20" y="84" font-family="sans-serif" font-size="28" font-weight="700" fill="white" letter-spacing="-0.5">НЮ</text>
+  <!-- Nav links col 1 -->
+  <text x="20" y="108" font-family="sans-serif" font-size="9" fill="rgba(255,255,255,0.85)">Готовые решения</text>
+  <text x="20" y="122" font-family="sans-serif" font-size="9" fill="rgba(255,255,255,0.85)">Про нас</text>
+  <text x="20" y="136" font-family="sans-serif" font-size="9" fill="rgba(255,255,255,0.85)">Контакты</text>
+  <!-- Divider -->
+  <line x1="115" y1="44" x2="115" y2="148" stroke="rgba(62,207,190,0.55)" stroke-width="1"/>
+  <!-- Col 2: services -->
+  <text x="128" y="58" font-family="sans-serif" font-size="10" font-weight="600" fill="white">Разработка сайтов</text>
+  <text x="128" y="76" font-family="sans-serif" font-size="8" fill="rgba(255,255,255,0.75)">Лендинг</text>
+  <text x="128" y="89" font-family="sans-serif" font-size="8" fill="rgba(255,255,255,0.75)">Интернет-магазин</text>
+  <text x="128" y="102" font-family="sans-serif" font-size="8" fill="rgba(255,255,255,0.75)">Промо-сайт</text>
+  <text x="128" y="124" font-family="sans-serif" font-size="9" fill="rgba(255,255,255,0.85)">SEO продвижение</text>
+  <text x="128" y="138" font-family="sans-serif" font-size="9" fill="rgba(255,255,255,0.85)">Брендинг и дизайн</text>
+  <!-- Divider -->
+  <line x1="200" y1="44" x2="200" y2="148" stroke="rgba(62,207,190,0.55)" stroke-width="1"/>
+  <!-- Col 3: contacts -->
+  <text x="213" y="72" font-family="sans-serif" font-size="11" font-weight="600" fill="white">+7 999 801</text>
+  <text x="213" y="87" font-family="sans-serif" font-size="9" fill="rgba(255,255,255,0.7)">info@randee.ru</text>
+  <!-- CTA button -->
+  <rect x="213" y="100" width="54" height="18" rx="9" fill="#6653B7"/>
+  <text x="240" y="113" font-family="sans-serif" font-size="7" fill="white" text-anchor="middle">Скачать бриф</text>
+</svg>

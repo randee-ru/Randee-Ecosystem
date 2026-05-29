@@ -1,0 +1,580 @@
+/* ── component-09 · Header ─────────────────────────────────────────────────
+   Стили перенесены с сайта 1-в-1, скоупинг под .randee-component-09
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Враппер ────────────────────────────────────────────────────────────── */
+.randee-component-09 {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Утилиты (нужны внутри компонента) ─────────────────────────────────── */
+.randee-component-09 .flex         { display: flex; }
+.randee-component-09 .items-center { align-items: center; }
+.randee-component-09 .justify-end  { justify-content: flex-end; }
+
+/* ── Container ──────────────────────────────────────────────────────────── */
+.randee-component-09 .container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 24px;
+  box-sizing: border-box;
+}
+
+/* ── 12-col grid ────────────────────────────────────────────────────────── */
+.randee-component-09 .row {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+}
+
+.randee-component-09 .col-1  { grid-column-end: span 1;  }
+.randee-component-09 .col-2  { grid-column-end: span 2;  }
+.randee-component-09 .col-3  { grid-column-end: span 3;  }
+.randee-component-09 .col-4  { grid-column-end: span 4;  }
+.randee-component-09 .col-5  { grid-column-end: span 5;  }
+.randee-component-09 .col-6  { grid-column-end: span 6;  }
+.randee-component-09 .col-7  { grid-column-end: span 7;  }
+.randee-component-09 .col-8  { grid-column-end: span 8;  }
+.randee-component-09 .col-9  { grid-column-end: span 9;  }
+.randee-component-09 .col-10 { grid-column-end: span 10; }
+.randee-component-09 .col-11 { grid-column-end: span 11; }
+.randee-component-09 .col-12 { grid-column-end: span 12; }
+
+@media (min-width: 768px) {
+  .randee-component-09 .col-md-1  { grid-column-end: span 1;  }
+  .randee-component-09 .col-md-2  { grid-column-end: span 2;  }
+  .randee-component-09 .col-md-3  { grid-column-end: span 3;  }
+  .randee-component-09 .col-md-4  { grid-column-end: span 4;  }
+  .randee-component-09 .col-md-5  { grid-column-end: span 5;  }
+  .randee-component-09 .col-md-6  { grid-column-end: span 6;  }
+  .randee-component-09 .col-md-7  { grid-column-end: span 7;  }
+  .randee-component-09 .col-md-8  { grid-column-end: span 8;  }
+  .randee-component-09 .col-md-9  { grid-column-end: span 9;  }
+  .randee-component-09 .col-md-10 { grid-column-end: span 10; }
+  .randee-component-09 .col-md-11 { grid-column-end: span 11; }
+  .randee-component-09 .col-md-12 { grid-column-end: span 12; }
+}
+
+/* ── .btn ───────────────────────────────────────────────────────────────── */
+.randee-component-09 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 20px;
+  border-radius: 40px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 28px;
+  color: #fff;
+  background: #6653B7;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+}
+.randee-component-09 .btn:hover { opacity: 0.8; }
+
+/* btn-blick sweep */
+.randee-component-09 .btn-blick {
+  position: relative;
+  overflow: hidden;
+}
+.randee-component-09 .btn-blick::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 45%;
+  background: linear-gradient(100deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.45) 50%,
+    rgba(255,255,255,0) 100%);
+  transform: skewX(-18deg) translate3d(-180%, 0, 0);
+  animation: c09-blick 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .randee-component-09 .btn-blick::after { animation: none; opacity: 0; }
+}
+@keyframes c09-blick {
+  0%   { transform: skewX(-18deg) translate3d(-180%, 0, 0); }
+  100% { transform: skewX(-18deg) translate3d(320%,  0, 0); }
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.randee-component-09 .header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  height: 100px;
+  /* Тёмная тема по умолчанию */
+  background: rgba(13, 16, 16, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+  transition:
+    background 0.3s ease,
+    color 0.3s ease,
+    box-shadow 0.3s ease,
+    backdrop-filter 0.3s ease,
+    -webkit-backdrop-filter 0.3s ease;
+}
+
+.randee-component-09 .header.is-scrolled {
+  background: rgba(13, 16, 16, 0.97);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06);
+}
+
+/* ── Светлая тема ───────────────────────────────────────────────────────── */
+.randee-component-09 .header[data-theme="light"] {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0d1010;
+}
+
+.randee-component-09 .header[data-theme="light"].is-scrolled {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.08);
+}
+
+.randee-component-09 .header[data-theme="light"] .header__description,
+.randee-component-09 .header[data-theme="light"] .header_phone a,
+.randee-component-09 .header[data-theme="light"] .header__menu {
+  color: #0d1010;
+}
+
+/* Соцсети: иконки всегда белые независимо от темы */
+.randee-component-09 .header_social a {
+  color: #fff !important;
+}
+
+.randee-component-09 .header[data-theme="light"] .header__menu--m,
+.randee-component-09 .header[data-theme="light"] .header__menu--n,
+.randee-component-09 .header[data-theme="light"] .header__menu--j {
+  color: #0d1010;
+}
+
+.randee-component-09 .header[data-theme="light"] .header__menu--e::after {
+  color: #0d1010;
+}
+
+/* ── Переключатель темы ─────────────────────────────────────────────────── */
+.randee-component-09 .header__theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.randee-component-09 .header__theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.32);
+  transform: scale(1.08);
+}
+
+.randee-component-09 .header__theme-toggle svg {
+  display: block;
+  transition: opacity 0.2s ease, transform 0.3s ease;
+}
+
+/* Иконка луны скрыта в тёмной теме */
+.randee-component-09 .header__theme-toggle .icon-moon { display: none; }
+.randee-component-09 .header__theme-toggle .icon-sun  { display: block; }
+
+/* В светлой теме: показываем луну, скрываем солнце */
+.randee-component-09 .header[data-theme="light"] .header__theme-toggle {
+  border-color: rgba(0, 0, 0, 0.14);
+  background: rgba(0, 0, 0, 0.05);
+  color: #0d1010;
+}
+
+.randee-component-09 .header[data-theme="light"] .header__theme-toggle:hover {
+  background: rgba(0, 0, 0, 0.09);
+  border-color: rgba(0, 0, 0, 0.22);
+}
+
+.randee-component-09 .header[data-theme="light"] .header__theme-toggle .icon-sun  { display: none; }
+.randee-component-09 .header[data-theme="light"] .header__theme-toggle .icon-moon { display: block; }
+
+.randee-component-09 .header .container {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  column-gap: 24px;
+  height: 100%;
+}
+
+.randee-component-09 .header .container .row {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  align-self: center;
+}
+
+/* Меню у правого края на десктопе */
+.randee-component-09 .header__menu-col {
+  display: flex;
+  align-items: center;
+}
+
+@media (min-width: 1100px) {
+  .randee-component-09 .header__menu-col {
+    justify-self: end;
+    justify-content: flex-end;
+    text-align: right;
+  }
+}
+
+@media (min-width: 768px) {
+  .randee-component-09 .header .row > .header__menu-col {
+    grid-column: -2 / -1;
+  }
+}
+
+/* ── Логотип ────────────────────────────────────────────────────────────── */
+.randee-component-09 .header__logo-col {
+  display: flex;
+  align-items: center;
+}
+
+.randee-component-09 .header__logo {
+  max-width: 50px;
+  width: 100%;
+  height: auto;
+}
+
+.randee-component-09 .header__logo a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.randee-component-09 .header__logo img,
+.randee-component-09 .header__logo svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 768px) {
+  .randee-component-09 .header__logo { max-width: 40px; }
+}
+
+/* ── Описание ───────────────────────────────────────────────────────────── */
+.randee-component-09 .header__description-col {
+  display: flex;
+  align-items: center;
+}
+
+.randee-component-09 .header__description {
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* ── Кнопка-col ─────────────────────────────────────────────────────────── */
+.randee-component-09 .header__btn-col {
+  display: flex;
+  align-items: center;
+}
+
+.randee-component-09 .header__btn {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+.randee-component-09 .header__btn a {
+  box-sizing: border-box;
+  display: inline-flex;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 0 clamp(16px, 2vw, 28px);
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.2;
+  font-size: 13px;
+  font-weight: 600;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (min-width: 1100px) and (max-width: 1550px) {
+  .randee-component-09 .header__btn a {
+    padding-inline: clamp(12px, 1.8vw, 22px);
+    font-size: clamp(12px, 1.05vw, 13px);
+  }
+}
+
+@media (min-width: 1100px) and (max-width: 1280px) {
+  .randee-component-09 .header__btn a { padding-inline: 12px; }
+}
+
+/* ── Телефон ────────────────────────────────────────────────────────────── */
+.randee-component-09 .header_phone { flex-shrink: 0; }
+
+.randee-component-09 .header_phone a {
+  font-size: 1.375rem;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* ── Соцсети ────────────────────────────────────────────────────────────── */
+.randee-component-09 .header_social {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+  min-width: fit-content;
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+
+.randee-component-09 .header_social a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 6px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  max-width: 40px;
+  box-sizing: border-box;
+  text-decoration: none;
+  transition: transform 0.3s ease;
+}
+
+.randee-component-09 .header_social a:hover { transform: scale(1.1); }
+.randee-component-09 .header_social .--whatsapp { background: #25d366; }
+.randee-component-09 .header_social .--telegram { background: #29b6f6; }
+
+/* ── Contacts col ───────────────────────────────────────────────────────── */
+.randee-component-09 .header__contacts-col {
+  display: none;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: clamp(12px, 1.6vw, 20px);
+}
+
+@media (min-width: 768px) {
+  .randee-component-09 .header__contacts-col { display: flex; }
+}
+
+/* ── Спейсер ────────────────────────────────────────────────────────────── */
+.randee-component-09 .header__spacer { display: none !important; }
+
+@media (min-width: 1400px) {
+  .randee-component-09 .header__spacer { display: block !important; }
+}
+
+/* ── Скрыть при тесной сетке ────────────────────────────────────────────── */
+.randee-component-09 .header__hide-when-tight { display: flex; }
+
+@media (max-width: 1099px) {
+  .randee-component-09 .header__hide-when-tight { display: none !important; }
+}
+
+/* ── Отступы на широком экране ──────────────────────────────────────────── */
+@media (min-width: 1100px) {
+  .randee-component-09 .header_phone {
+    margin-inline-end: clamp(6px, 1vw, 18px);
+  }
+  .randee-component-09 .header__btn {
+    margin-inline-end: clamp(4px, 0.8vw, 14px);
+  }
+}
+
+/* ── Узкий desktop / планшет (< 1100px): row → flex ────────────────────── */
+@media (max-width: 1099px) {
+  .randee-component-09 .header .row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    column-gap: 0;
+    gap: clamp(18px, 3vw, 28px);
+  }
+
+  .randee-component-09 .header .header__contacts-col {
+    order: 2;
+    margin-inline-start: auto;
+    min-width: 0;
+  }
+
+  .randee-component-09 .header .header__menu-col {
+    order: 1;
+    flex-shrink: 0;
+    justify-content: flex-start;
+    text-align: left;
+    justify-self: auto;
+  }
+
+  .randee-component-09 .header .row > [class*="col-"] {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: none;
+  }
+}
+
+@media (min-width: 1100px) and (max-width: 1399px) {
+  .randee-component-09 .header .row {
+    column-gap: clamp(24px, 3vw, 40px);
+  }
+}
+
+@media (min-width: 1100px) and (max-width: 1550px) {
+  .randee-component-09 .header__contacts-col {
+    padding-inline-start: clamp(4px, 1vw, 16px);
+    min-width: 0;
+  }
+}
+
+/* ── Кнопка МЕНЮ ────────────────────────────────────────────────────────── */
+.randee-component-09 .header__menu {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  user-select: none;
+  -webkit-appearance: none;
+  font: inherit;
+  flex-shrink: 0;
+}
+
+.randee-component-09 .header__menu--m,
+.randee-component-09 .header__menu--n,
+.randee-component-09 .header__menu--j {
+  font-size: 26px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Три чёрточки — «Е» */
+.randee-component-09 .header__menu--e {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-block;
+  width: 34px;
+  height: 34px;
+  margin: 0 1px;
+  --bar-h: 3px;
+  --bar-gap: calc((100% - 3 * var(--bar-h)) / 4);
+}
+
+.randee-component-09 .header__menu--e span {
+  position: absolute;
+  left: 50%;
+  width: 26px;
+  height: var(--bar-h);
+  margin-left: -13px;
+  border-radius: 2px;
+  background: #6653b7;
+  transition:
+    top 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    left 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    width 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    height 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    margin 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+    border-radius 0.22s ease,
+    opacity 0.14s ease 0s;
+}
+
+.randee-component-09 .header__menu--e span:nth-child(1) { top: var(--bar-gap); }
+.randee-component-09 .header__menu--e span:nth-child(2) { top: calc(var(--bar-gap) * 2 + var(--bar-h)); }
+.randee-component-09 .header__menu--e span:nth-child(3) { top: calc(var(--bar-gap) * 3 + 2 * var(--bar-h)); }
+
+/* Круг */
+.randee-component-09 .header__menu--e::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 50%; top: 50%;
+  box-sizing: border-box;
+  width: 34px; height: 34px;
+  margin: -17px 0 0 -17px;
+  border: 2px solid #6653b7;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.25);
+  pointer-events: none;
+  transition:
+    opacity 0.22s cubic-bezier(0.33, 1, 0.68, 1),
+    transform 0.26s cubic-bezier(0.33, 1.12, 0.68, 1);
+}
+
+/* Буква Е */
+.randee-component-09 .header__menu--e::after {
+  content: "Е";
+  position: absolute;
+  z-index: 2;
+  left: 50%; top: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px; height: 34px;
+  margin: -17px 0 0 -17px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  opacity: 0;
+  transform: scale(0.6);
+  pointer-events: none;
+  transition:
+    opacity 0.2s cubic-bezier(0.33, 1, 0.68, 1),
+    transform 0.24s cubic-bezier(0.33, 1.12, 0.68, 1);
+}
+
+/* Hover: чёрточки → точка → круг → «Е» */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .randee-component-09 .header__menu:hover .header__menu--e span {
+    top: 50%; left: 50%;
+    width: 3px; height: 3px;
+    margin: -1.5px 0 0 -1.5px;
+    border-radius: 50%;
+    opacity: 0;
+    transition:
+      top 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+      left 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+      width 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+      height 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+      margin 0.28s cubic-bezier(0.33, 1, 0.68, 1),
+      border-radius 0.22s ease,
+      opacity 0.14s ease 0.22s;
+  }
+
+  .randee-component-09 .header__menu:hover .header__menu--e::before {
+    opacity: 1;
+    transform: scale(1);
+    transition-delay: 0.28s, 0.28s;
+  }
+
+  .randee-component-09 .header__menu:hover .header__menu--e::after {
+    opacity: 1;
+    transform: scale(1);
+    transition-delay: 0.5s, 0.5s;
+  }
+}

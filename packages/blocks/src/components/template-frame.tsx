@@ -5,14 +5,14 @@ import type { PageBlock } from '@randee/builder'
 import { collectTemplateVendors } from '../vendors/collect'
 import { useBlockVendors } from './block-vendor-provider'
 
-type TemplateFrameProps = {
+type TemplateFrameProps = React.HTMLAttributes<HTMLDivElement> & {
   block: PageBlock
   className: string
   initScript: (root: HTMLElement | null) => void | Promise<void>
   children: React.ReactNode
 }
 
-export function TemplateFrame({ block, className, initScript, children }: TemplateFrameProps) {
+export function TemplateFrame({ block, className, initScript, children, style, ...rest }: TemplateFrameProps) {
   const rootRef = React.useRef<HTMLDivElement>(null)
   const { waitForVendors } = useBlockVendors()
   const dependencies = React.useMemo(() => collectTemplateVendors(block.template), [block.template])
@@ -32,7 +32,14 @@ export function TemplateFrame({ block, className, initScript, children }: Templa
   }, [block.id, block.template, initScript, dependencyKey, waitForVendors])
 
   return (
-    <div ref={rootRef} className={className} data-randee-template={block.template} data-randee-type={block.type} style={{ width: '100%', alignSelf: 'stretch' }}>
+    <div
+      ref={rootRef}
+      className={className}
+      data-randee-template={block.template}
+      data-randee-type={block.type}
+      style={{ width: '100%', alignSelf: 'stretch', ...style }}
+      {...rest}
+    >
       {children}
     </div>
   )

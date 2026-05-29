@@ -6,6 +6,42 @@ import { buildConnectorUrl, isCmsConnectionConfigured } from './builder-cms-util
 
 type CmsFieldValue = Record<string, string>
 
+// Bitrix uppercase field names → camelCase ключи коннектора
+const BITRIX_FIELD_CAMEL: Record<string, string> = {
+  PREVIEW_PICTURE: 'previewPicture',
+  DETAIL_PICTURE: 'detailPicture',
+  PREVIEW_TEXT: 'previewText',
+  DETAIL_TEXT: 'detailText',
+  PREVIEW_PAGE_URL: 'previewPageUrl',
+  DETAIL_PAGE_URL: 'detailPageUrl',
+  ID: 'id',
+  IBLOCK_ID: 'iblockId',
+  NAME: 'name',
+  CODE: 'code',
+  SORT: 'sort',
+  ACTIVE: 'active',
+}
+
+/** Извлекает строковое значение из поля ответа коннектора.
+ *  Обрабатывает: файловые объекты {src, width, height}, массивы, примитивы.
+ */
+function extractFieldString(raw: unknown): string {
+  if (raw === undefined || raw === null) return ''
+  // Файловый объект от коннектора: { id, src, width, height, ... }
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    const fileObj = raw as Record<string, unknown>
+    if (typeof fileObj.src === 'string' && fileObj.src) return fileObj.src
+    // Другие объекты — пробуем вернуть пустую строку, а не "[object Object]"
+    return ''
+  }
+  if (Array.isArray(raw)) {
+    // Массив файлов → берём src первого
+    if (raw.length > 0) return extractFieldString(raw[0])
+    return ''
+  }
+  return String(raw)
+}
+
 function readFieldFromPayload(
   data: Record<string, unknown>,
   kind: string,
@@ -14,12 +50,13 @@ function readFieldFromPayload(
   if (kind === 'property') {
     const props = data.PROPERTIES as Record<string, { VALUE?: unknown }> | undefined
     const raw = props?.[code]?.VALUE
-    if (Array.isArray(raw)) return String(raw[0] ?? '')
-    return raw !== undefined && raw !== null ? String(raw) : ''
+    if (Array.isArray(raw)) return extractFieldString(raw[0])
+    return extractFieldString(raw)
   }
-  const direct = data[code]
-  if (direct !== undefined && direct !== null) return String(direct)
-  return ''
+  // Пробуем сначала оригинальный код, потом camelCase-вариант
+  const camelCode = BITRIX_FIELD_CAMEL[code]
+  const raw = data[code] ?? (camelCode ? data[camelCode] : undefined)
+  return extractFieldString(raw)
 }
 
 export function useCmsPreviewData(

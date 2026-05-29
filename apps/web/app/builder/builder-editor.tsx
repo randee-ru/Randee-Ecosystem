@@ -782,6 +782,11 @@ export default function BuilderEditor() {
     [store]
   )
 
+  const onBlockToggleHidden = React.useCallback(
+    (id: string) => { store.getState().toggleBlockHidden(id) },
+    [store]
+  )
+
   const onBlockRef = React.useCallback(
     (id: string, el: HTMLElement | null) => { blockRefs.current[id] = el },
     []
@@ -1769,19 +1774,24 @@ export default function BuilderEditor() {
   // forceVisual=true → BlockPreview показывает реальный компонент (не tree-view)
   // onDropElement → drag из левой панели + inline «+» кнопка работают
   const artboardElementOptions = React.useMemo(
-    () =>
-      elementPreviewOptions
-        ? {
-            ...elementPreviewOptions,
-            onPatchElementProps: (elementId: string, props: Record<string, string>) => {
-              if (!block || block.type !== 'component') return
-              store.getState().updateElementProps(block.id, elementId, props)
-            },
-            cmsPreviewValues,
-            forceVisual: true as const
-          }
-        : undefined,
-    [block, elementPreviewOptions, store, cmsPreviewValues]
+    () => {
+      const connection = page.cmsConnection ?? cmsConnection
+      const base = {
+        cmsPreviewValues,
+        cmsConnection: connection,
+      }
+      if (!elementPreviewOptions) return base
+      return {
+        ...elementPreviewOptions,
+        ...base,
+        onPatchElementProps: (elementId: string, props: Record<string, string>) => {
+          if (!block || block.type !== 'component') return
+          store.getState().updateElementProps(block.id, elementId, props)
+        },
+        forceVisual: true as const
+      }
+    },
+    [block, elementPreviewOptions, store, cmsPreviewValues, page.cmsConnection, cmsConnection]
   )
 
   const saveSelectedElementAsCustom = React.useCallback(async () => {
@@ -3343,6 +3353,7 @@ export default function BuilderEditor() {
                                               onEdit={onBlockEdit}
                                               onDuplicate={onBlockDuplicate}
                                               onDelete={onBlockDelete}
+                                              onToggleHidden={onBlockToggleHidden}
                                               onHover={setHoveredBlockId}
                                               onResizeStart={onBlockResizeStart}
                                             />
@@ -3425,7 +3436,6 @@ export default function BuilderEditor() {
                                 height: vpIframeHeights[vp] ?? Math.max(frameContentHeight, 800),
                                 transform: `scale(${frameScale})`,
                                 transformOrigin: 'top left',
-                                background: '#fff',
                               }}
                               onLoad={(e) => {
                                 try {
@@ -3578,6 +3588,7 @@ export default function BuilderEditor() {
                               onEdit={onBlockEdit}
                               onDuplicate={onBlockDuplicate}
                               onDelete={onBlockDelete}
+                              onToggleHidden={onBlockToggleHidden}
                               onHover={setHoveredBlockId}
                               onResizeStart={onBlockResizeStart}
                             />
@@ -4276,6 +4287,7 @@ type SortableCanvasBlockProps = {
   onEdit: (id: string) => void
   onDuplicate: (id: string) => void
   onDelete: (id: string) => void
+  onToggleHidden: (id: string) => void
   onHover: (id: string | null) => void
   onResizeStart: (blockId: string, edge: ResizeEdge, event: React.PointerEvent) => void
 }
@@ -4293,6 +4305,7 @@ const SortableCanvasBlock = React.memo(function SortableCanvasBlock({
   onEdit,
   onDuplicate,
   onDelete,
+  onToggleHidden,
   onHover,
   onResizeStart
 }: SortableCanvasBlockProps) {
@@ -4342,12 +4355,40 @@ const SortableCanvasBlock = React.memo(function SortableCanvasBlock({
         isDragging={isDragging}
         dragHandle={dragHandle}
         isComponentType={item.type === 'component'}
+        isHidden={!!item.hidden}
         onEdit={() => onEdit(item.id)}
         onDuplicate={() => onDuplicate(item.id)}
         onDelete={() => onDelete(item.id)}
+        onToggleHidden={() => onToggleHidden(item.id)}
         onResizeStart={(edge, event) => onResizeStart(item.id, edge, event)}
       />
-      {item.type === 'component' ? (
+      {item.hidden ? (
+        /* Collapsed placeholder — тонкая полоса вместо контента */
+        <div
+          style={{
+            height: 36,
+            display: 'flex',
+            alignItems: 'center',
+            paddingInline: 12,
+            gap: 8,
+            background: `${t.accent}12`,
+            borderTop: `1px dashed ${t.accent}44`,
+            borderBottom: `1px dashed ${t.accent}44`,
+            opacity: 0.6,
+            userSelect: 'none',
+            pointerEvents: 'none',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={t.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.7">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+          </svg>
+          <span style={{ fontSize: 11, color: t.accent, fontFamily: 'system-ui, sans-serif', opacity: 0.8 }}>
+            {item.name ?? item.template} — скрыт
+          </span>
+        </div>
+      ) : item.type === 'component' ? (
         <div
           style={{
             ...componentRootStyle(resolveComponentDesign(item.design)),

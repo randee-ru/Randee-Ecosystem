@@ -9,6 +9,11 @@ export type BlockType =
   | 'cta'
   | 'catalog.section'
   | 'news.list'
+  | 'nav'
+  | 'footer'
+  | 'pricing'
+  | 'logos'
+  | 'testimonial'
   | 'component'
 
 export interface DynamicBinding {
@@ -35,6 +40,8 @@ export interface PageBlock {
   design?: ComponentDesignSettings
   /** UI primitives inserted in Edit Component mode */
   elements?: ComponentElement[]
+  /** Скрыт в редакторе (collapsed placeholder вместо полного блока) */
+  hidden?: boolean
 }
 
 export interface SeoMetadata {

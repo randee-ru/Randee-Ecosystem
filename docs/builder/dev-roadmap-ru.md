@@ -115,7 +115,13 @@
 
 ## СПРИНТ 5–7 — CMS, Pages, Polish ✅ (база закрыта)
 
-См. чеклисты в истории коммитов; остаются точечные улучшения (валидация CMS, rename page из UI).
+| Область | Статус |
+|---------|--------|
+| CMS connection + сохранение в страницу | ✅ |
+| Block props → Binding (CMS) | ✅ |
+| **R5 UI-элементы** (инфоблок в Inspector, live preview, export PHP) | ✅ см. [builder-v2-roadmap-ru.md](./builder-v2-roadmap-ru.md) R5 |
+| Rename page из UI | 🟡 |
+| Валидация CMS (расширенная) | 🟡 |
 
 ---
 
@@ -148,13 +154,14 @@
 
 ---
 
-### 8.2 🟠 Экспорт дерева elements в preview / Bitrix
+### 8.2 🟡 Экспорт дерева elements в preview / Bitrix
 
-- [ ] `layout.generated.tsx` или merge в `preview.tsx`
-- [ ] Bitrix export: HTML из element tree, не только GenericComponentPreview
+- [x] `layout.generated.tsx` + autosync API (`sync-layout`, `elements.snapshot.json`) — **R4.1**
+- [x] Bitrix export: CMS bindings → `CIBlockElement::GetList` — **R5.4**
+- [ ] Bitrix export: полный HTML из element tree для всех типов
 - [ ] Документировать контракт в `component-design-export-ru.md`
 
-**Файлы:** `packages/blocks/src/bitrix-export.ts`, sync-layout API
+**Файлы:** `packages/blocks/src/bitrix-export.ts`, `bitrix-cms-php.ts`, sync-layout API
 
 ---
 
@@ -189,11 +196,12 @@
 
 ## СПРИНТ 9 — IDE + Builder sync
 
-### 9.1 🟠 preview.tsx с диска → canvas (hot reload)
+### 9.1 ✅ preview.tsx с диска → canvas (hot reload) — база (R4.3)
 
-- [ ] Сейчас user components часто через `GenericComponentPreview`
-- [ ] Динамическая загрузка или HMR для `component-XX/preview.tsx`
-- [ ] Кнопка **Reload preview** в asset editor
+- [x] Poll `file-revision` + `bumpTemplateRevision` в Редакторе
+- [x] Кнопки **Открыть в VS Code / Cursor** (`builder-ide.ts`)
+- [ ] Полный HMR без poll (опционально)
+- [x] Кнопка **Reload preview** в asset editor
 
 ---
 
@@ -221,12 +229,13 @@
 ## Рекомендуемый порядок (сейчас)
 
 ```
-8.1 drop из Insert (если ещё баг)
-  → 8.2 export elements
-  → 8.3 live previews
+✅ R1–R5 builder-v2-roadmap (см. builder-v2-roadmap-ru.md)
+  → 8.1 drop из Insert (если ещё баг)
+  → 8.2 export elements (доработка HTML tree)
+  → 8.3 live previews (больше catalog elements)
   → 8.4 inspector по типам
-  → 9.1 IDE hot reload preview
-  → 9.2 инструкция Element Canvas
+  → 9.2 инструкция Element Canvas (частично обновлена)
+  → backlog R5: multi-item CMS preview, drag CMS на элемент
   → 10.x Framer-parity (по запросу)
 ```
 

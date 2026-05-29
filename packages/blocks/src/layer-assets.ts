@@ -16,6 +16,7 @@ export type BlockLayerAssets = {
   templateId: string
   name: string
   preview: BlockLayerAssetFile
+  generatedLayout: BlockLayerAssetFile | null
   init: BlockLayerAssetFile
   style: BlockLayerAssetFile
   script: BlockLayerAssetFile
@@ -58,6 +59,9 @@ export function getBlockLayerAssets(templateId: string): BlockLayerAssets | null
     templateId,
     name,
     preview: assetFile(templateId, 'preview.tsx', 'component'),
+    generatedLayout: isUserComponentTemplateId(templateId)
+      ? assetFile(templateId, 'layout.generated.tsx', 'component')
+      : null,
     init: assetFile(templateId, 'init.ts', 'component'),
     style: assetFile(templateId, assets.stylePath, 'style'),
     script: assetFile(templateId, assets.scriptPath, 'script'),

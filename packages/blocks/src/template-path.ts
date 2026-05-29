@@ -10,6 +10,10 @@ import { manifest as faq01Manifest, assets as faq01Assets } from './templates/fa
 import { manifest as cta01Manifest, assets as cta01Assets } from './templates/cta/cta-01/manifest'
 import { manifest as catalog01Manifest, assets as catalog01Assets } from './templates/catalog.section/catalog-01/manifest'
 import { manifest as news01Manifest, assets as news01Assets } from './templates/news.list/news-01/manifest'
+import { manifest as nav01Manifest, assets as nav01Assets } from './templates/nav/nav-01/manifest'
+import { manifest as nav02Manifest, assets as nav02Assets } from './templates/nav/nav-02/manifest'
+import { manifest as footer01Manifest, assets as footer01Assets } from './templates/footer/footer-01/manifest'
+import { manifest as pricing01Manifest, assets as pricing01Assets } from './templates/pricing/pricing-01/manifest'
 
 export const builtinTemplateManifests: Record<string, BlockTemplateManifest> = {
   'hero-01': hero01Manifest,
@@ -20,7 +24,11 @@ export const builtinTemplateManifests: Record<string, BlockTemplateManifest> = {
   'faq-01': faq01Manifest,
   'cta-01': cta01Manifest,
   'catalog-01': catalog01Manifest,
-  'news-01': news01Manifest
+  'news-01': news01Manifest,
+  'nav-01': nav01Manifest,
+  'nav-02': nav02Manifest,
+  'footer-01': footer01Manifest,
+  'pricing-01': pricing01Manifest
 }
 
 export const builtinTemplateAssets: Record<string, BlockTemplateAssets> = {
@@ -32,7 +40,11 @@ export const builtinTemplateAssets: Record<string, BlockTemplateAssets> = {
   'faq-01': faq01Assets,
   'cta-01': cta01Assets,
   'catalog-01': catalog01Assets,
-  'news-01': news01Assets
+  'news-01': news01Assets,
+  'nav-01': nav01Assets,
+  'nav-02': nav02Assets,
+  'footer-01': footer01Assets,
+  'pricing-01': pricing01Assets
 }
 
 export function resolveTemplateManifest(templateId: string): BlockTemplateManifest | null {

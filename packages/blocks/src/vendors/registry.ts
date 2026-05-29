@@ -65,5 +65,8 @@ declare global {
     gsap?: typeof import('gsap').gsap
     ScrollTrigger?: typeof import('gsap/ScrollTrigger').ScrollTrigger
     Swiper?: typeof import('swiper').Swiper
+    SwiperModules?: {
+      Navigation: typeof import('swiper/modules').Navigation
+    }
   }
 }

@@ -13,6 +13,7 @@ export const UI_READY_ELEMENT_IDS = new Set([
   'button',
   'columns',
   'container',
+  'stack',
   'card',
   'drawer',
   'dropdown',
@@ -91,7 +92,7 @@ const ELEMENT_CATALOG: Record<string, string[]> = {
     'ColorSwatch',
     'ColorSwatchPicker'
   ],
-  Layout: ['Container', 'Columns', 'Separator', 'Surface', 'ScrollShadow', 'Slider']
+  Layout: ['Container', 'Stack', 'Columns', 'Separator', 'Surface', 'ScrollShadow', 'Slider']
 }
 
 function toElementId(name: string): string {
@@ -146,6 +147,9 @@ function defaultPropsFor(name: string): Record<string, string> {
   }
   if (id === 'container') {
     return {}
+  }
+  if (id === 'stack') {
+    return { direction: 'column', gap: '12', align: 'stretch', justify: 'start', padding: '0' }
   }
   if (id === 'columns') {
     return { columns: '2', gap: '16', title: 'Columns' }

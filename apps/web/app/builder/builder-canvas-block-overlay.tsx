@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Copy, GripVertical, Pencil, Trash2 } from 'lucide-react'
+import { Copy, Eye, EyeOff, GripVertical, Pencil, Trash2 } from 'lucide-react'
 
 export type ResizeEdge = 'right' | 'bottom' | 'corner-br'
 
@@ -26,9 +26,11 @@ type CanvasBlockOverlayProps = {
   isDragging: boolean
   dragHandle: BlockOverlayDragHandle
   isComponentType: boolean
+  isHidden: boolean
   onEdit: () => void
   onDuplicate: () => void
   onDelete: () => void
+  onToggleHidden: () => void
   onResizeStart: (edge: ResizeEdge, event: React.PointerEvent) => void
 }
 
@@ -52,9 +54,11 @@ export function CanvasBlockOverlay({
   isDragging,
   dragHandle,
   isComponentType,
+  isHidden,
   onEdit,
   onDuplicate,
   onDelete,
+  onToggleHidden,
   onResizeStart
 }: CanvasBlockOverlayProps) {
   if (canvasTool !== 'select' || isDragging) return null
@@ -124,6 +128,17 @@ export function CanvasBlockOverlay({
             boxShadow: '0 4px 16px rgba(0,0,0,0.4)'
           }}
         >
+          <button
+            type="button"
+            className="flex h-7 w-7 items-center justify-center"
+            style={{ background: 'transparent', color: isHidden ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.7)', border: 'none', cursor: 'pointer' }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.10)'; e.currentTarget.style.color = '#fff' }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = isHidden ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.7)' }}
+            title={isHidden ? 'Показать блок' : 'Скрыть блок'}
+            onClick={(e) => { e.stopPropagation(); onToggleHidden() }}
+          >
+            {isHidden ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          </button>
           <button
             type="button"
             className="flex h-7 w-7 items-center justify-center"

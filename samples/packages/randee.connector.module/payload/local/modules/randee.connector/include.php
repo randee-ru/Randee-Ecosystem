@@ -75,12 +75,17 @@ class RandeeConnectorService
                     ['IBLOCK_ID' => $iblockId, 'ACTIVE' => 'Y']
                 );
                 while ($prop = $propIterator->Fetch()) {
+                    $propCode = trim((string)$prop['CODE']);
+                    $propId   = (int)$prop['ID'];
+                    // If CODE is empty, fall back to PROP_{ID} so the binding key is always usable
+                    $bindCode = $propCode !== '' ? $propCode : 'PROP_' . $propId;
                     $fields[] = [
                         'kind' => 'property',
-                        'code' => (string)$prop['CODE'],
-                        'label' => (string)($prop['NAME'] ?: $prop['CODE']),
+                        'code' => $bindCode,
+                        'label' => (string)($prop['NAME'] ?: $bindCode),
                         'propertyType' => (string)$prop['PROPERTY_TYPE'],
                         'multiple' => (string)$prop['MULTIPLE'] === 'Y',
+                        'propertyId' => $propId,
                     ];
                 }
                 return self::ok(['iblockId' => (string)$iblockId, 'fields' => $fields]);

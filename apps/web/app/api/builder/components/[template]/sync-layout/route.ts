@@ -42,6 +42,15 @@ function renderNode(
       return `${i}<div className="code-sync-container" data-element-id="${node.id}">
 ${i}  ${children || '<div className="code-sync-empty">Container</div>'}
 ${i}</div>`
+    case 'stack': {
+      const direction = node.props.direction === 'row' ? 'row' : 'column'
+      const gap = Math.max(0, Math.min(120, Number(node.props.gap ?? '12') || 12))
+      const align = node.props.align ?? 'stretch'
+      const justify = node.props.justify === 'center' ? 'center' : node.props.justify === 'end' ? 'flex-end' : node.props.justify === 'between' ? 'space-between' : 'flex-start'
+      return `${i}<div className="code-sync-stack" style={{ display: 'flex', flexDirection: '${direction}', gap: '${gap}px', alignItems: '${align}', justifyContent: '${justify}' }} data-element-id="${node.id}">
+${i}  ${children || '<div className="code-sync-empty">Stack</div>'}
+${i}</div>`
+    }
     case 'columns': {
       const columns = Math.max(1, Math.min(16, Number(node.props.columns ?? '2') || 2))
       const gap = Math.max(0, Math.min(120, Number(node.props.gap ?? '16') || 16))
@@ -59,7 +68,8 @@ ${i}</div>`
     case 'image': {
       const src = esc(node.props.src || '')
       const alt = esc(node.props.alt || title)
-      return `${i}<img src="${src}" alt="${alt}" data-element-id="${node.id}" />`
+      const srcAttr = src ? ` src="${src}"` : ''
+      return `${i}<img${srcAttr} alt="${alt}" data-element-id="${node.id}" />`
     }
     default:
       return `${i}<div className="code-sync-node" data-element-id="${node.id}">${title}${children ? `\n${i}  ${children}\n${i}` : ''}</div>`
@@ -122,7 +132,8 @@ const BUILTIN_TEMPLATES = new Set([
   'component-04',
   'hero-01', 'hero-02', 'hero-03',
   'features-01', 'features-02',
-  'faq-01', 'cta-01', 'catalog-01', 'news-01'
+  'faq-01', 'cta-01', 'catalog-01', 'news-01',
+  'nav-01', 'footer-01', 'pricing-01'
 ])
 
 export async function POST(request: Request, context: RouteContext) {

@@ -50,10 +50,13 @@ export function GenericComponentPreview({ block, elementOptions }: GenericCompon
 
   useTemplateStylesheet(block.template, revision)
 
+  const isEmpty = (block.elements?.length ?? 0) === 0
+  const isEditMode = !!elementOptions?.onDropElement
+
   return (
     <TemplateFrame block={block} className={cls} initScript={genericInit}>
       <ElementTreePreview elements={block.elements ?? []} options={elementOptions} />
-      {(block.elements?.length ?? 0) === 0 ? (
+      {isEmpty && !isEditMode ? (
         <>
           <img
             src={getTemplateAssetUrl(block.template, 'images/thumb.svg')}
@@ -65,6 +68,39 @@ export function GenericComponentPreview({ block, elementOptions }: GenericCompon
           <h2 className={`${cls}__title`}>{title}</h2>
           <p className={`${cls}__hint`}>Insert UI elements via Insert, or edit preview.tsx in Blocks</p>
         </>
+      ) : null}
+      {isEmpty && isEditMode ? (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '12px',
+          padding: '48px 24px',
+          minHeight: '200px',
+          border: '2px dashed rgba(255,255,255,0.2)',
+          borderRadius: '12px',
+          margin: '24px',
+          textAlign: 'center',
+          color: 'rgba(255,255,255,0.55)',
+          fontFamily: 'system-ui, sans-serif',
+          pointerEvents: 'none',
+        }}>
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <rect x="1" y="1" width="38" height="38" rx="8" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 3"/>
+            <line x1="20" y1="12" x2="20" y2="28" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <line x1="12" y1="20" x2="28" y2="20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          <div>
+            <div style={{ fontSize: '15px', fontWeight: 600, color: 'rgba(255,255,255,0.8)', marginBottom: '6px' }}>
+              Компонент пустой
+            </div>
+            <div style={{ fontSize: '13px', lineHeight: 1.5 }}>
+              Откройте панель <strong style={{ color: 'rgba(255,255,255,0.75)' }}>Вставка</strong> слева<br/>
+              и перетащите сюда заголовок, текст, кнопку или картинку
+            </div>
+          </div>
+        </div>
       ) : null}
     </TemplateFrame>
   )

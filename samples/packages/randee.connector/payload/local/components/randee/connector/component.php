@@ -171,6 +171,7 @@ switch ($action) {
         $iblockId = readIblockId($request, $allowedIblockIds);
         $offset = max(0, (int)$request->get('offset'));
         $limit = max(1, min($maxPageSize, (int)($request->get('limit') ?: $defaultPageSize)));
+        $withProperties = (string)$request->get('withProperties') === 'true' || (string)$request->get('with_properties') === 'true';
 
         $elements = [];
         $count = 0;
@@ -182,7 +183,7 @@ switch ($action) {
             ['ID', 'IBLOCK_ID', 'NAME', 'PREVIEW_TEXT', 'DETAIL_TEXT', 'PREVIEW_PICTURE', 'DETAIL_PICTURE']
         );
 
-        while ($item = $result->GetNext()) {
+        while ($item = $result->GetNextElement()) {
             if ($count < $offset) {
                 $count++;
                 continue;
@@ -190,7 +191,17 @@ switch ($action) {
             if (count($elements) >= $limit) {
                 break;
             }
-            $elements[] = normalizeElement($item);
+            $fields = $item->GetFields();
+            $element = normalizeElement($fields);
+            if ($withProperties) {
+                $properties = $item->GetProperties();
+                $normalizedProps = [];
+                foreach ($properties as $propCode => $prop) {
+                    $normalizedProps[$propCode] = normalizeProperty($prop);
+                }
+                $element['properties'] = $normalizedProps;
+            }
+            $elements[] = $element;
             $count++;
         }
 

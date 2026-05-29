@@ -1,0 +1,236 @@
+/* ── pricing-01 — Тарифные планы ────────────────────────────────────────── */
+
+.randee-pricing-01 {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 80px 24px;
+  font-family: inherit;
+}
+
+/* Вариант A — карточки с тенью */
+.randee-pricing-01[data-variant="A"] {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+/* Вариант B — minimal с бордером */
+.randee-pricing-01[data-variant="B"] {
+  background: #ffffff;
+  color: #1e293b;
+}
+
+/* ── Заголовок секции ── */
+.randee-pricing-01__header {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto 56px;
+}
+
+.randee-pricing-01__title {
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 0 0 12px;
+  color: inherit;
+}
+
+.randee-pricing-01__subtitle {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── Сетка карточек ── */
+.randee-pricing-01__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+/* ── Карточка ── */
+.randee-pricing-01__card {
+  border-radius: 16px;
+  padding: 32px 28px;
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Вариант A */
+.randee-pricing-01[data-variant="A"] .randee-pricing-01__card {
+  background: #ffffff;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+  border: 1.5px solid transparent;
+}
+
+/* Вариант B */
+.randee-pricing-01[data-variant="B"] .randee-pricing-01__card {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+}
+
+/* Highlighted card (средняя) */
+.randee-pricing-01__card--highlight {
+  border-color: #4f46e5 !important;
+  margin-top: -12px;
+  padding-top: 44px;
+}
+
+.randee-pricing-01[data-variant="A"] .randee-pricing-01__card--highlight {
+  box-shadow: 0 8px 40px rgba(79, 70, 229, 0.2);
+}
+
+/* Бейдж "Популярный" */
+.randee-pricing-01__badge {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #4f46e5;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* ── Название плана ── */
+.randee-pricing-01__plan-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Цена ── */
+.randee-pricing-01__price-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.randee-pricing-01__currency {
+  font-size: 18px;
+  font-weight: 700;
+  color: #64748b;
+  line-height: 1;
+  padding-bottom: 6px;
+}
+
+.randee-pricing-01__amount {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -2px;
+  line-height: 1;
+  color: #1e293b;
+}
+
+.randee-pricing-01__card--highlight .randee-pricing-01__amount {
+  color: #4f46e5;
+}
+
+.randee-pricing-01__period {
+  font-size: 14px;
+  color: #94a3b8;
+  line-height: 1;
+  padding-bottom: 8px;
+}
+
+/* ── Разделитель ── */
+.randee-pricing-01__divider {
+  border: none;
+  border-top: 1px solid #f1f5f9;
+  margin: 20px 0;
+}
+
+/* ── Список фич ── */
+.randee-pricing-01__features {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.randee-pricing-01__feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.randee-pricing-01__feature::before {
+  content: '';
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #4f46e5;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='white' d='M13.07 4.22a.75.75 0 0 1 0 1.06l-6 6a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 1.06-1.06L6.5 9.69l5.47-5.47a.75.75 0 0 1 1.06 0Z'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='white' d='M13.07 4.22a.75.75 0 0 1 0 1.06l-6 6a.75.75 0 0 1-1.06 0l-3-3a.75.75 0 0 1 1.06-1.06L6.5 9.69l5.47-5.47a.75.75 0 0 1 1.06 0Z'/%3E%3C/svg%3E");
+  mask-size: cover;
+  -webkit-mask-size: cover;
+}
+
+/* ── Кнопка ── */
+.randee-pricing-01__cta {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 2px solid #4f46e5;
+  text-decoration: none;
+  transition: background 150ms, color 150ms, opacity 150ms;
+}
+
+.randee-pricing-01__card:not(.randee-pricing-01__card--highlight) .randee-pricing-01__cta {
+  background: transparent;
+  color: #4f46e5;
+}
+
+.randee-pricing-01__card:not(.randee-pricing-01__card--highlight) .randee-pricing-01__cta:hover {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.randee-pricing-01__card--highlight .randee-pricing-01__cta {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.randee-pricing-01__card--highlight .randee-pricing-01__cta:hover {
+  opacity: 0.88;
+}
+
+@media (max-width: 768px) {
+  .randee-pricing-01__grid {
+    grid-template-columns: 1fr;
+    max-width: 440px;
+  }
+
+  .randee-pricing-01__card--highlight {
+    margin-top: 0;
+    padding-top: 44px;
+  }
+}

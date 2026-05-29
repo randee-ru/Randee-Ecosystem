@@ -49,6 +49,13 @@ export type BlockTemplatePreviewProps = {
     onPatchElementProps?: (elementId: string, props: Record<string, string>) => void
     viewport?: 'desktop' | 'macbook' | 'tablet' | 'mobile'
     cmsPreviewValues?: Record<string, Record<string, string>>
+    /** Передаётся в preview-компоненты для самостоятельного fetch из CMS */
+    cmsConnection?: {
+      siteUrl: string
+      connectorPath: string
+      apiKey: string
+      enabled: boolean
+    }
     forceVisual?: boolean
   }
 }

@@ -14,7 +14,9 @@ async function loadGsap(): Promise<void> {
 
 async function loadSwiper(): Promise<void> {
   const swiperModule = await import('swiper')
+  const { Navigation } = await import('swiper/modules')
   window.Swiper = swiperModule.Swiper
+  window.SwiperModules = { Navigation }
 }
 
 async function loadVendorOnce(id: VendorId): Promise<void> {

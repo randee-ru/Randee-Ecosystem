@@ -63,6 +63,7 @@ export interface BuilderActions {
   updateBlockProps: (blockId: string, props: Record<string, string>) => void
   updateBlockCmsBinding: (blockId: string, propName: string, binding: CmsPropBindingState) => void
   updateBlockDesign: (blockId: string, patch: ComponentDesignPatch) => void
+  toggleBlockHidden: (blockId: string) => void
   renameBlock: (blockId: string, name: string) => void
   setPageMeta: (meta: Pick<BuilderPage, 'page' | 'slug'>) => void
   setCmsConnection: (connection: BuilderCmsConnection) => void
@@ -281,6 +282,19 @@ export function createBuilderStore(initialPage: BuilderPage = DEFAULT_PAGE) {
           blocks: state.page.blocks.map((block) =>
             block.id === blockId
               ? { ...block, design: mergeComponentDesign(block.design, patch) }
+              : block
+          )
+        }
+      }))
+    },
+
+    toggleBlockHidden: (blockId) => {
+      set((state) => ({
+        page: {
+          ...state.page,
+          blocks: state.page.blocks.map((block) =>
+            block.id === blockId
+              ? { ...block, hidden: !block.hidden }
               : block
           )
         }

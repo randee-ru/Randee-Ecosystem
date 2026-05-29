@@ -209,14 +209,94 @@ function WireframeComponent({ color }: { color: string }) {
   )
 }
 
-const WIREFRAME_MAP = {
+function WireframeNav({ color }: { color: string }) {
+  return (
+    <svg viewBox="0 0 240 140" fill={color} xmlns="http://www.w3.org/2000/svg" className="h-full w-full">
+      {/* Header bar */}
+      <rect x="8" y="8" width="224" height="28" rx="6" opacity="0.1"/>
+      {/* Logo */}
+      <rect x="16" y="15" width="28" height="14" rx="3" opacity="0.35"/>
+      {/* Nav links */}
+      <rect x="54" y="18" width="30" height="8" rx="2" opacity="0.22"/>
+      <rect x="92" y="18" width="30" height="8" rx="2" opacity="0.22"/>
+      <rect x="130" y="18" width="30" height="8" rx="2" opacity="0.22"/>
+      {/* CTA button */}
+      <rect x="180" y="14" width="44" height="16" rx="8" opacity="0.45"/>
+      {/* Mega menu panel */}
+      <rect x="8" y="44" width="224" height="86" rx="8" opacity="0.07"/>
+      <rect x="20" y="54" width="60" height="10" rx="2" opacity="0.3"/>
+      <rect x="20" y="70" width="48" height="6" rx="2" opacity="0.18"/>
+      <rect x="20" y="82" width="52" height="6" rx="2" opacity="0.18"/>
+      <rect x="20" y="94" width="44" height="6" rx="2" opacity="0.18"/>
+      <rect x="100" y="54" width="60" height="10" rx="2" opacity="0.3"/>
+      <rect x="100" y="70" width="48" height="6" rx="2" opacity="0.18"/>
+      <rect x="100" y="82" width="52" height="6" rx="2" opacity="0.18"/>
+      <rect x="100" y="94" width="44" height="6" rx="2" opacity="0.18"/>
+      <rect x="180" y="54" width="44" height="8" rx="2" opacity="0.25"/>
+      <rect x="180" y="68" width="36" height="6" rx="2" opacity="0.18"/>
+      <rect x="180" y="116" width="44" height="16" rx="8" opacity="0.4"/>
+    </svg>
+  )
+}
+
+function WireframeFooter({ color }: { color: string }) {
+  return (
+    <svg viewBox="0 0 240 140" fill={color} xmlns="http://www.w3.org/2000/svg" className="h-full w-full">
+      {/* Footer bar */}
+      <rect x="8" y="8" width="224" height="90" rx="6" opacity="0.08"/>
+      {/* Logo */}
+      <rect x="20" y="20" width="36" height="14" rx="3" opacity="0.35"/>
+      <rect x="20" y="40" width="72" height="6" rx="2" opacity="0.16"/>
+      <rect x="20" y="52" width="60" height="6" rx="2" opacity="0.12"/>
+      {/* Cols */}
+      <rect x="110" y="20" width="40" height="7" rx="2" opacity="0.3"/>
+      <rect x="110" y="34" width="32" height="5" rx="2" opacity="0.18"/>
+      <rect x="110" y="44" width="36" height="5" rx="2" opacity="0.18"/>
+      <rect x="110" y="54" width="28" height="5" rx="2" opacity="0.18"/>
+      <rect x="168" y="20" width="40" height="7" rx="2" opacity="0.3"/>
+      <rect x="168" y="34" width="36" height="5" rx="2" opacity="0.18"/>
+      <rect x="168" y="44" width="28" height="5" rx="2" opacity="0.18"/>
+      <rect x="168" y="54" width="32" height="5" rx="2" opacity="0.18"/>
+      {/* Bottom bar */}
+      <rect x="8" y="106" width="224" height="26" rx="5" opacity="0.07"/>
+      <rect x="20" y="114" width="80" height="6" rx="2" opacity="0.2"/>
+      <rect x="180" y="114" width="40" height="6" rx="2" opacity="0.2"/>
+    </svg>
+  )
+}
+
+function WireframePricing({ color }: { color: string }) {
+  return (
+    <svg viewBox="0 0 240 140" fill={color} xmlns="http://www.w3.org/2000/svg" className="h-full w-full">
+      <rect x="55" y="8" width="130" height="10" rx="2" opacity="0.35"/>
+      {[8, 88, 168].map((x) => (
+        <g key={x}>
+          <rect x={x} y="28" width="66" height="104" rx="6" opacity="0.1"/>
+          <rect x={x + 8} y="38" width="50" height="8" rx="2" opacity="0.3"/>
+          <rect x={x + 8} y="52" width="32" height="12" rx="2" opacity="0.4"/>
+          <rect x={x + 8} y="70" width="40" height="5" rx="2" opacity="0.18"/>
+          <rect x={x + 8} y="80" width="36" height="5" rx="2" opacity="0.18"/>
+          <rect x={x + 8} y="90" width="42" height="5" rx="2" opacity="0.18"/>
+          <rect x={x + 8} y="110" width="50" height="14" rx="7" opacity="0.4"/>
+        </g>
+      ))}
+    </svg>
+  )
+}
+
+const WIREFRAME_MAP: Record<string, React.FC<{ color: string }>> = {
   hero: WireframeHero,
   features: WireframeFeatures,
   faq: WireframeFaq,
   cta: WireframeCta,
   catalog: WireframeCatalog,
   news: WireframeNews,
-  component: WireframeComponent
+  component: WireframeComponent,
+  nav: WireframeNav,
+  footer: WireframeFooter,
+  pricing: WireframePricing,
+  form: WireframeComponent,
+  popup: WireframeComponent,
 }
 
 // ─── Block Card ──────────────────────────────────────────────────────────────
@@ -229,13 +309,13 @@ const BlockCard = React.memo(function BlockCard({
   onAdd
 }: {
   item: LibraryVariant
-  wf: keyof typeof WIREFRAME_MAP
+  wf: string
   color: string
   t: PanelTheme
   onAdd: (item: LibraryVariant) => void
 }) {
   const [hovered, setHovered] = React.useState(false)
-  const WireframeComp = WIREFRAME_MAP[wf]
+  const WireframeComp = WIREFRAME_MAP[wf] ?? WireframeComponent
   const nameRu = BLOCK_NAME_RU[item.template] ?? item.name
 
   return (
@@ -313,11 +393,14 @@ export function BuilderInsertPanel({
   searchQuery,
   variant = 'full'
 }: BuilderInsertPanelProps) {
-  const allGroups = Object.keys(groupedVariants).filter((g) => variant !== 'sections' || g !== 'Custom')
-  const sortedGroups = allGroups.sort((a, b) => {
-    const ORDER = ['Header', 'Hero', 'Features', 'CTA', 'FAQ', 'Forms', 'Popups', 'Catalog', 'News', 'Navigation', 'Footer', 'Custom']
-    return (ORDER.indexOf(a) ?? 99) - (ORDER.indexOf(b) ?? 99)
-  })
+  const SECTION_ORDER = ['Header', 'Hero', 'Features', 'CTA', 'FAQ', 'Forms', 'Popups', 'Catalog', 'News', 'Navigation', 'Footer', 'Custom']
+  // Always show all predefined groups + any unknown groups from actual variants
+  const extraGroups = Object.keys(groupedVariants).filter((g) => !SECTION_ORDER.includes(g))
+  const allGroups = [
+    ...SECTION_ORDER,
+    ...extraGroups
+  ].filter((g) => variant !== 'sections' || g !== 'Custom')
+  const sortedGroups = allGroups
 
   const [activeTab, setActiveTab] = React.useState<string>(() => sortedGroups[0] ?? '_libs')
   const showSavedTab = variant === 'full'
@@ -492,9 +575,23 @@ export function BuilderInsertPanel({
 
                 {/* Cards grid */}
                 {currentItems.length === 0 ? (
-                  <p className="py-6 text-center text-[11px]" style={{ color: t.textMuted }}>
-                    Нет блоков в этой категории
-                  </p>
+                  <div className="flex flex-col items-center gap-2 py-8">
+                    <div
+                      className="flex h-10 w-10 items-center justify-center rounded-xl"
+                      style={{ background: `${meta.color}18` }}
+                    >
+                      <meta.icon className="h-5 w-5" style={{ color: meta.color }} />
+                    </div>
+                    <p className="text-[11px] font-medium" style={{ color: t.textMuted }}>
+                      Скоро появятся блоки
+                    </p>
+                    <span
+                      className="rounded-full px-2.5 py-0.5 text-[9px] font-semibold"
+                      style={{ background: `${meta.color}18`, color: meta.color }}
+                    >
+                      Coming soon
+                    </span>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-2">
                     {currentItems.map((item) => (

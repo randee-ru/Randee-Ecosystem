@@ -119,6 +119,7 @@ function filterVisibleAssets(
   searchQuery: string
 ): {
   preview: BlockLayerAssetFile | null
+  generatedLayout: BlockLayerAssetFile | null
   init: BlockLayerAssetFile | null
   style: BlockLayerAssetFile | null
   script: BlockLayerAssetFile | null
@@ -127,6 +128,7 @@ function filterVisibleAssets(
   if (!searchQuery) {
     return {
       preview: assets.preview,
+      generatedLayout: assets.generatedLayout ?? null,
       init: assets.init,
       style: assets.style,
       script: assets.script,
@@ -136,6 +138,10 @@ function filterVisibleAssets(
 
   return {
     preview: assetMatchesSearch(assets.preview, searchQuery) ? assets.preview : null,
+    generatedLayout:
+      assets.generatedLayout && assetMatchesSearch(assets.generatedLayout, searchQuery)
+        ? assets.generatedLayout
+        : null,
     init: assetMatchesSearch(assets.init, searchQuery) ? assets.init : null,
     style: assetMatchesSearch(assets.style, searchQuery) ? assets.style : null,
     script: assetMatchesSearch(assets.script, searchQuery) ? assets.script : null,
@@ -330,6 +336,7 @@ function LayerBlockRowInner({
   const hasVisibleAssets =
     visibleAssets &&
     (visibleAssets.preview ||
+      visibleAssets.generatedLayout ||
       visibleAssets.init ||
       visibleAssets.style ||
       visibleAssets.script ||
@@ -476,6 +483,7 @@ function LayerBlockRowInner({
       {expanded && hasVisibleAssets && visibleAssets ? (
         <div className="pb-1">
           {renderAsset(visibleAssets.preview, 2)}
+          {renderAsset(visibleAssets.generatedLayout, 2)}
           {renderAsset(visibleAssets.init, 2)}
           {renderAsset(visibleAssets.style, 2)}
           {renderAsset(visibleAssets.script, 2)}

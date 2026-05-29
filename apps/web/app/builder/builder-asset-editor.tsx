@@ -57,6 +57,8 @@ type BuilderAssetEditorProps = {
   savingToAssets?: boolean
   onSaveToAssets?: () => void
   onAssetSaved?: (asset: BuilderAssetTarget) => void
+  /** Если меняется — перечитывает файл (только когда нет несохранённых изменений). */
+  refreshKey?: number
 }
 
 function languageExtension(asset: BuilderAssetTarget) {
@@ -134,7 +136,8 @@ export function BuilderAssetEditor({
   savedToAssets,
   savingToAssets,
   onSaveToAssets,
-  onAssetSaved
+  onAssetSaved,
+  refreshKey
 }: BuilderAssetEditorProps) {
   const [fontSize, setFontSize] = React.useState(EDITOR_FONT_DEFAULT)
   const editorViewRef = React.useRef<EditorView | null>(null)
@@ -145,6 +148,34 @@ export function BuilderAssetEditor({
   const [error, setError] = React.useState<string | null>(null)
 
   const isDirty = content !== savedContent
+  const isDirtyRef = React.useRef(isDirty)
+  isDirtyRef.current = isDirty
+
+  // Следим за refreshKey — перечитываем файл если нет несохранённых изменений
+  const prevRefreshKeyRef = React.useRef<number | undefined>(undefined)
+  React.useEffect(() => {
+    if (refreshKey === undefined) return
+    if (prevRefreshKeyRef.current === undefined) {
+      prevRefreshKeyRef.current = refreshKey
+      return
+    }
+    if (refreshKey === prevRefreshKeyRef.current) return
+    prevRefreshKeyRef.current = refreshKey
+    // Не перезаписываем несохранённые правки пользователя
+    if (isDirtyRef.current) return
+
+    let cancelled = false
+    fetch(asset.url, { cache: 'no-store' })
+      .then((r) => r.ok ? r.text() : Promise.reject(new Error('reload failed')))
+      .then((text) => {
+        if (cancelled) return
+        setContent(text)
+        setSavedContent(text)
+      })
+      .catch(() => { /* тихо игнорируем ошибки авто-обновления */ })
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey])
 
   React.useEffect(() => {
     let cancelled = false
@@ -204,10 +235,8 @@ export function BuilderAssetEditor({
   }, [asset.url, content, asset, onAssetSaved])
 
   const saveRef = React.useRef(save)
-  const isDirtyRef = React.useRef(isDirty)
   const savingRef = React.useRef(saving)
   saveRef.current = save
-  isDirtyRef.current = isDirty
   savingRef.current = saving
 
   const triggerSave = React.useCallback(() => {

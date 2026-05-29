@@ -158,19 +158,23 @@ function ElementPlaceholder({ element }: { element: ComponentElement }) {
 }
 
 function isNestableElement(element: ComponentElement) {
-  return element.elementId === 'container' || element.elementId === 'columns'
+  return (
+    element.elementId === 'container' ||
+    element.elementId === 'columns' ||
+    element.elementId === 'stack'
+  )
 }
 
 // ── Быстрые элементы для мини-каталога инлайн-вставки ────────────────────────
 const QUICK_INSERT_ELEMENTS: Array<{ id: string; label: string; char: string; color: string }> = [
   { id: 'container', label: 'Container', char: '▣', color: '#3b82f6' },
+  { id: 'stack',     label: 'Stack',     char: '⇳', color: '#0ea5e9' },
   { id: 'columns',   label: 'Columns',   char: '⊞', color: '#06b6d4' },
   { id: 'heading',   label: 'Heading',   char: 'H', color: '#22c55e' },
   { id: 'text',      label: 'Text',      char: 'T', color: '#22c55e' },
   { id: 'button',    label: 'Button',    char: '◉', color: '#a855f7' },
   { id: 'image',     label: 'Image',     char: '⊟', color: '#f97316' },
   { id: 'input',     label: 'Input',     char: '▭', color: '#ec4899' },
-  { id: 'link',      label: 'Link',      char: '↗', color: '#eab308' },
 ]
 
 function computeColumnInsertPlacement(
@@ -216,6 +220,28 @@ function readDraggedElementId(event: React.DragEvent<HTMLElement>, fallbackId?: 
     ''
   )
 }
+
+// ── Artboard Pointer-Events drag ─────────────────────────────────────────────
+
+type ArtboardDropTarget = {
+  elementId: string | null   // null = корневая зона
+  zone: 'before' | 'after' | 'inside' | 'root'
+} | null
+
+type ArtboardDragCtxType = {
+  draggingElementId: string | null
+  dropTarget: ArtboardDropTarget
+  onStartDrag: (elementId: string, clientX: number, clientY: number) => void
+}
+
+const ArtboardDragCtx = React.createContext<ArtboardDragCtxType>({
+  draggingElementId: null,
+  dropTarget: null,
+  onStartDrag: () => undefined
+})
+
+const DRAG_THRESHOLD = 5
+
 
 function renderReadyElement(
   element: ComponentElement,
@@ -366,6 +392,7 @@ function renderReadyElement(
     case 'pagination':
       return <Pagination page={1} totalPages={5} />
     case 'container':
+    case 'stack':
       return null
     case 'columns': {
       const desktopColumns = Math.max(1, Math.min(16, Number(props.columns ?? '2') || 2))
@@ -521,7 +548,6 @@ function ElementNode({
   element,
   parentId,
   prevSiblingId,
-  dragFallbackId,
   options,
   onOpenContextMenu,
   childrenContent,
@@ -532,7 +558,6 @@ function ElementNode({
   element: ComponentElement
   parentId: string | null
   prevSiblingId: string | null
-  dragFallbackId?: string | null
   options?: ElementPreviewOptions
   onOpenContextMenu?: (elementId: string, x: number, y: number) => void
   childrenContent?: React.ReactNode
@@ -540,13 +565,16 @@ function ElementNode({
   childrenElements?: ComponentElement[]
   renderChildNode?: (element: ComponentElement, parentId: string | null, prevSiblingId: string | null) => React.ReactNode
 }) {
+  const { draggingElementId, dropTarget, onStartDrag } = React.useContext(ArtboardDragCtx)
   const variant = getElementVariant(element.elementId)
   const selected = options?.selectedElementId === element.id
   const isEditMode = Boolean(options?.onDropElement || options?.onSelectElement)
   const readyNode = variant?.ready
     ? renderReadyElement(element, isEditMode, options?.viewport ?? 'desktop', options)
     : null
-  const [dropZone, setDropZone] = React.useState<'inside' | 'before' | 'after' | null>(null)
+  // dropZone больше не локальный state — берём из контекста
+  const rawDropZone = dropTarget?.elementId === element.id ? dropTarget.zone : null
+  const dropZone = rawDropZone === 'root' ? null : rawDropZone as 'inside' | 'before' | 'after' | null
   const [showColumnsPicker, setShowColumnsPicker] = React.useState(false)
   const [hovered, setHovered] = React.useState(false)
   const [insertMenuOpen, setInsertMenuOpen] = React.useState(false)
@@ -613,30 +641,13 @@ function ElementNode({
     }
   }, [closeInsertMenu, insertMenuOpen])
   const nestable = isNestableElement(element)
-  const isDragging = Boolean(dragFallbackId)
-  const isBeingDragged = dragFallbackId === element.id   // именно этот элемент тащат
-  const isContainerElement = element.elementId === 'container'
+  const isDragging = Boolean(draggingElementId)
+  const isBeingDragged = draggingElementId === element.id   // именно этот элемент тащат
+  const isContainerElement = element.elementId === 'container' || element.elementId === 'stack'
   const hasRenderableChildren =
     (childrenElements?.length ?? 0) > 0 ||
     (Array.isArray(childrenContent) ? childrenContent.length > 0 : Boolean(childrenContent))
 
-  React.useEffect(() => {
-    const reset = () => setDropZone(null)
-    window.addEventListener('dragend', reset)
-    window.addEventListener('drop', reset)
-    window.addEventListener('pointerup', reset)
-    const onDragState = (event: Event) => {
-      const custom = event as CustomEvent<{ phase?: 'start' | 'end' }>
-      if (custom.detail?.phase === 'end') reset()
-    }
-    window.addEventListener('randee:element-drag', onDragState as EventListener)
-    return () => {
-      window.removeEventListener('dragend', reset)
-      window.removeEventListener('drop', reset)
-      window.removeEventListener('pointerup', reset)
-      window.removeEventListener('randee:element-drag', onDragState as EventListener)
-    }
-  }, [])
   const columnPresets = [1, 2, 3, 4] as const
 
   return (
@@ -644,7 +655,7 @@ function ElementNode({
       className="randee-element-node"
       data-randee-element={element.id}
       data-randee-element-type={element.elementId}
-      draggable={Boolean(options?.onDropElement)}
+      data-randee-nestable={nestable ? 'true' : undefined}
       style={{
         position: 'relative',
         width: '100%',
@@ -677,6 +688,13 @@ function ElementNode({
         if (!isEditMode) return
         setHovered(false)
       }}
+      onPointerDown={(event) => {
+        if (!options?.onDropElement) return
+        // Только левая кнопка, не на inline-редакторе
+        if (event.button !== 0) return
+        event.stopPropagation()
+        onStartDrag(element.id, event.clientX, event.clientY)
+      }}
       onClick={(event) => {
         if (!options?.onSelectElement) return
         event.stopPropagation()
@@ -706,99 +724,6 @@ function ElementNode({
           setInlineEdit({ field: 'placeholder', value: String(element.props.placeholder ?? '') })
           return
         }
-      }}
-      onDragStart={(event) => {
-        if (!options?.onDropElement) return
-        event.stopPropagation()
-        event.dataTransfer.effectAllowed = 'move'
-        event.dataTransfer.setData('application/x-randee-element-id', element.id)
-        event.dataTransfer.setData('text/plain', element.id)
-        window.dispatchEvent(
-          new CustomEvent('randee:element-drag', {
-            detail: { phase: 'start', elementId: element.id }
-          })
-        )
-      }}
-      onDragEnd={() => {
-        if (!options?.onDropElement) return
-        window.dispatchEvent(
-          new CustomEvent('randee:element-drag', {
-            detail: { phase: 'end', elementId: element.id }
-          })
-        )
-      }}
-      onDragOver={(event) => {
-        const elementId = readDraggedElementId(event, dragFallbackId)
-        if (!options?.onDropElement || !elementId) return
-        event.preventDefault()
-        event.stopPropagation()
-        event.dataTransfer.dropEffect = 'move'
-        const rect = event.currentTarget.getBoundingClientRect()
-        const y = event.clientY - rect.top
-        const yRatio = rect.height > 0 ? y / rect.height : 0.5
-        const edge = 0.22
-        const nextZone: 'inside' | 'before' | 'after' =
-          nestable && yRatio > edge && yRatio < 1 - edge
-            ? 'inside'
-            : yRatio <= edge
-              ? 'before'
-              : 'after'
-        if (dropZone !== nextZone) setDropZone(nextZone)
-        options.onDropDebug?.({
-          phase: 'dragover',
-          targetElementId: element.id,
-          zone: nextZone,
-          draggedElementId: elementId,
-          parentId
-        })
-      }}
-      onDragLeave={() => {
-        if (dropZone !== null) setDropZone(null)
-      }}
-      onDrop={(event) => {
-        const elementId = readDraggedElementId(event, dragFallbackId)
-        if (!options?.onDropElement || !elementId) return
-        event.preventDefault()
-        event.stopPropagation()
-        const nextZone = dropZone ?? 'after'
-        setDropZone(null)
-        if (nextZone === 'inside') {
-          options.onDropDebug?.({
-            phase: 'drop',
-            targetElementId: element.id,
-            zone: 'inside',
-            draggedElementId: elementId,
-            parentId: element.id
-          })
-          options.onDropElement(elementId, { parentId: element.id })
-        } else if (nextZone === 'before') {
-          options.onDropDebug?.({
-            phase: 'drop',
-            targetElementId: element.id,
-            zone: 'before',
-            draggedElementId: elementId,
-            parentId
-          })
-          if (prevSiblingId) {
-            options.onDropElement(elementId, { parentId, afterElementId: prevSiblingId })
-          } else {
-            options.onDropElement(elementId, { parentId, beforeElementId: element.id })
-          }
-        } else {
-          options.onDropDebug?.({
-            phase: 'drop',
-            targetElementId: element.id,
-            zone: 'after',
-            draggedElementId: elementId,
-            parentId
-          })
-          options.onDropElement(elementId, { parentId, afterElementId: element.id })
-        }
-        window.dispatchEvent(
-          new CustomEvent('randee:element-drag', {
-            detail: { phase: 'end', elementId: null }
-          })
-        )
       }}
       onContextMenu={(event) => {
         if (!onOpenContextMenu) return
@@ -1142,7 +1067,40 @@ function ElementNode({
         </div>
       ) : null}
       {nestable ? (
-        <div className="flex w-full flex-col gap-2">
+        <div
+          className="w-full"
+          style={
+            element.elementId === 'stack'
+              ? {
+                  display: 'flex',
+                  flexDirection:
+                    (element.props.direction ?? 'column') === 'row' ? 'row' : 'column',
+                  gap: Math.max(0, Math.min(120, Number(element.props.gap ?? '12') || 12)),
+                  alignItems:
+                    (element.props.align ?? 'stretch') === 'center'
+                      ? 'center'
+                      : (element.props.align ?? 'stretch') === 'end'
+                        ? 'flex-end'
+                        : (element.props.align ?? 'stretch') === 'start'
+                          ? 'flex-start'
+                          : 'stretch',
+                  justifyContent:
+                    (element.props.justify ?? 'start') === 'center'
+                      ? 'center'
+                      : (element.props.justify ?? 'start') === 'end'
+                        ? 'flex-end'
+                        : (element.props.justify ?? 'start') === 'between'
+                          ? 'space-between'
+                          : 'flex-start',
+                  padding: Math.max(0, Math.min(80, Number(element.props.padding ?? '0') || 0)),
+                  border: isEditMode ? '2px solid rgba(14, 165, 233, 0.5)' : 'none',
+                  borderRadius: isEditMode ? 8 : 0,
+                  background: isEditMode ? 'rgba(14, 165, 233, 0.04)' : 'transparent',
+                  minHeight: isEditMode ? 60 : 0
+                }
+              : undefined
+          }
+        >
           {element.elementId === 'columns' ? (
             (() => {
               const desktopColumns = Math.max(1, Math.min(16, Number(element.props.columns ?? '2') || 2))
@@ -1187,8 +1145,6 @@ function ElementNode({
                       >
                         <NestDropZone
                           parentElementId={element.id}
-                          options={options}
-                          dragFallbackId={dragFallbackId}
                         >
                           {items.length > 0 ? (
                             <div className="flex flex-col gap-2">
@@ -1326,8 +1282,6 @@ function ElementNode({
           {element.elementId !== 'columns' ? (
             <NestDropZone
               parentElementId={element.id}
-              options={options}
-              dragFallbackId={dragFallbackId}
             >
               {childrenContent}
             </NestDropZone>
@@ -1515,94 +1469,20 @@ function ElementNode({
 
 function NestDropZone({
   parentElementId,
-  options,
-  dragFallbackId,
   children
 }: {
   parentElementId: string
-  options?: ElementPreviewOptions
-  dragFallbackId?: string | null
   children: React.ReactNode
 }) {
-  const [active, setActive] = React.useState(false)
-  const dragDepthRef = React.useRef(0)
-
-  React.useEffect(() => {
-    const reset = () => {
-      dragDepthRef.current = 0
-      setActive(false)
-    }
-    window.addEventListener('dragend', reset)
-    window.addEventListener('drop', reset)
-    window.addEventListener('pointerup', reset)
-    const onDragState = (event: Event) => {
-      const custom = event as CustomEvent<{ phase?: 'start' | 'end' }>
-      if (custom.detail?.phase === 'end') reset()
-    }
-    window.addEventListener('randee:element-drag', onDragState as EventListener)
-    return () => {
-      window.removeEventListener('dragend', reset)
-      window.removeEventListener('drop', reset)
-      window.removeEventListener('pointerup', reset)
-      window.removeEventListener('randee:element-drag', onDragState as EventListener)
-    }
-  }, [])
+  const { draggingElementId, dropTarget } = React.useContext(ArtboardDragCtx)
+  // active = идёт перетаскивание + курсор над этим контейнером (зона inside)
+  const active = Boolean(draggingElementId) &&
+    dropTarget?.elementId === parentElementId &&
+    dropTarget?.zone === 'inside'
 
   return (
     <div
       className="min-h-[24px] rounded-md p-1"
-      onDragOver={(event) => {
-        const elementId = readDraggedElementId(event, dragFallbackId)
-        if (!options?.onDropElement || !elementId) return
-        event.preventDefault()
-        event.stopPropagation()
-        event.dataTransfer.dropEffect = 'move'
-        if (!active) setActive(true)
-        options.onDropDebug?.({
-          phase: 'dragover',
-          targetElementId: parentElementId,
-          zone: 'inside',
-          draggedElementId: elementId,
-          parentId: parentElementId
-        })
-      }}
-      onDragEnter={(event) => {
-        const elementId = readDraggedElementId(event, dragFallbackId)
-        if (!options?.onDropElement || !elementId) return
-        event.preventDefault()
-        event.stopPropagation()
-        dragDepthRef.current += 1
-        if (!active) setActive(true)
-      }}
-      onDragLeave={(event) => {
-        const elementId = readDraggedElementId(event, dragFallbackId)
-        if (!options?.onDropElement || !elementId) return
-        event.preventDefault()
-        event.stopPropagation()
-        dragDepthRef.current = Math.max(0, dragDepthRef.current - 1)
-        if (dragDepthRef.current === 0 && active) setActive(false)
-      }}
-      onDrop={(event) => {
-        const elementId = readDraggedElementId(event, dragFallbackId)
-        if (!options?.onDropElement || !elementId) return
-        event.preventDefault()
-        event.stopPropagation()
-        dragDepthRef.current = 0
-        setActive(false)
-        options.onDropDebug?.({
-          phase: 'drop',
-          targetElementId: parentElementId,
-          zone: 'inside',
-          draggedElementId: elementId,
-          parentId: parentElementId
-        })
-        options.onDropElement(elementId, { parentId: parentElementId })
-        window.dispatchEvent(
-          new CustomEvent('randee:element-drag', {
-            detail: { phase: 'end', elementId: null }
-          })
-        )
-      }}
       style={
         active
           ? {
@@ -1670,8 +1550,28 @@ export function ElementTreePreview({
   const [menu, setMenu] = React.useState<{ elementId: string; x: number; y: number } | null>(null)
   const [menuQuery, setMenuQuery] = React.useState('')
   const [portalReady, setPortalReady] = React.useState(false)
-  const [isRootDropTarget, setIsRootDropTarget] = React.useState(false)
-  const [dragFallbackId, setDragFallbackId] = React.useState<string | null>(null)
+
+  // ── Pointer Events drag — ref-based, без ре-рендера на каждый pointermove ──
+  // pending: поставили pointerdown, ещё не преодолели порог
+  const pendingDragRef = React.useRef<{ elementId: string; startX: number; startY: number } | null>(null)
+  // activeDragId: только когда порог преодолён → триггерит 1 ре-рендер для ghost/cursor
+  const [activeDragId, setActiveDragId] = React.useState<string | null>(null)
+  const activeDragIdRef = React.useRef<string | null>(null)
+  // ghost DOM — двигаем напрямую без React
+  const ghostRef = React.useRef<HTMLDivElement | null>(null)
+  const [dropTarget, setDropTarget] = React.useState<ArtboardDropTarget>(null)
+  const elementsRef = React.useRef(elements)
+  elementsRef.current = elements
+  const onDropElementRef = React.useRef(options?.onDropElement)
+  onDropElementRef.current = options?.onDropElement
+
+  const draggingElementId = activeDragId
+  const isRootDropTarget = Boolean(activeDragId) && dropTarget?.zone === 'root'
+
+  const onStartDrag = React.useCallback((elementId: string, clientX: number, clientY: number) => {
+    if (!onDropElementRef.current) return
+    pendingDragRef.current = { elementId, startX: clientX, startY: clientY }
+  }, [])
 
   const elementsByParent = React.useMemo(() => {
     const map = new Map<string | null, ComponentElement[]>()
@@ -1697,7 +1597,6 @@ export function ElementTreePreview({
             element={element}
             parentId={currentParentId}
             prevSiblingId={previousSiblingId}
-            dragFallbackId={dragFallbackId}
             options={{
               ...options,
               onDropDebug: (payload) => {
@@ -1718,7 +1617,7 @@ export function ElementTreePreview({
         renderOne(element, parentId, index > 0 ? branch[index - 1].id : null)
       )
     },
-    [dragFallbackId, elementsByParent, options]
+    [elementsByParent, options]
   )
 
   React.useEffect(() => {
@@ -1744,76 +1643,179 @@ export function ElementTreePreview({
     }
   }, [menu])
 
+  // ── Единый постоянный Pointer Events listener (пустые deps = mount/unmount) ──
   React.useEffect(() => {
-    const onDragState = (event: Event) => {
-      const custom = event as CustomEvent<{ phase?: 'start' | 'end'; elementId?: string | null }>
-      const phase = custom.detail?.phase
-      if (phase === 'start') {
-        setDragFallbackId(custom.detail?.elementId ?? null)
-      } else if (phase === 'end') {
-        setDragFallbackId(null)
-        setIsRootDropTarget(false)
+    const onMove = (event: PointerEvent) => {
+      const pending = pendingDragRef.current
+      if (!pending) return
+
+      const dx = event.clientX - pending.startX
+      const dy = event.clientY - pending.startY
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist < DRAG_THRESHOLD) return
+
+      // Активируем drag при первом превышении порога (1 ре-рендер)
+      if (activeDragIdRef.current !== pending.elementId) {
+        activeDragIdRef.current = pending.elementId
+        setActiveDragId(pending.elementId)
+      }
+
+      // Ghost двигаем напрямую через DOM — ноль ре-рендеров
+      const ghost = ghostRef.current
+      if (ghost) {
+        ghost.style.left = `${event.clientX + 14}px`
+        ghost.style.top = `${event.clientY + 14}px`
+      }
+
+      // Вычисляем drop target
+      const nodes = document.querySelectorAll<HTMLElement>('[data-randee-element]')
+      let bestId: string | null = null
+      let bestZone: 'before' | 'after' | 'inside' = 'after'
+      let bestSize = Infinity
+
+      for (const node of nodes) {
+        const id = node.dataset.randeeElement
+        if (!id || id === pending.elementId) continue
+        const rect = node.getBoundingClientRect()
+        if (
+          event.clientX < rect.left ||
+          event.clientX > rect.right ||
+          event.clientY < rect.top ||
+          event.clientY > rect.bottom
+        )
+          continue
+
+        const size = rect.width * rect.height
+        if (size < bestSize) {
+          bestSize = size
+          bestId = id
+          const isNestable = node.dataset.randeeNestable === 'true'
+          const yRatio = rect.height > 0 ? (event.clientY - rect.top) / rect.height : 0.5
+          const edge = 0.22
+          bestZone =
+            isNestable && yRatio > edge && yRatio < 1 - edge
+              ? 'inside'
+              : yRatio <= edge
+                ? 'before'
+                : 'after'
+        }
+      }
+
+      const nextTarget: ArtboardDropTarget = bestId
+        ? { elementId: bestId, zone: bestZone }
+        : { elementId: null, zone: 'root' }
+
+      setDropTarget((prev) =>
+        prev?.elementId === nextTarget.elementId && prev?.zone === nextTarget.zone
+          ? prev  // без изменений — ре-рендер не нужен
+          : nextTarget
+      )
+    }
+
+    const onUp = () => {
+      const pending = pendingDragRef.current
+      if (!pending) return
+      pendingDragRef.current = null
+
+      if (activeDragIdRef.current) {
+        const onDrop = onDropElementRef.current
+        const els = elementsRef.current
+        // dropTarget берём из setDropTarget — нужен ref
+        setDropTarget((dt) => {
+          if (onDrop && dt) {
+            const { elementId: targetId, zone } = dt
+            if (targetId === null) {
+              onDrop(activeDragIdRef.current!, { parentId: null })
+            } else if (zone === 'inside') {
+              onDrop(activeDragIdRef.current!, { parentId: targetId })
+            } else {
+              const targetEl = els.find((e) => e.id === targetId)
+              const pId = targetEl?.parentId ?? null
+              if (zone === 'after') {
+                onDrop(activeDragIdRef.current!, { parentId: pId, afterElementId: targetId })
+              } else {
+                const siblings = els.filter((e) => (e.parentId ?? null) === pId)
+                const idx = siblings.findIndex((e) => e.id === targetId)
+                const prev = idx > 0 ? siblings[idx - 1] : null
+                if (prev) {
+                  onDrop(activeDragIdRef.current!, { parentId: pId, afterElementId: prev.id })
+                } else {
+                  onDrop(activeDragIdRef.current!, { parentId: pId, beforeElementId: targetId })
+                }
+              }
+            }
+          }
+          return null
+        })
+        activeDragIdRef.current = null
+        setActiveDragId(null)
+      } else {
+        // Простой клик (порог не преодолён) — ничего не делаем
+        setDropTarget(null)
       }
     }
-    window.addEventListener('randee:element-drag', onDragState as EventListener)
-    return () => window.removeEventListener('randee:element-drag', onDragState as EventListener)
-  }, [])
 
-  React.useEffect(() => {
-    const reset = () => setIsRootDropTarget(false)
-    window.addEventListener('dragend', reset)
-    window.addEventListener('drop', reset)
-    window.addEventListener('pointerup', reset)
-    return () => {
-      window.removeEventListener('dragend', reset)
-      window.removeEventListener('drop', reset)
-      window.removeEventListener('pointerup', reset)
+    // Отменяем drag по Escape
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && pendingDragRef.current) {
+        pendingDragRef.current = null
+        activeDragIdRef.current = null
+        setActiveDragId(null)
+        setDropTarget(null)
+      }
     }
-  }, [])
+
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, []) // Пустые deps — один раз при mount, всё через рефы
+
+  // Найдём имя перетаскиваемого элемента для ghost label
+  const draggingEl = activeDragId ? elements.find((e) => e.id === activeDragId) : null
 
   return (
-    <>
+    <ArtboardDragCtx.Provider value={{ draggingElementId, dropTarget, onStartDrag }}>
+      {/* Ghost — всегда в DOM, показываем/скрываем через display. Позиция — через ref DOM (без ре-рендеров) */}
+      {portalReady ? createPortal(
+        <div
+          ref={ghostRef}
+          aria-hidden
+          style={{
+            display: activeDragId ? 'flex' : 'none',
+            position: 'fixed',
+            zIndex: 999999,
+            pointerEvents: 'none',
+            background: '#1f2127',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: 8,
+            padding: '4px 12px',
+            fontSize: 12,
+            color: '#e5e7eb',
+            fontWeight: 600,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            alignItems: 'center',
+            gap: 6,
+            maxWidth: 220,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            userSelect: 'none',
+            left: 0,
+            top: 0,
+          }}
+        >
+          <span style={{ opacity: 0.5, fontSize: 10, letterSpacing: 1 }}>⣿</span>
+          {draggingEl?.name || draggingEl?.elementId || ''}
+        </div>,
+        document.body
+      ) : null}
       <div
         className="randee-element-tree flex w-full flex-col gap-3 p-2"
-        onDragOver={(event) => {
-          const elementId = readDraggedElementId(event, dragFallbackId)
-          if (!options?.onDropElement || !elementId) return
-          event.preventDefault()
-          event.dataTransfer.dropEffect = 'move'
-          if (!isRootDropTarget) setIsRootDropTarget(true)
-          const payload = {
-            phase: 'dragover' as const,
-            targetElementId: null,
-            zone: 'root' as const,
-            draggedElementId: elementId,
-            parentId: null
-          }
-          options.onDropDebug?.(payload)
-        }}
-        onDragLeave={() => {
-          if (isRootDropTarget) setIsRootDropTarget(false)
-        }}
-        onDrop={(event) => {
-          const elementId = readDraggedElementId(event, dragFallbackId)
-          if (!options?.onDropElement || !elementId) return
-          event.preventDefault()
-          setIsRootDropTarget(false)
-          const payload = {
-            phase: 'drop' as const,
-            targetElementId: null,
-            zone: 'root' as const,
-            draggedElementId: elementId,
-            parentId: null
-          }
-          options.onDropDebug?.(payload)
-          options.onDropElement(elementId, { parentId: null })
-          setDragFallbackId(null)
-          window.dispatchEvent(
-            new CustomEvent('randee:element-drag', {
-              detail: { phase: 'end', elementId: null }
-            })
-          )
-        }}
       >
         {isRootDropTarget ? (
           <div
@@ -2037,6 +2039,6 @@ export function ElementTreePreview({
         document.body
       )
         : null}
-    </>
+    </ArtboardDragCtx.Provider>
   )
 }

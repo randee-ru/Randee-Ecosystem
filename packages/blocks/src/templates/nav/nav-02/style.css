@@ -1,0 +1,489 @@
+/* ── nav-02 · Мега-меню overlay ─────────────────────────────────────────────
+   Стили скоупированы под .randee-nav-02
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Враппер ────────────────────────────────────────────────────────────── */
+.randee-nav-02 {
+  width: 100%;
+  height: 100%;
+}
+
+/* ── Container / Grid (используется внутри overlay) ────────────────────── */
+.randee-nav-02 .container {
+  width: 100%;
+  margin-inline: auto;
+  padding-inline: 24px;
+  box-sizing: border-box;
+}
+
+.randee-nav-02 .row {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+}
+
+.randee-nav-02 [class*="col-"] { box-sizing: border-box; }
+
+.randee-nav-02 .col-1  { grid-column: span 1; }
+.randee-nav-02 .col-2  { grid-column: span 2; }
+.randee-nav-02 .col-3  { grid-column: span 3; }
+.randee-nav-02 .col-4  { grid-column: span 4; }
+.randee-nav-02 .col-5  { grid-column: span 5; }
+.randee-nav-02 .col-6  { grid-column: span 6; }
+.randee-nav-02 .col-7  { grid-column: span 7; }
+.randee-nav-02 .col-8  { grid-column: span 8; }
+.randee-nav-02 .col-9  { grid-column: span 9; }
+.randee-nav-02 .col-10 { grid-column: span 10; }
+.randee-nav-02 .col-11 { grid-column: span 11; }
+.randee-nav-02 .col-12 { grid-column: span 12; }
+
+@media (min-width: 768px) {
+  .randee-nav-02 .col-md-1  { grid-column: span 1; }
+  .randee-nav-02 .col-md-2  { grid-column: span 2; }
+  .randee-nav-02 .col-md-3  { grid-column: span 3; }
+  .randee-nav-02 .col-md-4  { grid-column: span 4; }
+  .randee-nav-02 .col-md-5  { grid-column: span 5; }
+  .randee-nav-02 .col-md-6  { grid-column: span 6; }
+  .randee-nav-02 .col-md-7  { grid-column: span 7; }
+  .randee-nav-02 .col-md-8  { grid-column: span 8; }
+  .randee-nav-02 .col-md-9  { grid-column: span 9; }
+  .randee-nav-02 .col-md-10 { grid-column: span 10; }
+  .randee-nav-02 .col-md-11 { grid-column: span 11; }
+  .randee-nav-02 .col-md-12 { grid-column: span 12; }
+}
+
+/* ── .btn / .btn-blick ──────────────────────────────────────────────────── */
+.randee-nav-02 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 20px;
+  border-radius: 40px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 28px;
+  color: #fff;
+  background: #6653B7;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+}
+.randee-nav-02 .btn:hover { opacity: 0.8; }
+
+.randee-nav-02 .btn-blick {
+  position: relative;
+  overflow: hidden;
+}
+.randee-nav-02 .btn-blick::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; left: 0;
+  width: 45%;
+  background: linear-gradient(100deg,
+    rgba(255,255,255,0) 0%,
+    rgba(255,255,255,0.45) 50%,
+    rgba(255,255,255,0) 100%);
+  transform: skewX(-18deg) translate3d(-180%, 0, 0);
+  animation: nav02-blick 2.6s ease-in-out infinite;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .randee-nav-02 .btn-blick::after { animation: none; opacity: 0; }
+}
+@keyframes nav02-blick {
+  0%   { transform: skewX(-18deg) translate3d(-180%, 0, 0); }
+  100% { transform: skewX(-18deg) translate3d(320%,  0, 0); }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   РЕДАКТОР: overlay всегда виден как обычный блок
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.randee-nav-02[data-editor-mode] .menu-overlay {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 1 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  overflow: visible !important;
+  min-height: 0 !important;
+  transition: none !important;
+}
+
+.randee-nav-02[data-editor-mode] .menu-overlay__shell {
+  transform: none !important;
+  min-height: 0 !important;
+  transition: none !important;
+}
+
+.randee-nav-02[data-editor-mode] .menu-overlay__panel {
+  position: relative !important;
+  min-height: 0 !important;
+  pointer-events: auto !important;
+}
+
+.randee-nav-02[data-editor-mode] .menu-overlay__backdrop {
+  position: absolute !important;
+}
+
+.randee-nav-02[data-editor-mode] .menu-overlay__close {
+  display: none !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MENU OVERLAY (production)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.randee-nav-02 .menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+  color: #ffffff;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.28s ease,
+    visibility 0.28s ease;
+}
+
+.randee-nav-02 .menu-overlay.is-open {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+  overflow: auto;
+}
+
+/* ── Shell (слайд сверху вниз) ──────────────────────────────────────────── */
+.randee-nav-02 .menu-overlay__shell {
+  position: relative;
+  min-height: 100%;
+  min-height: 100dvh;
+  transform: translate3d(0, -100%, 0);
+  transition: transform 0.48s cubic-bezier(0.22, 1, 0.32, 1);
+  will-change: transform;
+}
+
+.randee-nav-02 .menu-overlay.is-open .menu-overlay__shell {
+  transform: translate3d(0, 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .randee-nav-02 .menu-overlay__shell {
+    transition-duration: 0.01ms;
+    transition-property: none;
+  }
+  .randee-nav-02 .menu-overlay:not(.is-open) .menu-overlay__shell {
+    transform: none;
+  }
+}
+
+/* ── Backdrop (затемнение) ──────────────────────────────────────────────── */
+.randee-nav-02 .menu-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  cursor: pointer;
+  background: rgba(10, 12, 12, 0.55);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+/* ── Panel ──────────────────────────────────────────────────────────────── */
+.randee-nav-02 .menu-overlay__panel {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 88px 24px 48px;
+  padding-top: max(88px, env(safe-area-inset-top, 0px) + 72px);
+  padding-bottom: max(48px, env(safe-area-inset-bottom, 0px) + 24px);
+  color: #ffffff;
+  pointer-events: none;
+}
+
+.randee-nav-02 .menu-overlay__close,
+.randee-nav-02 .menu-overlay__inner {
+  pointer-events: auto;
+}
+
+/* ── Кнопка закрыть ─────────────────────────────────────────────────────── */
+.randee-nav-02 .menu-overlay__close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  cursor: pointer;
+  color: #fff;
+  background: transparent;
+  border-radius: 8px;
+  transition: opacity 0.2s ease;
+}
+
+.randee-nav-02 .menu-overlay__close:hover {
+  opacity: 0.75;
+}
+
+.randee-nav-02 .menu-overlay__close-icon {
+  position: relative;
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+
+.randee-nav-02 .menu-overlay__close-icon::before,
+.randee-nav-02 .menu-overlay__close-icon::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 2px;
+  margin: -1px 0 0 -11px;
+  background: currentcolor;
+  border-radius: 1px;
+}
+
+.randee-nav-02 .menu-overlay__close-icon::before { transform: rotate(45deg); }
+.randee-nav-02 .menu-overlay__close-icon::after  { transform: rotate(-45deg); }
+
+/* ── Inner (скролл-контент) ─────────────────────────────────────────────── */
+.randee-nav-02 .menu-overlay__inner {
+  flex: 0 1 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0 auto;
+  max-height: calc(100vh - 140px);
+  max-height: calc(100dvh - 140px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Row / Cols ─────────────────────────────────────────────────────────── */
+.randee-nav-02 .menu-overlay__row.row {
+  row-gap: 32px;
+  align-items: start;
+}
+
+@media (min-width: 768px) {
+  .randee-nav-02 .menu-overlay__row > .menu-overlay__col ~ .menu-overlay__col {
+    padding-left: 48px;
+    border-left: 1px solid rgba(62, 207, 190, 0.55);
+  }
+}
+
+/* ── Брендинг «МЕ-НЮ» ───────────────────────────────────────────────────── */
+.randee-nav-02 .menu-overlay__brand {
+  margin: 0 0 40px;
+  font-size: clamp(40px, 6vw, 72px);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.randee-nav-02 .menu-overlay__brand-line {
+  display: block;
+  color: #ffffff;
+}
+
+.randee-nav-02 .menu-overlay__brand-line span {
+  color: #ffffff;
+}
+
+.randee-nav-02 .menu-overlay__brand-line--with-icon {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.randee-nav-02 .menu-overlay__brand-bars {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 28px;
+  height: 22px;
+  margin-top: 4px;
+}
+
+.randee-nav-02 .menu-overlay__brand-bars span {
+  height: 3px;
+  border-radius: 2px;
+  background: #6653b7;
+}
+
+/* ── Навигация ──────────────────────────────────────────────────────────── */
+.randee-nav-02 .menu-overlay__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.randee-nav-02 .menu-overlay__nav--tight {
+  margin-top: 36px;
+  gap: 18px;
+}
+
+.randee-nav-02 .menu-overlay__link {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  font-size: clamp(20px, 2.2vw, 24px);
+  font-weight: 500;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.92);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .randee-nav-02 .menu-overlay__link:hover { color: #00f0ff; }
+}
+.randee-nav-02 .menu-overlay__link:focus-visible { color: #00f0ff; }
+@media (hover: none) {
+  .randee-nav-02 .menu-overlay__link:active { color: #00f0ff; }
+}
+
+.randee-nav-02 .menu-overlay__link--sub {
+  flex-wrap: nowrap;
+  align-items: center;
+  font-size: clamp(17px, 1.8vw, 20px);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* ── Стрелка ↗ ──────────────────────────────────────────────────────────── */
+.randee-nav-02 .menu-overlay__arr {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin-inline-start: 0.12em;
+  vertical-align: middle;
+  opacity: 0.78;
+}
+
+.randee-nav-02 .menu-overlay__arr-svg {
+  display: block;
+  width: 0.62em;
+  height: 0.62em;
+}
+
+/* ── Блок «Разработка сайтов» ───────────────────────────────────────────── */
+.randee-nav-02 .menu-overlay__block {
+  margin-bottom: 8px;
+}
+
+.randee-nav-02 .menu-overlay__heading-link {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 20px;
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 600;
+  color: #fff;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .randee-nav-02 .menu-overlay__heading-link:hover { color: #00f0ff; }
+}
+.randee-nav-02 .menu-overlay__heading-link:focus-visible { color: #00f0ff; }
+@media (hover: none) {
+  .randee-nav-02 .menu-overlay__heading-link:active { color: #00f0ff; }
+}
+
+.randee-nav-02 .menu-overlay__sub {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-left: 10px;
+}
+
+/* ── Колонка «Контакты» ─────────────────────────────────────────────────── */
+.randee-nav-02 .menu-overlay__col--aside {
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.randee-nav-02 .menu-overlay__lead {
+  margin: 0 0 28px;
+  max-width: 28em;
+}
+
+.randee-nav-02 .menu-overlay__phone,
+.randee-nav-02 .menu-overlay__email {
+  margin: 0 0 12px;
+  font-size: clamp(22px, 3vw, 34px);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.randee-nav-02 .menu-overlay__phone a,
+.randee-nav-02 .menu-overlay__email a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.randee-nav-02 .menu-overlay__phone a:hover,
+.randee-nav-02 .menu-overlay__email a:hover {
+  opacity: 0.85;
+}
+
+/* ── Кнопки действий ────────────────────────────────────────────────────── */
+.randee-nav-02 .menu-overlay__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.randee-nav-02 .menu-overlay__btn {
+  text-decoration: none;
+}
+
+.randee-nav-02 .menu-overlay__btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 22px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: #fff;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 40px;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.randee-nav-02 .menu-overlay__btn-secondary:hover {
+  border-color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
