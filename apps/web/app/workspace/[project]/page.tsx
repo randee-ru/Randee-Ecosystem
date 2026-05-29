@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { useDialog } from '@/components/dialog'
 import {
   ArrowLeft,
   Copy,
@@ -20,6 +21,8 @@ import {
   FileText,
   Construction,
   Settings,
+  Palette,
+  Frame,
 } from 'lucide-react'
 
 type PageEntry = {
@@ -38,7 +41,7 @@ type Project = {
   updatedAt: string
 }
 
-type Section = 'site' | 'crm' | 'metrics' | 'files'
+type Section = 'site' | 'design' | 'crm' | 'metrics' | 'files'
 
 // ── Логотип ───────────────────────────────────────────────────────────────────
 function ProjectAvatar({ name }: { name: string }) {
@@ -164,16 +167,129 @@ function ComingSoon({ icon: Icon, title, description }: { icon: React.ElementTyp
 // ── Навигация проекта ─────────────────────────────────────────────────────────
 const NAV_ITEMS: Array<{ id: Section; icon: React.ElementType; label: string; badge?: string }> = [
   { id: 'site',    icon: Globe,     label: 'Сайт' },
+  { id: 'design',  icon: Palette,   label: 'Дизайн',  badge: 'Скоро' },
   { id: 'crm',     icon: Inbox,     label: 'CRM',     badge: 'Скоро' },
   { id: 'metrics', icon: BarChart2, label: 'Метрика', badge: 'Скоро' },
   { id: 'files',   icon: FolderOpen, label: 'Файлы',  badge: 'Скоро' },
 ]
+
+type DesignFileEntry = { id: string; name: string; updatedAt: string }
+
+// ── Список дизайн-файлов ──────────────────────────────────────────────────────
+function DesignFileList({ projectSlug, projectId }: { projectSlug: string; projectId: string }) {
+  const router = useRouter()
+  const { prompt, confirm, Dialog } = useDialog()
+  const [files, setFiles] = React.useState<DesignFileEntry[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+  const load = React.useCallback(() => {
+    setLoading(true)
+    void fetch(`/api/builder/projects/${encodeURIComponent(projectSlug)}/design-files`)
+      .then(r => r.ok ? r.json() : { files: [] })
+      .then((d: { files?: DesignFileEntry[] }) => setFiles(d.files ?? []))
+      .finally(() => setLoading(false))
+  }, [projectSlug])
+
+  React.useEffect(() => { load() }, [load])
+
+  const createFile = async () => {
+    const name = await prompt('Название дизайн-файла', 'Untitled')
+    if (!name?.trim()) return
+    const res = await fetch(`/api/builder/projects/${encodeURIComponent(projectSlug)}/design-files`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name.trim() }),
+    })
+    const data = (await res.json()) as { ok: boolean; file?: DesignFileEntry }
+    if (data.ok && data.file) router.push(`/workspace/${projectSlug}/design/${data.file.id}`)
+  }
+
+  const deleteFile = async (id: string, name: string) => {
+    if (!(await confirm(`Удалить файл «${name}»?`))) return
+    await fetch(`/api/design/${id}`, { method: 'DELETE' })
+    load()
+  }
+
+  if (loading) return <div style={{ padding: 32, color: '#555', fontSize: 13 }}>Загрузка...</div>
+
+  return (
+    <div style={{ padding: 24 }}>
+      {Dialog}
+      {files.length === 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 280, gap: 16, color: '#555' }}>
+          <div style={{ width: 64, height: 64, borderRadius: 18, background: '#1C1C1C', border: '1px solid #2C2C2C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Frame size={28} style={{ color: '#444' }} />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#555' }}>Нет дизайн-файлов</p>
+            <p style={{ margin: '6px 0 0', fontSize: 13, color: '#3A3A3A' }}>Создайте первый макет для этого проекта</p>
+          </div>
+          <button type="button"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', background: '#7C3AED', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+            onClick={() => void createFile()}
+          >
+            <Plus size={14} /> Создать дизайн-файл
+          </button>
+        </div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+            <button type="button"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', background: '#7C3AED', border: 'none', borderRadius: 8, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              onClick={() => void createFile()}
+            >
+              <Plus size={12} /> Новый файл
+            </button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+            {files.map(f => {
+              const date = new Date(f.updatedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+              const colors = ['#8B5CF6', '#0099FF', '#EC4899', '#F59E0B', '#10B981']
+              const accent = colors[f.name.charCodeAt(0) % colors.length]!
+              return (
+                <div key={f.id}
+                  style={{ background: '#1C1C1C', border: '1px solid #2C2C2C', borderRadius: 12, overflow: 'hidden', cursor: 'pointer', transition: 'border-color 0.15s, transform 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#3C3C3C'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#2C2C2C'; e.currentTarget.style.transform = 'translateY(0)' }}
+                  onClick={() => router.push(`/workspace/${projectSlug}/design/${f.id}`)}
+                >
+                  <div style={{ height: 120, background: '#141414', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, padding: 16 }}>
+                      {[0.8, 0.4, 0.6, 0.3].map((op, i) => (
+                        <div key={i} style={{ borderRadius: 4, background: accent, opacity: op, height: i % 2 === 0 ? 36 : 24 }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: '#E8E8E8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</p>
+                      <p style={{ margin: 0, fontSize: 10, color: '#555', marginTop: 2 }}>{date}</p>
+                    </div>
+                    <button type="button"
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#444', padding: 4, borderRadius: 4 }}
+                      onMouseEnter={e => { e.currentTarget.style.color = '#ef4444' }}
+                      onMouseLeave={e => { e.currentTarget.style.color = '#444' }}
+                      onClick={e => { e.stopPropagation(); void deleteFile(f.id, f.name) }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
 
 // ── Главный компонент ─────────────────────────────────────────────────────────
 export default function ProjectPage() {
   const router = useRouter()
   const params = useParams<{ project: string }>()
   const projectSlug = params.project
+  const { prompt, confirm, Dialog } = useDialog()
 
   const [project, setProject] = React.useState<Project | null>(null)
   const [pages, setPages] = React.useState<PageEntry[]>([])
@@ -228,13 +344,13 @@ export default function ProjectPage() {
   }
 
   const detachPage = async (entry: PageEntry) => {
-    if (!window.confirm(`Отвязать «${entry.page}» от проекта? Страница не удалится.`)) return
+    if (!(await confirm(`Отвязать «${entry.page}» от проекта? Страница не удалится.`))) return
     await fetch('/api/builder/page-project', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: entry.pageKey, projectId: null }) })
     load()
   }
 
   const deletePage = async (entry: PageEntry) => {
-    if (!window.confirm(`Удалить страницу «${entry.page}»? Это необратимо.`)) return
+    if (!(await confirm(`Удалить страницу «${entry.page}»?`))) return
     await fetch(`/api/builder/pages/${encodeURIComponent(entry.pageKey)}`, { method: 'DELETE' })
     await fetch('/api/builder/page-project', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: entry.pageKey, projectId: null }) })
     load()
@@ -242,7 +358,7 @@ export default function ProjectPage() {
 
   const createPage = async () => {
     if (!project) return
-    const name = window.prompt('Название новой страницы', 'Новая страница')
+    const name = await prompt('Название новой страницы', 'Новая страница')
     if (!name?.trim()) return
     const pageKey = name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9а-яё-]/gi, '').replace(/-+/g, '-') || 'page'
     await fetch(`/api/builder/pages/${encodeURIComponent(pageKey)}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: name.trim(), slug: '/' + pageKey, seo: { title: name.trim(), description: '' }, blocks: [] }) })
@@ -252,7 +368,7 @@ export default function ProjectPage() {
 
   const renameProject = async () => {
     if (!project) return
-    const name = window.prompt('Новое название', project.name)
+    const name = await prompt('Новое название', project.name)
     if (!name?.trim() || name.trim() === project.name) return
     await fetch(`/api/builder/projects/${project.slug}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.trim() }) })
     load()
@@ -264,6 +380,7 @@ export default function ProjectPage() {
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#111', color: '#E8E8E8', fontFamily: 'system-ui, sans-serif', overflow: 'hidden' }}>
+      {Dialog}
 
       {/* ── Левая панель ── */}
       <aside style={{ width: 220, flexShrink: 0, borderRight: '1px solid #1E1E1E', display: 'flex', flexDirection: 'column' }}>
@@ -278,7 +395,7 @@ export default function ProjectPage() {
             onClick={() => router.push('/workspace')}
           >
             <ArrowLeft size={10} />
-            Все сайты
+            Все проекты
           </button>
 
           {/* Название проекта */}
@@ -467,6 +584,11 @@ export default function ProjectPage() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* ── Дизайн ── */}
+          {activeSection === 'design' && project && (
+            <DesignFileList projectSlug={projectSlug} projectId={project.id} />
           )}
 
           {/* ── CRM ── */}
